@@ -38,7 +38,7 @@ class _CategoryListPageState extends State<CategoryListPage> {
     final confirmed = await showConfirmationDialog(
       context: context,
       title: 'Confirmar Exclusão',
-      content: 'Tem certeza de que deseja excluir a categoria "${category.name}"?',
+      content: 'Tem certeza de que deseja excluir a categoria "${category.name}"?. Ao excluir esta categoria, ⚠️ TODOS ⚠️ os produtos associados a ela também serão excluídos.',
       confirmText: 'Excluir',
     );
 

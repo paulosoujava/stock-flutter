@@ -53,21 +53,8 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
     _viewModel = getIt<CustomerFormViewModel>();
 
     if (isEditing) {
-      final customer = widget.customerToEdit!;
-      _nameController.text = customer.name;
-      _cpfController.text = _cpfFormatter.maskText(customer.cpf);
-      _emailController.text = customer.email;
-      _phoneController.text = _phoneFormatter.maskText(customer.phone);
-      _whatsappController.text = _phoneFormatter.maskText(customer.whatsapp);
-      _addressController.text = customer.address;
-      _notesController.text = customer.notes;
-      if (customer.phone.isNotEmpty && customer.phone == customer.whatsapp) {
-        // Usa setState para atualizar o estado do checkbox e a UI.
-        setState(() {
-          _isWhatsAppSameAsPhone = true;
-        });
-      }
-    }
+      _populateFieldsForEditing();
+        }
 
     _phoneController.addListener(_updateWhatsAppField);
 
@@ -89,6 +76,37 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
         );
       }
     });
+  }
+
+  void _populateFieldsForEditing() {
+    final customer = widget.customerToEdit!;
+
+    // Para campos sem máscara, a atribuição direta funciona.
+    _nameController.text = customer.name;
+    _emailController.text = customer.email;
+    _addressController.text = customer.address;
+    _notesController.text = customer.notes;
+
+    // Para campos COM máscara, use o método .formatEditUpdate() do formatador.
+    // Isso atualiza o controlador e o estado interno do formatador, mantendo-os em sincronia.
+    _cpfController.value = _cpfFormatter.formatEditUpdate(
+      TextEditingValue.empty,
+      TextEditingValue(text: customer.cpf),
+    );
+    _phoneController.value = _phoneFormatter.formatEditUpdate(
+      TextEditingValue.empty,
+      TextEditingValue(text: customer.phone),
+    );
+    _whatsappController.value = _whatsappFormatter.formatEditUpdate(
+      TextEditingValue.empty,
+      TextEditingValue(text: customer.whatsapp),
+    );
+
+    if (customer.phone.isNotEmpty && customer.phone == customer.whatsapp) {
+      setState(() {
+        _isWhatsAppSameAsPhone = true;
+      });
+    }
   }
 
   @override
@@ -225,7 +243,7 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
                       minimumSize: const Size(double.infinity, 50),
                       // ...
                     ),
-                    child: const Text('Salvar Cliente'),
+                    child:  Text(isEditing ? 'Editar Cliente' :'Salvar Cliente'),
                   ),
                 ],
               ),
