@@ -5,6 +5,7 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
+import 'package:stock/presentation/widgets/product_card.dart';
 
 import 'product_list_intent.dart';
 import 'product_list_state.dart';
@@ -12,6 +13,7 @@ import 'product_list_viewmodel.dart';
 
 class ProductListPage extends StatefulWidget {
   final Category category;
+
   const ProductListPage({super.key, required this.category});
 
   @override
@@ -73,7 +75,7 @@ class _ProductListPageState extends State<ProductListPage> {
     );
 
     if (confirmed == true && mounted) {
-       _viewModel.handleIntent(DeleteProductIntent(product.id));
+      _viewModel.handleIntent(DeleteProductIntent(product.id));
       print("Deletar produto: ${product.id}");
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Produto "${product.name}" excluído.')),
@@ -113,68 +115,14 @@ class _ProductListPageState extends State<ProductListPage> {
             if (state.products.isEmpty) {
               return _buildEmptyState();
             }
-
             return ListView.builder(
-              padding: const EdgeInsets.all(8.0),
               itemCount: state.products.length,
               itemBuilder: (context, index) {
                 final product = state.products[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(vertical: 6.0),
-                  elevation: 2,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(product.description, maxLines: 2, overflow: TextOverflow.ellipsis),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Qtd: ${product.stockQuantity}',
-                          style: TextStyle(color: Colors.grey[600]),
-                        ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          'R\$ ${product.salePrice.toStringAsFixed(2)}',
-                          style: const TextStyle(
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        PopupMenuButton<String>(
-                          onSelected: (value) {
-                            if (value == 'edit') {
-                              _navigateToEditProduct(product);
-                            } else if (value == 'delete') {
-                              _showDeleteConfirmation(product);
-                            }
-                          },
-                          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                            const PopupMenuItem<String>(
-                              value: 'edit',
-                              child: ListTile(
-                                leading: Icon(Icons.edit_outlined),
-                                title: Text('Editar'),
-                              ),
-                            ),
-                            const PopupMenuItem<String>(
-                              value: 'delete',
-                              child: ListTile(
-                                leading: Icon(Icons.delete_outline, color: Colors.red),
-                                title: Text('Excluir', style: TextStyle(color: Colors.red)),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                return ProductCard(
+                  product: product,
+                  onEdit: () => _navigateToEditProduct(product),
+                  onDelete: () => _showDeleteConfirmation(product),
                 );
               },
             );
@@ -192,7 +140,8 @@ class _ProductListPageState extends State<ProductListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey),
+            const Icon(Icons.inventory_2_outlined,
+                size: 80, color: Colors.grey),
             const SizedBox(height: 24),
             const Text(
               'Nenhum produto cadastrado',
@@ -212,7 +161,8 @@ class _ProductListPageState extends State<ProductListPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: _navigateToCreateProduct,
             ),
@@ -222,4 +172,3 @@ class _ProductListPageState extends State<ProductListPage> {
     );
   }
 }
-

@@ -6,11 +6,10 @@ abstract class CategoryListState {}
 // A UI deve mostrar um indicador de carregamento (Spinner).
 class CategoryListLoadingState extends CategoryListState {}
 
-// Estado para quando a busca foi bem-sucedida.
-// Ele carrega a lista de categorias para a UI exibir.
+// A chave é a Categoria, o valor é a contagem de produtos (int).
 class CategoryListSuccessState extends CategoryListState {
-  final List<Category> categories;
-  CategoryListSuccessState(this.categories);
+  final Map<Category, int> categoriesWithCount;
+  CategoryListSuccessState(this.categoriesWithCount);
 }
 
 // Estado para quando ocorreu um erro durante a busca dos dados.

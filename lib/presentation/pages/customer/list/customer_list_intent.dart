@@ -7,3 +7,9 @@ class DeleteCustomerIntent extends CustomerListIntent {
   final String customerId;
   DeleteCustomerIntent(this.customerId);
 }
+
+
+class SearchCustomerIntent extends CustomerListIntent {
+  final String searchTerm;
+  SearchCustomerIntent(this.searchTerm);
+}

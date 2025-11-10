@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/category/category.dart';
+import '../../../widgets/custom_text_form_field.dart';
 import 'category_form_intent.dart';
 import 'category_form_state.dart';
 import 'category_form_viewmodel.dart';
@@ -20,6 +21,7 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
   late final CategoryCreateViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+
   bool get isEditing => widget.categoryToEdit != null;
 
   @override
@@ -69,19 +71,18 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
       );
 
       if (isEditing) {
-         _viewModel.handleIntent(UpdateCategoryIntent(categoryData));
+        _viewModel.handleIntent(UpdateCategoryIntent(categoryData));
       } else {
         _viewModel.handleIntent(SaveCategoryIntent(categoryData));
       }
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const  Text('Categoria'),
+        title: const Text('Categoria'),
       ),
       body: StreamBuilder<CategoryFormState>(
         stream: _viewModel.state,
@@ -91,50 +92,56 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
           if (state is CategoryCreateLoadingState) {
             return const Center(child: CircularProgressIndicator());
           }
-
-          return Padding(
+          return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                   Text(
-                    isEditing ? 'Editar Categoria':  'Adicionar Nova Categoria',
-                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            child: Card(
+              elevation: 2,
+              shadowColor: Colors.black.withOpacity(0.1),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 16.0),
+                        child: Text(
+                          "Digite o nome da categoria para associar com os produtos:",
+                          style: Theme.of(context).textTheme.titleSmall,
+                          textAlign: TextAlign.start,
+                        ),
+                      ),
+                      CustomTextFormField(
+                        controller: _nameController,
+                        labelText: 'Nome da Categoria',
+                        icon: Icons.label_important_outline,
+                        validator: (value) {
+                          // 2. O FORMULÁRIO AGORA ESTÁ DENTRO DE UM CARD
+                          if (value == null || value.trim().isEmpty) {
+                            return 'O nome da categoria é obrigatório.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _saveForm,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(isEditing
+                            ? 'Atualizar Categoria'
+                            : 'Salvar Categoria'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
-                  Text(isEditing ? 'Você está no modo de edição da categoria.' : 'Crie categorias para organizar seus produtos de forma eficiente.',
-                    style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 32),
-                  TextFormField(
-                    controller: _nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Nome da Categoria',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.label_outline),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'O nome da categoria é obrigatório.';
-                      }
-                      return null;
-                    },
-                  ),
-                  const Spacer(), // Empurra o botão para baixo
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: const Text('Salvar Categoria'),
-                    onPressed: _saveForm,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.deepPurple,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
           );

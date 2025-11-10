@@ -54,7 +54,7 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
 
     if (isEditing) {
       _populateFieldsForEditing();
-        }
+    }
 
     _phoneController.addListener(_updateWhatsAppField);
 
@@ -63,7 +63,7 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
 
       if (state is CustomerFormSuccessState) {
         ScaffoldMessenger.of(context).showSnackBar(
-           SnackBar(
+          SnackBar(
               content: Text(isEditing
                   ? 'Cliente atualizado com sucesso!'
                   : 'Cliente salvo com sucesso!'),
@@ -170,82 +170,90 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  CustomTextFormField(
-                    controller: _nameController,
-                    labelText: 'Nome Completo',
-                    icon: Icons.person,
-                    validator: (value) => (value?.isEmpty ?? true)
-                        ? 'O nome é obrigatório'
-                        : null,
+            // O FORMULÁRIO AGORA ESTÁ DENTRO DE UM CARD
+            child: Card(
+              elevation: 2,
+              shadowColor: Colors.black.withOpacity(0.1),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      CustomTextFormField(
+                        controller: _nameController,
+                        labelText: 'Nome Completo',
+                        icon: Icons.person,
+                        validator: (value) =>
+                        (value?.isEmpty ?? true)
+                            ? 'O nome é obrigatório'
+                            : null,
+                      ),
+                      CustomTextFormField(
+                        controller: _cpfController,
+                        labelText: 'CPF',
+                        icon: Icons.badge,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [_cpfFormatter],
+                      ),
+                      CustomTextFormField(
+                        controller: _emailController,
+                        labelText: 'Email',
+                        icon: Icons.email,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      CustomTextFormField(
+                        controller: _phoneController,
+                        labelText: 'Telefone',
+                        icon: Icons.phone,
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [_phoneFormatter],
+                      ),
+                      CheckboxListTile(
+                        title: const Text("WhatsApp é o mesmo que o telefone"),
+                        value: _isWhatsAppSameAsPhone,
+                        onChanged: (bool? value) {
+                          setState(() {
+                            _isWhatsAppSameAsPhone = value ?? false;
+                            _updateWhatsAppField();
+                          });
+                        },
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      CustomTextFormField(
+                        controller: _whatsappController,
+                        labelText: 'WhatsApp',
+                        icon: Icons.chat_bubble,
+                        keyboardType: TextInputType.phone,
+                        enabled: !_isWhatsAppSameAsPhone,
+                        inputFormatters: [_phoneFormatter],
+                      ),
+                      CustomTextFormField(
+                        controller: _addressController,
+                        labelText: 'Endereço',
+                        icon: Icons.location_on,
+                      ),
+                      CustomTextFormField(
+                        controller: _notesController,
+                        labelText: 'Observações',
+                        icon: Icons.notes,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _saveForm,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: const Text('Salvar Cliente'),
+                      ),
+                    ],
                   ),
-                  // 5. Campo CPF com máscara
-                  CustomTextFormField(
-                    controller: _cpfController,
-                    labelText: 'CPF',
-                    icon: Icons.badge,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [_cpfFormatter], // Aplica a máscara
-                  ),
-                  CustomTextFormField(
-                    controller: _emailController,
-                    labelText: 'Email',
-                    icon: Icons.email,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  // 6. Campo Telefone com máscara
-                  CustomTextFormField(
-                    controller: _phoneController,
-                    labelText: 'Telefone',
-                    icon: Icons.phone,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: [_phoneFormatter], // Aplica a máscara
-                  ),
-                  // 7. Checkbox e campo WhatsApp
-                  CheckboxListTile(
-                    title: const Text("WhatsApp é o mesmo que o telefone"),
-                    value: _isWhatsAppSameAsPhone,
-                    onChanged: (bool? value) {
-                      setState(() {
-                        _isWhatsAppSameAsPhone = value ?? false;
-                        _updateWhatsAppField();
-                      });
-                    },
-                    controlAffinity: ListTileControlAffinity.leading,
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                  CustomTextFormField(
-                    controller: _whatsappController,
-                    labelText: 'WhatsApp',
-                    icon: Icons.chat_bubble,
-                    keyboardType: TextInputType.phone,
-                    // Desabilita o campo se o checkbox estiver marcado
-                    enabled: !_isWhatsAppSameAsPhone,
-                    inputFormatters: [_phoneFormatter], // Aplica a máscara
-                  ),
-                  CustomTextFormField(
-                    controller: _addressController,
-                    labelText: 'Endereço',
-                    icon: Icons.location_on,
-                  ),
-                  CustomTextFormField(
-                    controller: _notesController,
-                    labelText: 'Texto Livre',
-                    icon: Icons.notes,
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _saveForm,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      // ...
-                    ),
-                    child:  Text(isEditing ? 'Editar Cliente' :'Salvar Cliente'),
-                  ),
-                ],
+                ),
               ),
             ),
           );

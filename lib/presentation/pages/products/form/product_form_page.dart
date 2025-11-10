@@ -30,8 +30,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _barcodeController = TextEditingController();
+  final _unitOfMeasureController = TextEditingController(text: 'un');
 
-  // 1. USA O MoneyMaskedTextController PARA OS CAMPOS DE VALOR
   final _salePriceController = MoneyMaskedTextController(
     leftSymbol: 'R\$ ',
     decimalSeparator: ',',
@@ -73,11 +74,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
     final product = widget.productToEdit!;
     _nameController.text = product.name;
     _descriptionController.text = product.description;
-    // Usa .updateValue() para preencher os controladores de moeda
     _salePriceController.updateValue(product.salePrice);
     _costPriceController.updateValue(product.costPrice);
     _stockQuantityController.text = product.stockQuantity.toString();
     _lowStockThresholdController.text = product.lowStockThreshold.toString();
+
   }
 
   @override
@@ -88,6 +89,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _costPriceController.dispose();
     _stockQuantityController.dispose();
     _lowStockThresholdController.dispose();
+    _barcodeController.dispose();
+    _unitOfMeasureController.dispose();
     _viewModel.dispose();
     super.dispose();
   }
@@ -98,7 +101,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
         id: isEditing ? widget.productToEdit!.id : '',
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
-        // 2. USA A PROPRIEDADE 'numberValue' PARA OBTER O DOUBLE LIMPO
         salePrice: _salePriceController.numberValue,
         costPrice: _costPriceController.numberValue,
         stockQuantity: int.tryParse(_stockQuantityController.text) ?? 0,
@@ -120,10 +122,13 @@ class _ProductFormPageState extends State<ProductFormPage> {
       appBar: AppBar(
         title: Text(isEditing ? 'Editar Produto' : 'Novo Produto'),
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(20),
-          child: Text(
-            'Categoria: ${widget.category.name}',
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          preferredSize: const Size.fromHeight(25),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Text(
+              'Categoria: ${widget.category.name}',
+              style: const TextStyle(color: Colors.white70, fontSize: 14),
+            ),
           ),
         ),
       ),
@@ -135,88 +140,98 @@ class _ProductFormPageState extends State<ProductFormPage> {
           }
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  CustomTextFormField(
-                    controller: _nameController,
-                    labelText: 'Título do Produto',
-                    icon: Icons.label_important_outline,
-                    validator: (value) => (value?.isEmpty ?? true) ? 'O título é obrigatório.' : null,
-                  ),
-                  // 4. CAMPO DE DESCRIÇÃO COMO TEXTAREA
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: TextFormField(
-                      controller: _descriptionController,
-                      decoration: InputDecoration(
-                        labelText: 'Descrição',
-                        alignLabelWithHint: true, // Alinha o label no topo
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      maxLines: 4, // Define a altura do campo
-                      textCapitalization: TextCapitalization.sentences,
-                    ),
-                  ),
-                  Row(
+            child: Card(
+              // 2. O FORMULÁRIO AGORA ESTÁ DENTRO DE UM CARD
+              elevation: 2,
+              shadowColor: Colors.black.withOpacity(0.1),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Expanded(
-                        child: CustomTextFormField(
-                          controller: _costPriceController,
-                          labelText: 'Valor de Compra',
-                          icon: Icons.arrow_downward,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      CustomTextFormField(
+                        controller: _nameController,
+                        labelText: 'Título do Produto',
+                        icon: Icons.label_important_outline,
+                        validator: (value) =>
+                        (value?.isEmpty ?? true) ? 'O título é obrigatório.' : null,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
+                        child: TextFormField(
+                          controller: _descriptionController,
+                          decoration: InputDecoration(
+                            labelText: 'Descrição',
+                            alignLabelWithHint: true,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          maxLines: 4,
+                          textCapitalization: TextCapitalization.sentences,
                         ),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: CustomTextFormField(
-                          controller: _salePriceController,
-                          labelText: 'Valor de Venda',
-                          icon: Icons.arrow_upward,
-                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                          validator: (value) {
-                            if (_salePriceController.numberValue <= 0) {
-                              return 'Obrigatório e > 0.';
-                            }
-                            return null;
-                          },
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextFormField(
+                              controller: _costPriceController,
+                              labelText: 'Valor de Compra',
+                              icon: Icons.arrow_downward,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: CustomTextFormField(
+                              controller: _salePriceController,
+                              labelText: 'Valor de Venda',
+                              icon: Icons.arrow_upward,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              validator: (value) {
+                                if (_salePriceController.numberValue <= 0) {
+                                  return 'Obrigatório e > 0.';
+                                }
+                                return null;
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: CustomTextFormField(
+                              controller: _stockQuantityController,
+                              labelText: 'Qtd. em Estoque',
+                              icon: Icons.inventory_2_outlined,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: CustomTextFormField(
+                              controller: _lowStockThresholdController,
+                              labelText: 'Alerta de Estoque',
+                              icon: Icons.warning_amber_rounded,
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _saveForm,
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: const Size(double.infinity, 50),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
+                        child: Text(isEditing ? 'Atualizar Produto' : 'Salvar Produto'),
                       ),
                     ],
                   ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: CustomTextFormField(
-                          controller: _stockQuantityController,
-                          labelText: 'Qtd. em Estoque',
-                          icon: Icons.inventory_2_outlined,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: CustomTextFormField(
-                          controller: _lowStockThresholdController,
-                          labelText: 'Qtd. Baixo Estoque',
-                          icon: Icons.warning_amber_rounded,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton(
-                    onPressed: _saveForm,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                    ),
-                    child: Text(isEditing ? 'Atualizar Produto' : 'Salvar Produto'),
-                  ),
-                ],
+                ),
               ),
             ),
           );

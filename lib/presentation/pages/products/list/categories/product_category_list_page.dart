@@ -3,6 +3,8 @@ import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
 import 'package:badges/badges.dart' as badges;
+import 'package:stock/domain/entities/category/category.dart';
+import 'package:stock/presentation/widgets/category_card.dart';
 
 import 'product_category_list_intent.dart';
 import 'product_category_list_state.dart';
@@ -32,17 +34,19 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
 
   /// Navega para a tela de criação de categoria e atualiza a lista ao retornar com sucesso.
   Future<void> _createCategoryAndRefresh() async {
-    // 1. Usa 'await' para esperar a tela de formulário fechar e retornar um valor.
+    // Usa 'await' para esperar a tela de formulário fechar e retornar um valor.
     //    Usa a rota correta 'categoryForm' que definimos em nosso padrão.
     final result = await context.push<bool>(AppRoutes.categoryCreate);
 
-    // 2. Se o valor retornado for 'true' (o que indica que salvou com sucesso)...
+    // Se o valor retornado for 'true' (o que indica que salvou com sucesso)...
     if (result == true) {
-      // 3. ...nós disparamos a intenção para buscar as categorias novamente.
+      // ...nós disparamos a intenção para buscar as categorias novamente.
       _viewModel.handleIntent(LoadCategoriesWithProductCount());
     }
   }
-
+  void _navigateToProductList(Category category) {
+    context.push(AppRoutes.productList, extra: category);
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -86,31 +90,14 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
               itemBuilder: (context, index) {
                 final category = categories[index];
                 final count = categoriesMap[category]!;
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  elevation: 2,
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    leading: badges.Badge(
-                      badgeContent: Text(
-                        count.toString(),
-                        style: const TextStyle(color: Colors.white, fontSize: 12),
-                      ),
-                      position: badges.BadgePosition.topEnd(top: -12, end: -12),
-                      badgeStyle: const badges.BadgeStyle(
-                        badgeColor: Colors.deepPurple,
-                      ),
-                      child: const Icon(Icons.category_outlined, size: 40, color: Colors.teal),
-                    ),
-                    title: Text(
-                      category.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                    trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                    onTap: () {
-                      context.push(AppRoutes.productList,extra: category);
-                      print("Listar produtos da categoria: ${category.name}");
-                    },
+                return CategoryCard(
+                  category: category,
+                  productCount: count,
+                  onTap: () => _navigateToProductList(category),
+                  trailing: const Icon(
+                    Icons.arrow_forward_ios_rounded,
+                    color: Colors.grey,
+                    size: 20,
                   ),
                 );
               },

@@ -1,11 +1,12 @@
-// lib/presentation/pages/category/list/category_list_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
-import 'package:stock/core/navigation/app_router.dart';
 import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/category/category.dart';
+import 'package:stock/presentation/widgets/category_card.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
+import 'package:badges/badges.dart' as badges;
+
 import 'category_list_intent.dart';
 import 'category_list_state.dart';
 import 'category_list_viewmodel.dart';
@@ -23,7 +24,6 @@ class _CategoryListPageState extends State<CategoryListPage> {
   @override
   void initState() {
     super.initState();
-    // Obtém a instância do ViewModel via Injeção de Dependência
     _viewModel = getIt<CategoryListViewModel>();
   }
 
@@ -33,50 +33,43 @@ class _CategoryListPageState extends State<CategoryListPage> {
     super.dispose();
   }
 
-  // Função para mostrar o pop-up de confirmação de exclusão
   void _showDeleteConfirmation(Category category) async {
     final confirmed = await showConfirmationDialog(
       context: context,
       title: 'Confirmar Exclusão',
-      content: 'Tem certeza de que deseja excluir a categoria "${category.name}"?. Ao excluir esta categoria, ⚠️ TODOS ⚠️ os produtos associados a ela também serão excluídos.',
+      content: 'Tem certeza de que deseja excluir a categoria "${category.name}"?\n\n'
+          '⚠️ Ao excluir esta categoria, TODOS os produtos associados a ela também serão excluídos.',
       confirmText: 'Excluir',
     );
-
-    if (confirmed == true) {
+    if (confirmed == true && mounted) {
       _viewModel.handleIntent(DeleteCategoryIntent(category.id));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Categoria "${category.name}" excluída.')),
-        );
-      }
     }
   }
 
-  // Função para navegar para a tela de formulário
   Future<void> _navigateAndRefresh() async {
+    // CORREÇÃO DA ROTA: Usa a rota de formulário padronizada.
     final result = await context.push<bool>(AppRoutes.categoryCreate);
     if (result == true && mounted) {
-      _viewModel.handleIntent(FetchCategoriesIntent());
+      _viewModel.handleIntent(FetchCategoriesAndCountIntent());
     }
   }
 
   Future<void> _navigateToEditCategory(Category category) async {
-    // Navega para a mesma tela de formulário, mas passa a categoria
-    // como um argumento extra para que o formulário possa ser pré-preenchido.
     final result = await context.push<bool>(
-      AppRoutes.categoryEdit, // Usaremos uma nova rota para clareza
-      extra: category, // O GoRouter permite passar objetos como 'extra'
+      AppRoutes.categoryEdit,
+      extra: category,
     );
-    // Se o formulário retornou 'true' (sucesso), recarregamos a lista
     if (result == true) {
-      _viewModel.handleIntent(FetchCategoriesIntent());
+      _viewModel.handleIntent(FetchCategoriesAndCountIntent());
     }
   }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Categorias'),
+        title: const Text('Gerenciar Categorias'),
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline, color: Colors.white),
@@ -89,65 +82,65 @@ class _CategoryListPageState extends State<CategoryListPage> {
         stream: _viewModel.state,
         builder: (context, snapshot) {
           final state = snapshot.data;
-
           if (state is CategoryListLoadingState || !snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
-
           if (state is CategoryListErrorState) {
             return Center(child: Text(state.message));
           }
-
           if (state is CategoryListSuccessState) {
-            // Se a lista estiver vazia, mostra a tela de "call-to-action"
-            if (state.categories.isEmpty) {
+            final categoriesMap = state.categoriesWithCount;
+            if (categoriesMap.isEmpty) {
               return _buildEmptyState();
             }
-
-            // Se houver dados, mostra a lista
+            final categories = categoriesMap.keys.toList();
             return ListView.builder(
-              itemCount: state.categories.length,
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              itemCount: categories.length,
               itemBuilder: (context, index) {
-                final category = state.categories[index];
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: ListTile(
-                    leading: const Icon(Icons.label_outline, color: Colors.deepPurple),
-                    title: Text(category.name, style: const TextStyle(fontWeight: FontWeight.w500)),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min, // Faz a Row ocupar o mínimo de espaço
-                      children: [
-                        // --- Ícone de Edição (NOVO) ---
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, color: Colors.blueGrey),
-                          tooltip: 'Editar',
-                          onPressed: () {
-                            // TODO: Implementar a navegação para a tela de edição
-                            print('Editar categoria: ${category.name}');
-                            _navigateToEditCategory(category); // Chamaremos esta nova função
-                          },
+                final category = categories[index];
+                final count = categoriesMap[category]!;
+
+                return CategoryCard(
+                  category: category,
+                  productCount: count,
+                  onTap: () => _navigateToEditCategory(category),
+                  trailing: PopupMenuButton<String>(
+                    icon: Icon(Icons.more_vert, color: Colors.grey.shade600),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _navigateToEditCategory(category);
+                      } else if (value == 'delete') {
+                        _showDeleteConfirmation(category);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: ListTile(
+                          leading: Icon(Icons.edit_outlined),
+                          title: Text('Editar'),
                         ),
-                        // --- Ícone de Exclusão (JÁ EXISTENTE) ---
-                        IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.red),
-                          tooltip: 'Excluir',
-                          onPressed: () => _showDeleteConfirmation(category),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: ListTile(
+                          leading: Icon(Icons.delete_outline, color: Colors.red),
+                          title: Text('Excluir', style: TextStyle(color: Colors.red)),
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 );
               },
             );
           }
-          return const SizedBox.shrink(); // Estado inesperado
+          return _buildEmptyState();
         },
       ),
     );
   }
 
-  // Widget para o estado de lista vazia
   Widget _buildEmptyState() {
     return Center(
       child: Padding(

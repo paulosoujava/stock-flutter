@@ -2,6 +2,7 @@
 
 import 'dart:async';
 
+import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/usecases/customers/delete_customer.dart';
 import 'package:stock/domain/usecases/customers/get_customers.dart';
 
@@ -9,17 +10,16 @@ import 'package:injectable/injectable.dart';
 
 import 'customer_list_intent.dart';
 import 'customer_list_state.dart';
-
+import 'package:rxdart/rxdart.dart'; // Usaremos BehaviorSubject para facilitar
 
 @injectable
 class CustomerListViewModel {
-  // 1. DECLARAÇÃO DOS CASOS DE USO
-  // Eles guardam a lógica de negócio (buscar, deletar, etc.)
+
   late final GetCustomers _getCustomers;
   late final DeleteCustomer _deleteCustomer;
 
-  // Stream que emite os estados para a UI (Carregando, Sucesso, Erro)
-  final _stateController = StreamController<CustomerListState>.broadcast();
+  // Usar BehaviorSubject permite acessar o último estado emitido com .value
+  final _stateController = BehaviorSubject<CustomerListState>();
   Stream<CustomerListState> get state => _stateController.stream;
 
   CustomerListViewModel(this._getCustomers, this._deleteCustomer) {
@@ -28,29 +28,55 @@ class CustomerListViewModel {
 
 
   // Método central que recebe as "intenções" da UI
-  void handleIntent(CustomerListIntent intent) {
+  void handleIntent(CustomerListIntent intent) async  {
     if (intent is FetchCustomersIntent) {
-      _loadCustomers();
+      await _fetchCustomers();
     } else if (intent is DeleteCustomerIntent) {
-      _deleteCustomerById(intent.customerId);
+      await _deleteCustomerById(intent.customerId);
+    }else if (intent is SearchCustomerIntent) {
+      _searchCustomers(intent.searchTerm);
     }
   }
 
-  Future<void> _loadCustomers() async {
-    _stateController.add(CustomerListLoadingState());
-    try {
-      final customers = await _getCustomers(); // <- Busca os dados do Hive
-  _stateController.add(CustomerListSuccessState(customers));
-
-    } catch (e) {
-      _stateController.add(CustomerListErrorState('Falha ao carregar clientes do banco de dados.'));
-    }
+Future<void> _fetchCustomers() async {
+  _stateController.add(CustomerListLoadingState());
+  try {
+    final customers = await _getCustomers();
+    // No início, a lista filtrada é a mesma que a lista completa
+    _stateController.add(CustomerListSuccessState(
+      allCustomers: customers,
+      filteredCustomers: customers,
+    ));
+  } catch (e) {
+    _stateController.add(CustomerListErrorState('Falha ao carregar clientes.'));
   }
+}
+void _searchCustomers(String searchTerm) {
+  final currentState = _stateController.value;
+  if (currentState is CustomerListSuccessState) {
+    List<Customer> filteredList;
+    if (searchTerm.isEmpty) {
+      // Se a busca estiver vazia, a lista filtrada volta a ser a lista completa
+      filteredList = currentState.allCustomers;
+    } else {
+      // Filtra a lista completa (allCustomers) para não perder a referência original
+      filteredList = currentState.allCustomers
+          .where((customer) =>
+      customer.name.toLowerCase().contains(searchTerm.toLowerCase()) ||
+          customer.cpf.contains(searchTerm))
+          .toList();
+    }
+    // Emite uma cópia do estado atual com a lista filtrada e o termo da busca
+    _stateController.add(currentState.copyWith(
+      filteredCustomers: filteredList,
+      searchTerm: searchTerm,
+    ));
+  }
+}
 
-  Future<void> _deleteCustomerById(String customerId) async {
+Future<void> _deleteCustomerById(String customerId) async {
     try {
       await _deleteCustomer(customerId);
-      _loadCustomers();
     } catch (e) {
       print("Erro ao deletar cliente: $e");
       _stateController.add(CustomerListErrorState("Erro ao deletar cliente: $e"));

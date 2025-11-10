@@ -84,10 +84,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i543.AddProduct>(),
           gh<_i185.UpdateProduct>(),
         ));
-    gh.factory<_i971.CategoryListViewModel>(() => _i971.CategoryListViewModel(
-          gh<_i678.GetCategories>(),
-          gh<_i588.DeleteCategory>(),
-        ));
     gh.factory<_i152.GetCustomers>(
         () => _i152.GetCustomers(gh<_i64.ICustomerRepository>()));
     gh.factory<_i346.DeleteCustomer>(
@@ -113,6 +109,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i336.ProductListViewModel>(() => _i336.ProductListViewModel(
           gh<_i614.GetProductsByCategory>(),
           gh<_i847.DeleteProduct>(),
+        ));
+    gh.factory<_i971.CategoryListViewModel>(() => _i971.CategoryListViewModel(
+          gh<_i678.GetCategories>(),
+          gh<_i588.DeleteCategory>(),
+          gh<_i228.GetProductCountByCategory>(),
         ));
     gh.factory<_i252.CustomerFormViewModel>(() => _i252.CustomerFormViewModel(
           gh<_i139.AddCustomer>(),
