@@ -36,6 +36,8 @@ dependencies:
   injectable: ^2.4.2 # O gerador de código para o get_it
   go_router: ^14.2.0
   mask_text_input_formatter: ^2.9.0
+  flutter_masked_text2: ^0.9.1
+  badges: ^3.1.2
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8

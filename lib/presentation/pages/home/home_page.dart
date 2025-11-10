@@ -120,8 +120,7 @@ class HomePage extends StatelessWidget {
             icon: Icons.inventory_2,
             iconColor: Colors.orange.shade800,
             onTap: () {
-              // TODO: Navegar para a tela de lista de produtos
-              print("Navegar para Produtos");
+              context.push(AppRoutes.productByCategory);
             },
           ),
           ActionCard(
