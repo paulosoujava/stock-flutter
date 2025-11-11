@@ -175,14 +175,6 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
-    gh.lazySingleton<_i161.SalesViewModel>(
-      () => _i161.SalesViewModel(
-        gh<_i281.GetAllProductsUseCase>(),
-        gh<_i510.SaveSaleUseCase>(),
-        gh<_i706.Uuid>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
     gh.lazySingleton<_i100.SalesReportViewModel>(
       () => _i100.SalesReportViewModel(gh<_i51.GetAllSalesUseCase>()),
       dispose: (i) => i.dispose(),
@@ -200,6 +192,15 @@ extension GetItInjectableX on _i174.GetIt {
               gh<_i337.AddCategory>(),
               gh<_i460.UpdateCategory>(),
             ));
+    gh.lazySingleton<_i161.SalesViewModel>(
+      () => _i161.SalesViewModel(
+        gh<_i281.GetAllProductsUseCase>(),
+        gh<_i510.SaveSaleUseCase>(),
+        gh<_i185.UpdateProduct>(),
+        gh<_i706.Uuid>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     gh.lazySingleton<_i348.CustomerListViewModel>(
       () => _i348.CustomerListViewModel(
         gh<_i152.GetCustomers>(),

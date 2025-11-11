@@ -530,6 +530,7 @@ class __ProductSearchItemState extends State<_ProductSearchItem> {
   @override
   Widget build(BuildContext context) {
     final bool hasStock = widget.product.stockQuantity > 0;
+    final bool isStockMaxedOut = _quantity >= widget.product.stockQuantity;
     final bool isLowStock =
         hasStock && widget.product.stockQuantity <= widget.product.lowStockThreshold;
 
@@ -566,33 +567,57 @@ class __ProductSearchItemState extends State<_ProductSearchItem> {
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const Text('Quantidade:'),
-                const SizedBox(width: 12),
-                IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: hasStock && _quantity > 1
-                      ? () => setState(() => _quantity--)
-                      : null,
-                ),
-                SizedBox(
-                  width: 40,
-                  child: Text(
-                    _quantity.toString(),
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium,
+
+                if (hasStock) ...[
+                  // Se TEM estoque, mostra os controles de quantidade
+                  const Text('Quantidade:'),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    onPressed: _quantity > 1
+                        ? () => setState(() => _quantity--)
+                        : null,
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed:
-                  hasStock && _quantity < widget.product.stockQuantity
-                      ? () => setState(() => _quantity++)
-                      : null,
-                ),
+                  SizedBox(
+                    width: 40,
+                    child: Text(
+                      _quantity.toString(),
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                  ),
+                  Tooltip(
+                    message: isStockMaxedOut
+                        ? 'Estoque máximo atingido'
+                        : 'Incrementar quantidade',
+                    child: IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      onPressed: !isStockMaxedOut
+                          ? () => setState(() => _quantity++)
+                          : null,
+                    ),
+                  ),
+                ] else ...[
+                  // Se NÃO TEM estoque, mostra a mensagem
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.sentiment_very_dissatisfied, // Ícone de carinha triste
+                        color: Colors.red,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'Produto esgotado',
+                        style: TextStyle(
+                            color: Colors.red, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
                 const Spacer(),
                 FilledButton(
-                  onPressed:
-                  hasStock ? () => widget.onAddToCart(_quantity) : null,
+                  onPressed: hasStock ? () => widget.onAddToCart(_quantity) : null,
                   child: const Text('Adicionar'),
                 ),
               ],
