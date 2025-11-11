@@ -18,7 +18,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  // 1. Obtém a instância do ViewModel através do GetIt.
   late final HomeViewModel _viewModel;
 
   // A lista de ações da grade é estática e pode ficar aqui.
@@ -49,7 +48,7 @@ class _HomePageState extends State<HomePage> {
       description: 'Registre novas vendas e consulte o histórico.',
       icon: Icons.point_of_sale,
       iconColor: Colors.green,
-      route: AppRoutes.customerList, // TODO: Alterar para rota de vendas
+      route: AppRoutes.orderCreate
     ),
   ];
 

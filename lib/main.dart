@@ -6,6 +6,8 @@ import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/domain/entities/product/product.dart';
+import 'package:stock/domain/entities/sale/sale.dart';
+import 'package:stock/domain/entities/sale/sale_item.dart';
 import 'package:stock/presentation/pages/customer/list/customer_list_page.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -80,4 +82,6 @@ void _registerHiveAdapters() {
   Hive.registerAdapter(CustomerAdapter());
   Hive.registerAdapter(CategoryAdapter());
   Hive.registerAdapter(ProductAdapter());
+  Hive.registerAdapter(SaleAdapter());
+  Hive.registerAdapter(SaleItemAdapter());
 }

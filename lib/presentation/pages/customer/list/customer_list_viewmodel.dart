@@ -12,7 +12,7 @@ import 'customer_list_intent.dart';
 import 'customer_list_state.dart';
 import 'package:rxdart/rxdart.dart'; // Usaremos BehaviorSubject para facilitar
 
-@injectable
+@lazySingleton
 class CustomerListViewModel {
 
   late final GetCustomers _getCustomers;
@@ -84,6 +84,7 @@ Future<void> _deleteCustomerById(String customerId) async {
     }
   }
 
+  @disposeMethod
   void dispose() {
     _stateController.close();
   }

@@ -44,4 +44,26 @@ class Product {
     required this.lowStockThreshold,
     required this.categoryId,
   });
+
+  Product copyWith({
+    String? id,
+    String? name,
+    String? description,
+    double? costPrice,
+    double? salePrice,
+    int? stockQuantity,
+    int? lowStockThreshold,
+    String? categoryId,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      costPrice: costPrice ?? this.costPrice,
+      salePrice: salePrice ?? this.salePrice,
+      stockQuantity: stockQuantity ?? this.stockQuantity,
+      lowStockThreshold: lowStockThreshold ?? this.lowStockThreshold,
+      categoryId: categoryId ?? this.categoryId,
+    );
+  }
 }

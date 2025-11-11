@@ -13,6 +13,7 @@ import 'package:stock/presentation/pages/home/home_page.dart';
 import 'package:stock/presentation/pages/products/form/product_form_page.dart';
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_page.dart';
 import 'package:stock/presentation/pages/products/list/products/product_list_page.dart';
+import 'package:stock/presentation/pages/sales/sales_page.dart';
 import 'package:stock/presentation/widgets/error_route_page.dart';
 
 final appRouter = GoRouter(
@@ -70,7 +71,8 @@ final appRouter = GoRouter(
         if (category != null) {
           return ProductFormPage(category: category);
         }
-        return const ErrorRoutePage(errorMessage: 'Erro: Categoria não encontrada.');
+        return const ErrorRoutePage(
+            errorMessage: 'Erro: Categoria não encontrada.');
       },
     ),
     GoRoute(
@@ -78,12 +80,15 @@ final appRouter = GoRouter(
       builder: (context, state) {
         // Ao editar, um mapa com o produto E a categoria são passados como 'extra'.
         final data = state.extra as Map<String, dynamic>?;
-        if (data != null && data['product'] is Product && data['category'] is Category) {
+        if (data != null &&
+            data['product'] is Product &&
+            data['category'] is Category) {
           final product = data['product'] as Product;
           final category = data['category'] as Category;
           return ProductFormPage(category: category, productToEdit: product);
         }
-        return const ErrorRoutePage(errorMessage: 'Erro: Categoria não encontrada.');
+        return const ErrorRoutePage(
+            errorMessage: 'Erro: Categoria não encontrada.');
       },
     ),
     GoRoute(
@@ -93,11 +98,17 @@ final appRouter = GoRouter(
           if (categoryToShow != null) {
             return ProductListPage(category: categoryToShow);
           }
-          return const ErrorRoutePage(errorMessage: 'Erro: Categoria não encontrada.');
+          return const ErrorRoutePage(
+              errorMessage: 'Erro: Categoria não encontrada.');
         }),
+
+    //ORDER
+    GoRoute(
+      path: AppRoutes.orderCreate,
+      builder: (context, state) => const SalesPage(),
+    )
   ],
 );
-
 
 /// Observador para o GoRouter para logar as transições de rota.
 class GoRouterObserver extends NavigatorObserver {

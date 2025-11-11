@@ -15,6 +15,7 @@ import 'package:stock/core/events/event_bus.dart' as _i468;
 import 'package:stock/domain/repositories/icategory_repository.dart' as _i836;
 import 'package:stock/domain/repositories/icustomer_repository.dart' as _i64;
 import 'package:stock/domain/repositories/iproduct_repository.dart' as _i741;
+import 'package:stock/domain/repositories/isale_repository.dart' as _i73;
 import 'package:stock/domain/usecases/categories/add_category.dart' as _i337;
 import 'package:stock/domain/usecases/categories/delete_category.dart' as _i588;
 import 'package:stock/domain/usecases/categories/get_categories.dart' as _i678;
@@ -32,6 +33,9 @@ import 'package:stock/domain/usecases/products/get_product_count_by_category.dar
 import 'package:stock/domain/usecases/products/get_products_by_category.dart'
     as _i614;
 import 'package:stock/domain/usecases/products/update_product.dart' as _i185;
+import 'package:stock/domain/usecases/sales/get_sales_by_month_use_case.dart'
+    as _i554;
+import 'package:stock/domain/usecases/sales/save_sale_use_case.dart' as _i510;
 import 'package:stock/presentation/pages/categories/form/category_form_viewmodel.dart'
     as _i851;
 import 'package:stock/presentation/pages/categories/list/category_list_viewmodel.dart'
@@ -47,6 +51,10 @@ import 'package:stock/presentation/pages/products/list/categories/product_catego
     as _i425;
 import 'package:stock/presentation/pages/products/list/products/product_list_viewmodel.dart'
     as _i336;
+import 'package:stock/presentation/pages/sales/customer_selection/customer_selection_view_model.dart'
+    as _i832;
+import 'package:stock/presentation/pages/sales/sales_view_model.dart' as _i161;
+import 'package:uuid/uuid.dart' as _i706;
 
 extension GetItInjectableX on _i174.GetIt {
 // initializes the registration of main-scope dependencies inside of GetIt
@@ -66,6 +74,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => dataModule.categoryRepository);
     gh.lazySingleton<_i741.IProductRepository>(
         () => dataModule.productRepository);
+    gh.lazySingleton<_i706.Uuid>(() => dataModule.uuid);
+    gh.lazySingleton<_i73.ISaleRepository>(() => dataModule.saleRepository);
     gh.lazySingleton<_i468.EventBus>(
       () => _i468.EventBus(),
       dispose: (i) => i.dispose(),
@@ -90,11 +100,23 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i337.AddCategory(gh<_i836.ICategoryRepository>()));
     gh.factory<_i588.DeleteCategory>(
         () => _i588.DeleteCategory(gh<_i836.ICategoryRepository>()));
+    gh.factory<_i554.GetSalesByMonthUseCase>(
+        () => _i554.GetSalesByMonthUseCase(gh<_i73.ISaleRepository>()));
+    gh.factory<_i510.SaveSaleUseCase>(
+        () => _i510.SaveSaleUseCase(gh<_i73.ISaleRepository>()));
     gh.lazySingleton<_i740.HomeViewModel>(
       () => _i740.HomeViewModel(
         gh<_i281.GetAllProductsUseCase>(),
         gh<_i678.GetCategories>(),
         gh<_i468.EventBus>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i161.SalesViewModel>(
+      () => _i161.SalesViewModel(
+        gh<_i281.GetAllProductsUseCase>(),
+        gh<_i510.SaveSaleUseCase>(),
+        gh<_i706.Uuid>(),
       ),
       dispose: (i) => i.dispose(),
     );
@@ -111,15 +133,22 @@ extension GetItInjectableX on _i174.GetIt {
               gh<_i337.AddCategory>(),
               gh<_i460.UpdateCategory>(),
             ));
-    gh.factory<_i348.CustomerListViewModel>(() => _i348.CustomerListViewModel(
-          gh<_i152.GetCustomers>(),
-          gh<_i346.DeleteCustomer>(),
-        ));
+    gh.lazySingleton<_i348.CustomerListViewModel>(
+      () => _i348.CustomerListViewModel(
+        gh<_i152.GetCustomers>(),
+        gh<_i346.DeleteCustomer>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     gh.factory<_i425.ProductCategoryListViewModel>(
         () => _i425.ProductCategoryListViewModel(
               gh<_i678.GetCategories>(),
               gh<_i228.GetProductCountByCategory>(),
             ));
+    gh.lazySingleton<_i832.CustomerSelectionViewModel>(
+      () => _i832.CustomerSelectionViewModel(gh<_i152.GetCustomers>()),
+      dispose: (i) => i.dispose(),
+    );
     gh.factory<_i336.ProductListViewModel>(() => _i336.ProductListViewModel(
           gh<_i614.GetProductsByCategory>(),
           gh<_i847.DeleteProduct>(),
