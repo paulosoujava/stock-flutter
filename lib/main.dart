@@ -10,8 +10,8 @@ import 'package:stock/domain/entities/reminder/reminder.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
 import 'package:stock/domain/entities/sale/sale_item.dart';
 import 'package:stock/domain/entities/supplier/supplier.dart';
-import 'package:stock/presentation/pages/customer/list/customer_list_page.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import 'core/navigation/app_router.dart';
 
@@ -49,6 +49,9 @@ Future<void> main() async {
     });
   }
 
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   //  Inicia o aplicativo.
   runApp(const MyApp());
