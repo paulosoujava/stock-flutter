@@ -17,6 +17,10 @@ class AppRoutes {
   static const String orderList = '/order-list';
   static const String orderCreate = '/order-form';
 
+  static const String supplierList = '/supplier-list';
+  static const String supplierCreate = '/supplier-create';
 
+  static  const String reminderList = '/reminder-list';
+  static const String reminderCreate = '/reminder-create';
 
 }

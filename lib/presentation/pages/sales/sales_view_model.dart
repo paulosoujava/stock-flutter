@@ -213,8 +213,8 @@ class SalesViewModel {
       saleDate: DateTime.now(),
       items: currentState.cart,
       totalAmount: currentState.cartTotal,
-      sellerId: 'user-001-mock',
-      sellerName: 'Vendedor Padrão',
+      sellerId: 'user-002-mock',
+      sellerName: 'Paulo Oliveira',
     );
 
     try {

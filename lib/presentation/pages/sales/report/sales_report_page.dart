@@ -58,9 +58,10 @@ class _SalesReportPageState extends State<SalesReportPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
       body: StreamBuilder<SalesReportState>(
-        stream: getIt.isRegistered<SalesReportViewModel>() ? _viewModel.state : const Stream.empty(),
+        stream: getIt.isRegistered<SalesReportViewModel>()
+            ? _viewModel.state
+            : const Stream.empty(),
         builder: (context, snapshot) {
           final state = snapshot.data;
 
@@ -72,39 +73,84 @@ class _SalesReportPageState extends State<SalesReportPage> {
           }
           if (state is SalesReportLoaded) {
             if (state.yearlySales.isEmpty) {
-              return const Center(child: Text('Nenhuma venda registrada ainda.'));
+              return const Center(
+                  child: Text('Nenhuma venda registrada ainda.'));
             }
-            // A TIMELINE EM SI
             return ListView.builder(
+              padding: const EdgeInsets.all(8), // Padding geral da lista
               itemCount: state.yearlySales.length,
               itemBuilder: (context, yearIndex) {
                 final yearData = state.yearlySales[yearIndex];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                   child: ExpansionTile(
-                    title: Text('${yearData.year}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    subtitle: Text('Total Anual: ${_currencyFormat.format(yearData.totalAmount)}'),
+                    title: Text('${yearData.year}',
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
+                    subtitle: Text(
+                        'Total Anual: ${_currencyFormat.format(yearData.totalAmount)}'),
                     children: yearData.monthlySales.map((monthData) {
                       return ExpansionTile(
-                        title: Text(_getMonthName(monthData.month), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                        subtitle: Text('Total Mensal: ${_currencyFormat.format(monthData.totalAmount)}'),
-                        children: monthData.sales.map((sale) {
-                          return ExpansionTile(
-                            leading: const Icon(Icons.receipt_long),
-                            title: Text(sale.customerName),
-                            subtitle: Text(_dateFormat.format(sale.saleDate)),
-                            trailing: Text(_currencyFormat.format(sale.totalAmount), style: const TextStyle(fontWeight: FontWeight.bold)),
-                            children: sale.items.map((item) {
-                              return ListTile(
-                                leading: const Icon(Icons.inventory_2_outlined),
-                                title: Text(item.productName),
-                                subtitle: Text('${item.quantity} x ${_currencyFormat.format(item.pricePerUnit)}'),
-                                trailing: Text(_currencyFormat.format(item.totalPrice)),
-                                onTap: () => _showItemDetailsDialog(item, monthData.sales),
-                              );
-                            }).toList(),
-                          );
-                        }).toList(),
+                        title: Text(_getMonthName(monthData.month),
+                            style: const TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+                        subtitle: Text(
+                            'Total Mensal: ${_currencyFormat.format(monthData.totalAmount)}'),
+                        // AQUI ESTÁ A EXIBIÇÃO DA NOVA SEÇÃO
+                        children: [
+                          // -- Seção de Vendas por Vendedor --
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Vendas por Vendedor:', style: TextStyle(fontWeight: FontWeight.bold)),
+                                const SizedBox(height: 4),
+                                ...monthData.sellerPerformances.map((perf) {
+                                  return Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(perf.sellerName),
+                                      Text(_currencyFormat.format(perf.totalSold)),
+                                    ],
+                                  );
+                                }),
+                                const Divider(height: 20),
+                              ],
+                            ),
+                          ),
+                          // -- Seção de Vendas Detalhadas --
+                          ...monthData.sales.map((sale) {
+                            return ExpansionTile(
+                              leading: const Icon(Icons.receipt_long),
+                              title: Text(sale.customerName),
+                              subtitle: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_dateFormat.format(sale.saleDate)),
+                                ],
+                              ),
+                              trailing: Text(
+                                  _currencyFormat.format(sale.totalAmount),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
+                              children: sale.items.map((item) {
+                                return ListTile(
+                                  leading:
+                                  const Icon(Icons.inventory_2_outlined),
+                                  title: Text(item.productName),
+                                  subtitle: Text(
+                                      '${item.quantity} x ${_currencyFormat.format(item.pricePerUnit)}'),
+                                  trailing: Text(
+                                      _currencyFormat.format(item.totalPrice)),
+                                  onTap: () => _showItemDetailsDialog(
+                                      item, monthData.sales),
+                                );
+                              }).toList(),
+                            );
+                          }).toList(),
+                        ],
                       );
                     }).toList(),
                   ),

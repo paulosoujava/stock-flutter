@@ -4,14 +4,16 @@ import 'package:injectable/injectable.dart';
 import 'package:stock/data/repositories/category_repository_impl.dart';
 import 'package:stock/data/repositories/customer_repository_impl.dart';
 import 'package:stock/data/repositories/product_repository_impl.dart';
+import 'package:stock/data/repositories/reminder_repository_impl.dart';
 import 'package:stock/data/repositories/sale_repository_impl.dart';
+import 'package:stock/data/repositories/supplier_repository_impl.dart';
 import 'package:stock/domain/repositories/icategory_repository.dart';
 import 'package:stock/domain/repositories/icustomer_repository.dart';
 import 'package:stock/domain/repositories/iproduct_repository.dart';
+import 'package:stock/domain/repositories/ireminder_repository.dart';
 import 'package:stock/domain/repositories/isale_repository.dart';
+import 'package:stock/domain/repositories/isupplier_repository.dart';
 import 'package:uuid/uuid.dart';
-
-
 
 @module
 abstract class DataModule {
@@ -30,5 +32,9 @@ abstract class DataModule {
   @lazySingleton
   ISaleRepository get saleRepository => SaleRepositoryImpl();
 
+  @lazySingleton
+  ISupplierRepository get supplierRepository => SupplierRepositoryImpl();
 
+  @lazySingleton
+  IReminderRepository get reminderRepository => ReminderRepositoryImpl();
 }

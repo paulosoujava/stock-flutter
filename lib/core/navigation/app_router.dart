@@ -4,6 +4,8 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/product/product.dart';
+import 'package:stock/domain/entities/reminder/reminder.dart';
+import 'package:stock/domain/entities/supplier/supplier.dart';
 import 'package:stock/presentation/pages/categories/form/category_form_page.dart';
 import 'package:stock/presentation/pages/categories/list/category_list_page.dart';
 import 'package:stock/presentation/pages/customer/form/customer_form_page.dart';
@@ -13,7 +15,11 @@ import 'package:stock/presentation/pages/home/home_page.dart';
 import 'package:stock/presentation/pages/products/form/product_form_page.dart';
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_page.dart';
 import 'package:stock/presentation/pages/products/list/products/product_list_page.dart';
+import 'package:stock/presentation/pages/reminder/form/reminder_form_page.dart';
+import 'package:stock/presentation/pages/reminder/list/reminder_list_page.dart';
 import 'package:stock/presentation/pages/sales/sales_page.dart';
+import 'package:stock/presentation/pages/supplier/form/supplier_form_page.dart';
+import 'package:stock/presentation/pages/supplier/list/supplier_list_page.dart';
 import 'package:stock/presentation/widgets/error_route_page.dart';
 
 final appRouter = GoRouter(
@@ -32,13 +38,13 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.customerCreate,
-      builder: (context, state) => const CustomerCreatePage(),
+      builder: (context, state) => const CustomerFormPage(),
     ),
     GoRoute(
       path: AppRoutes.customerEdit,
       builder: (context, state) {
         final customer = state.extra as Customer?;
-        return CustomerCreatePage(customerToEdit: customer);
+        return CustomerFormPage(customerToEdit: customer);
       },
     ),
 //CATEGORY
@@ -106,7 +112,32 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.orderCreate,
       builder: (context, state) => const SalesPage(),
-    )
+    ),
+
+    //SUPPLIER
+    GoRoute(
+      path: AppRoutes.supplierList,
+      builder: (context, state) => const SupplierListPage(),
+    ),
+    GoRoute(
+      path: AppRoutes.supplierCreate,
+      builder: (context, state) {
+        final supplier = state.extra as Supplier?;
+        return SupplierFormPage(supplierToEdit: supplier);
+      },
+    ),
+    //REMINDER
+    GoRoute(
+      path: AppRoutes.reminderList,
+      builder: (context, state) => const ReminderListPage(),
+    ),
+    GoRoute(
+      path: AppRoutes.reminderCreate,
+      builder: (context, state) {
+        final reminder = state.extra as Reminder?;
+        return ReminderFormPage(reminderToEdit: reminder);
+      },
+    ),
   ],
 );
 

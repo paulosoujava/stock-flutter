@@ -82,7 +82,13 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Categoria'),
+        title: Text(isEditing ? 'Editar Categoria' : 'Nova Categoria'),
+      ),
+      // AQUI ESTÁ A CORREÇÃO, SEGUINDO O PADRÃO
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _saveForm,
+        label: Text(isEditing ? 'Atualizar' : 'Salvar'),
+        icon: const Icon(Icons.save),
       ),
       body: StreamBuilder<CategoryFormState>(
         stream: _viewModel.state,
@@ -92,54 +98,44 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
           if (state is CategoryCreateLoadingState) {
             return const Center(child: CircularProgressIndicator());
           }
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Card(
-              elevation: 2,
-              shadowColor: Colors.black.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 16.0),
-                        child: Text(
-                          "Digite o nome da categoria para associar com os produtos:",
-                          style: Theme.of(context).textTheme.titleSmall,
-                          textAlign: TextAlign.start,
+          return Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Card(
+                elevation: 2,
+                shadowColor: Colors.black.withOpacity(0.1),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: Text(
+                            "Digite o nome da categoria para associar com os produtos:",
+                            style: Theme.of(context).textTheme.titleSmall,
+                            textAlign: TextAlign.start,
+                          ),
                         ),
-                      ),
-                      CustomTextFormField(
-                        controller: _nameController,
-                        labelText: 'Nome da Categoria',
-                        icon: Icons.label_important_outline,
-                        validator: (value) {
-                          // 2. O FORMULÁRIO AGORA ESTÁ DENTRO DE UM CARD
-                          if (value == null || value.trim().isEmpty) {
-                            return 'O nome da categoria é obrigatório.';
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _saveForm,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12)),
+                        CustomTextFormField(
+                          controller: _nameController,
+                          labelText: 'Nome da Categoria',
+                          icon: Icons.label_important_outline,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'O nome da categoria é obrigatório.';
+                            }
+                            return null;
+                          },
                         ),
-                        child: Text(isEditing
-                            ? 'Atualizar Categoria'
-                            : 'Salvar Categoria'),
-                      ),
-                    ],
+                        // O ElevatedButton foi removido daqui
+                      ],
+                    ),
                   ),
                 ),
               ),

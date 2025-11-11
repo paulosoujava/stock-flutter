@@ -8,16 +8,16 @@ import 'customer_form_intent.dart';
 import 'customer_form_state.dart';
 import 'customer_form_viewmodel.dart'; // Para gerar um ID aleatório
 
-class CustomerCreatePage extends StatefulWidget {
+class CustomerFormPage extends StatefulWidget {
   final Customer? customerToEdit;
 
-  const CustomerCreatePage({super.key, this.customerToEdit});
+  const CustomerFormPage({super.key, this.customerToEdit});
 
   @override
-  State<CustomerCreatePage> createState() => _CustomerCreatePageState();
+  State<CustomerFormPage> createState() => _CustomerFormPageState();
 }
 
-class _CustomerCreatePageState extends State<CustomerCreatePage> {
+class _CustomerFormPageState extends State<CustomerFormPage> {
   late final CustomerFormViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
 
@@ -161,6 +161,11 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
       appBar: AppBar(
         title: Text(isEditing ? 'Editar Cliente' : 'Novo Cliente'),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _saveForm,
+        label: Text(isEditing ? 'Atualizar' : 'Salvar'),
+        icon: const Icon(Icons.save),
+      ),
       body: StreamBuilder<CustomerFormState>(
         stream: _viewModel.state,
         builder: (context, snapshot) {
@@ -170,7 +175,6 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
-            // O FORMULÁRIO AGORA ESTÁ DENTRO DE UM CARD
             child: Card(
               elevation: 2,
               shadowColor: Colors.black.withOpacity(0.1),
@@ -242,7 +246,7 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
                         icon: Icons.notes,
                       ),
                       const SizedBox(height: 24),
-                      ElevatedButton(
+                    /*  ElevatedButton(
                         onPressed: _saveForm,
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),
@@ -250,7 +254,7 @@ class _CustomerCreatePageState extends State<CustomerCreatePage> {
                               borderRadius: BorderRadius.circular(12)),
                         ),
                         child: const Text('Salvar Cliente'),
-                      ),
+                      ),*/
                     ],
                   ),
                 ),

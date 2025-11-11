@@ -52,6 +52,20 @@ class _HomePageState extends State<HomePage> {
       iconColor: Colors.green,
       route: AppRoutes.orderCreate,
     ),
+    ActionItem(
+      title: 'Fornecedores',
+      description: 'Registre os fornecedores.',
+      icon: Icons.recent_actors_outlined,
+      iconColor: Colors.deepOrange,
+      route: AppRoutes.supplierList,
+    ),
+    ActionItem(
+      title: 'Lembretes',
+      description: 'Registre o que você não deve esquecer.',
+      icon: Icons.today_outlined,
+      iconColor: Colors.purple,
+      route: AppRoutes.reminderList,
+    ),
   ];
 
   @override

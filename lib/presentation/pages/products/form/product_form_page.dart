@@ -78,7 +78,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
     _costPriceController.updateValue(product.costPrice);
     _stockQuantityController.text = product.stockQuantity.toString();
     _lowStockThresholdController.text = product.lowStockThreshold.toString();
-
   }
 
   @override
@@ -132,6 +131,11 @@ class _ProductFormPageState extends State<ProductFormPage> {
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _saveForm,
+        label: Text(isEditing ? 'Atualizar' : 'Salvar'),
+        icon: const Icon(Icons.save),
+      ),
       body: StreamBuilder<ProductFormState>(
         stream: _viewModel.state,
         builder: (context, snapshot) {
@@ -141,10 +145,10 @@ class _ProductFormPageState extends State<ProductFormPage> {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
             child: Card(
-              // 2. O FORMULÁRIO AGORA ESTÁ DENTRO DE UM CARD
               elevation: 2,
               shadowColor: Colors.black.withOpacity(0.1),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(24.0),
                 child: Form(
@@ -156,8 +160,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         controller: _nameController,
                         labelText: 'Título do Produto',
                         icon: Icons.label_important_outline,
-                        validator: (value) =>
-                        (value?.isEmpty ?? true) ? 'O título é obrigatório.' : null,
+                        validator: (value) => (value?.isEmpty ?? true)
+                            ? 'O título é obrigatório.'
+                            : null,
                       ),
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -166,7 +171,8 @@ class _ProductFormPageState extends State<ProductFormPage> {
                           decoration: InputDecoration(
                             labelText: 'Descrição',
                             alignLabelWithHint: true,
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                            border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12)),
                           ),
                           maxLines: 4,
                           textCapitalization: TextCapitalization.sentences,
@@ -179,7 +185,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
                               controller: _costPriceController,
                               labelText: 'Valor de Compra',
                               icon: Icons.arrow_downward,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -188,7 +196,9 @@ class _ProductFormPageState extends State<ProductFormPage> {
                               controller: _salePriceController,
                               labelText: 'Valor de Venda',
                               icon: Icons.arrow_upward,
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              keyboardType:
+                              const TextInputType.numberWithOptions(
+                                  decimal: true),
                               validator: (value) {
                                 if (_salePriceController.numberValue <= 0) {
                                   return 'Obrigatório e > 0.';
@@ -221,14 +231,6 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         ],
                       ),
                       const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: _saveForm,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(double.infinity, 50),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(isEditing ? 'Atualizar Produto' : 'Salvar Produto'),
-                      ),
                     ],
                   ),
                 ),

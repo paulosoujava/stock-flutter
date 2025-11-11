@@ -30,33 +30,44 @@ class SalesReportViewModel {
     _stateController.add(SalesReportLoading());
     try {
       final allSales = await _getAllSalesUseCase();
-
-      // Agrupa todas as vendas por ano
       final salesByYear = groupBy(allSales, (Sale sale) => sale.saleDate.year);
-
       final List<YearlySales> yearlySalesList = [];
 
-      // Itera sobre cada ano (ex: 2024, 2023...)
       salesByYear.forEach((year, yearSales) {
-        // Calcula o total do ano
         final yearTotal = yearSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
-
-        // Agrupa as vendas daquele ano por mês
         final salesByMonth = groupBy(yearSales, (Sale sale) => sale.saleDate.month);
-
         final List<MonthlySales> monthlySalesList = [];
-        // Itera sobre cada mês daquele ano
+
         salesByMonth.forEach((month, monthSales) {
-          // Calcula o total do mês
           final monthTotal = monthSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+          final Map<String, double> sellerSalesMap = {};
+          for (var sale in monthSales) {
+            // Se o vendedor já está no mapa, soma o valor. Senão, adiciona.
+            sellerSalesMap.update(
+              sale.sellerName,
+                  (value) => value + sale.totalAmount,
+              ifAbsent: () => sale.totalAmount,
+            );
+          }
+          // Converte o mapa em uma lista de objetos de performance
+          final sellerPerformances = sellerSalesMap.entries.map((entry) {
+            return SellerMonthlyPerformance(
+              sellerName: entry.key,
+              totalSold: entry.value,
+            );
+          }).toList();
+          // Ordena os vendedores por quem vendeu mais
+          sellerPerformances.sort((a, b) => b.totalSold.compareTo(a.totalSold));
+
+
           monthlySalesList.add(MonthlySales(
             month: month,
             totalAmount: monthTotal,
             sales: monthSales,
+            sellerPerformances: sellerPerformances, // Passa a lista processada
           ));
         });
 
-        // Ordena os meses em ordem decrescente
         monthlySalesList.sort((a, b) => b.month.compareTo(a.month));
 
         yearlySalesList.add(YearlySales(
@@ -66,10 +77,9 @@ class SalesReportViewModel {
         ));
       });
 
-      // Ordena os anos em ordem decrescente
       yearlySalesList.sort((a, b) => b.year.compareTo(a.year));
-
       _stateController.add(SalesReportLoaded(yearlySales: yearlySalesList));
+
     } catch (e) {
       _stateController.add(SalesReportError("Erro ao gerar relatório: ${e.toString()}"));
     }
