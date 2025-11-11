@@ -47,4 +47,11 @@ class SaleRepositoryImpl implements ISaleRepository {
     sales.sort((a, b) => b.saleDate.compareTo(a.saleDate));
     return sales;
   }
+
+  @override
+  Future<List<Sale>> getAllSales() async {
+    final box = await _openBox();
+    // Simplesmente retorna todos os valores do box
+    return box.values.toList();
+  }
 }

@@ -9,4 +9,6 @@ abstract class ISaleRepository {
 
   /// Retorna todas as vendas de um ano inteiro.
   Future<List<Sale>> getSalesByYear(int year);
+
+  Future<List<Sale>> getAllSales();
 }

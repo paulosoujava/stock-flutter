@@ -18,6 +18,8 @@ import 'package:stock/domain/repositories/iproduct_repository.dart' as _i741;
 import 'package:stock/domain/repositories/isale_repository.dart' as _i73;
 import 'package:stock/domain/usecases/categories/add_category.dart' as _i337;
 import 'package:stock/domain/usecases/categories/delete_category.dart' as _i588;
+import 'package:stock/domain/usecases/categories/get_all_sales_use_case.dart'
+    as _i51;
 import 'package:stock/domain/usecases/categories/get_categories.dart' as _i678;
 import 'package:stock/domain/usecases/categories/update_category.dart' as _i460;
 import 'package:stock/domain/usecases/customers/add_customer.dart' as _i139;
@@ -53,6 +55,8 @@ import 'package:stock/presentation/pages/products/list/products/product_list_vie
     as _i336;
 import 'package:stock/presentation/pages/sales/customer_selection/customer_selection_view_model.dart'
     as _i832;
+import 'package:stock/presentation/pages/sales/report/sales_report_view_model.dart'
+    as _i100;
 import 'package:stock/presentation/pages/sales/sales_view_model.dart' as _i161;
 import 'package:uuid/uuid.dart' as _i706;
 
@@ -104,6 +108,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i554.GetSalesByMonthUseCase(gh<_i73.ISaleRepository>()));
     gh.factory<_i510.SaveSaleUseCase>(
         () => _i510.SaveSaleUseCase(gh<_i73.ISaleRepository>()));
+    gh.factory<_i51.GetAllSalesUseCase>(
+        () => _i51.GetAllSalesUseCase(gh<_i73.ISaleRepository>()));
     gh.lazySingleton<_i740.HomeViewModel>(
       () => _i740.HomeViewModel(
         gh<_i281.GetAllProductsUseCase>(),
@@ -118,6 +124,10 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i510.SaveSaleUseCase>(),
         gh<_i706.Uuid>(),
       ),
+      dispose: (i) => i.dispose(),
+    );
+    gh.lazySingleton<_i100.SalesReportViewModel>(
+      () => _i100.SalesReportViewModel(gh<_i51.GetAllSalesUseCase>()),
       dispose: (i) => i.dispose(),
     );
     gh.factory<_i152.GetCustomers>(
