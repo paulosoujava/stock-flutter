@@ -1,33 +1,76 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:stock/core/navigation/app_router.dart';
+import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
+import 'package:stock/presentation/pages/home/home_intent.dart';
+import 'package:stock/presentation/pages/home/home_state.dart';
+import 'package:stock/presentation/pages/home/home_view_model.dart';
 import 'package:stock/presentation/widgets/action_card.dart';
+import 'package:stock/presentation/widgets/action_item.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
+import 'package:stock/presentation/widgets/low_stock_alert_card.dart';
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
-  // Função para tratar o clique no botão de logoff
-  void _onLogoffPressed(BuildContext context) async {
-    final shouldLogoff = await showConfirmationDialog(
-      context: context,
-      title: 'Confirmar Logoff',
-      content: 'Tem certeza de que deseja sair da sua conta?',
-      confirmText: 'Sair',
-    );
-    if (shouldLogoff == true) {
-      // TODO: Implementar a lógica de logoff (limpar token, etc.)
-      // e navegar para a tela de login.
-      print("Usuário confirmou o logoff.");
-    }
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  // 1. Obtém a instância do ViewModel através do GetIt.
+  late final HomeViewModel _viewModel;
+
+  // A lista de ações da grade é estática e pode ficar aqui.
+  static const List<ActionItem> _actionItems = [
+    ActionItem(
+      title: 'Clientes',
+      description: 'Cadastre, edite e visualize sua base de clientes.',
+      icon: Icons.people_alt,
+      iconColor: Colors.blue,
+      route: AppRoutes.customerList,
+    ),
+    ActionItem(
+      title: 'Categorias',
+      description: 'Gerencie as categorias dos seus produtos.',
+      icon: Icons.category,
+      iconColor: Colors.teal,
+      route: AppRoutes.categoryList,
+    ),
+    ActionItem(
+      title: 'Produtos',
+      description: 'Controle seu estoque, preços e categorias.',
+      icon: Icons.inventory_2,
+      iconColor: Colors.orange,
+      route: AppRoutes.productByCategory,
+    ),
+    ActionItem(
+      title: 'Vendas',
+      description: 'Registre novas vendas e consulte o histórico.',
+      icon: Icons.point_of_sale,
+      iconColor: Colors.green,
+      route: AppRoutes.customerList, // TODO: Alterar para rota de vendas
+    ),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = getIt<HomeViewModel>();
+    _viewModel.handleIntent(LoadInitialDataIntent());
+  }
+
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2, // Exemplo com 2 abas: "Ações" e "Relatórios"
+      length: 2,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Dashboard'),
@@ -38,24 +81,19 @@ class HomePage extends StatelessWidget {
               onPressed: () => _onLogoffPressed(context),
             ),
           ],
-          bottom: TabBar(
-            // Cor do ícone e do texto da aba ATIVA.
+          bottom:  TabBar(
             labelColor: Colors.white,
-            // Cor do ícone e do texto das abas INATIVAS.
             unselectedLabelColor: Colors.white.withOpacity(0.7),
-            // Cor e espessura da linha indicadora que fica embaixo da aba ativa.
             indicatorColor: Colors.white,
             indicatorWeight: 3.0,
-            // Opcional: para garantir que o efeito "splash" ao tocar na aba seja visível.
             overlayColor: WidgetStateProperty.resolveWith<Color?>(
-              (Set<WidgetState> states) {
+                  (Set<WidgetState> states) {
                 if (states.contains(WidgetState.pressed)) {
                   return Colors.white.withOpacity(0.2);
                 }
-                return null; // Defer to the default splash color
+                return null;
               },
             ),
-
             tabs: const [
               Tab(icon: Icon(Icons.touch_app), text: 'Ações'),
               Tab(icon: Icon(Icons.bar_chart), text: 'Relatórios'),
@@ -64,9 +102,14 @@ class HomePage extends StatelessWidget {
         ),
         body: TabBarView(
           children: [
-            // Conteúdo da primeira aba: "Ações"
-            _buildActionsTab(context),
-            // Conteúdo da segunda aba: "Relatórios" (placeholder)
+            // 4. Usa um StreamBuilder para reconstruir a UI com base nos estados do ViewModel.
+            StreamBuilder<HomeState>(
+              stream: _viewModel.state,
+              builder: (context, snapshot) {
+                final state = snapshot.data;
+                return _buildActionsTab(context, state);
+              },
+            ),
             const Center(
               child: Text(
                 'Área de Relatórios em construção',
@@ -79,62 +122,77 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Widget que constrói o conteúdo da aba "Ações"
-  Widget _buildActionsTab(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Gerenciamento',
-            style: Theme.of(context)
-                .textTheme
-                .headlineSmall
-                ?.copyWith(fontWeight: FontWeight.bold),
+  /// Constrói a aba "Ações" com base no estado recebido do ViewModel.
+  Widget _buildActionsTab(BuildContext context, HomeState? state) {
+    return Column(
+      children: [
+        // --- Exibição do Alerta de Estoque Baixo ---
+        // Mostra o card de alerta APENAS no estado de sucesso e se a lista não for vazia.
+        if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: LowStockAlertCard(
+              lowStockInfoList: state.lowStockInfo,
+            ),
           ),
-          const SizedBox(height: 16),
-          ActionCard(
-            title: 'Clientes',
-            description: 'Cadastre, edite e visualize sua base de clientes.',
-            icon: Icons.people_alt,
-            iconColor: Colors.blue.shade700,
-            onTap: () {
-              // Navegação usando GoRouter para a tela de lista de clientes
-              context.push(AppRoutes.customerList);
-            },
+
+        // --- Widgets de Estado (Loading e Erro) ---
+        // Mostra um indicador de progresso durante o carregamento.
+        if (state is HomeLoadingState)
+          const Expanded(
+            child: Center(child: CircularProgressIndicator()),
           ),
-          ActionCard(
-            title: 'Categorias',
-            description: 'Gerencie as categorias dos seus produtos.',
-            icon: Icons.category,
-            iconColor: Colors.teal.shade700,
-            onTap: () {
-              // Navegação usando GoRouter para a tela de lista de categorias
-              context.push(AppRoutes.categoryList);
-            },
+
+        // Mostra uma mensagem de erro se ocorrer uma falha.
+        if (state is HomeErrorState)
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Text(
+              state.errorMessage,
+              style: const TextStyle(color: Colors.red, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
           ),
-          ActionCard(
-            title: 'Produtos',
-            description: 'Controle seu estoque, preços e categorias.',
-            icon: Icons.inventory_2,
-            iconColor: Colors.orange.shade800,
-            onTap: () {
-              context.push(AppRoutes.productByCategory);
-            },
+
+        // --- Grade de Ações ---
+        // Mostra a grade apenas quando não estiver carregando.
+        if (state is! HomeLoadingState)
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16.0),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 16.0,
+                mainAxisSpacing: 16.0,
+                mainAxisExtent: 140,
+              ),
+              itemCount: _actionItems.length,
+              itemBuilder: (context, index) {
+                final item = _actionItems[index];
+                return ActionCard(
+                  title: item.title,
+                  description: item.description,
+                  icon: item.icon,
+                  iconColor: item.iconColor,
+                  onTap: () => context.push(item.route),
+                );
+              },
+            ),
           ),
-          ActionCard(
-            title: 'Vendas',
-            description: 'Registre novas vendas e consulte o histórico.',
-            icon: Icons.point_of_sale,
-            iconColor: Colors.green.shade700,
-            onTap: () {
-              // TODO: Navegar para a tela de vendas
-              print("Navegar para Vendas");
-            },
-          ),
-        ],
-      ),
+      ],
     );
+  }
+
+  void _onLogoffPressed(BuildContext context) async {
+    final shouldLogoff = await showConfirmationDialog(
+      context: context,
+      title: 'Confirmar Logoff',
+      content: 'Tem certeza de que deseja sair da sua conta?',
+      confirmText: 'Sair',
+    );
+    if (shouldLogoff == true) {
+      // TODO: Implementar a lógica de logoff e navegar.
+      print("Usuário confirmou o logoff.");
+    }
   }
 }

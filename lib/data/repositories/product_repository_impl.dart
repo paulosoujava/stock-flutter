@@ -53,4 +53,14 @@ class ProductRepositoryImpl implements IProductRepository {
     final box = await _openBox();
     await box.delete(productId);
   }
+
+  @override
+  Future<List<Product>> getAllProducts() async {
+    final box = await _openBox();
+    // box.values retorna um Iterable com todos os objetos na caixa.
+    // .toList() converte para uma lista.
+    final allProducts = box.values.toList();
+    return allProducts;
+  }
+
 }

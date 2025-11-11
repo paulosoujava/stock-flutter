@@ -11,4 +11,7 @@ abstract class IProductRepository {
 
   /// Remove um produto do repositório usando seu [productId].
   Future<void> deleteProduct(String productId);
+
+  //Lista todos os produtos
+  Future<List<Product>> getAllProducts();
 }

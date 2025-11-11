@@ -11,6 +11,7 @@
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:stock/core/di/data_module.dart' as _i149;
+import 'package:stock/core/events/event_bus.dart' as _i468;
 import 'package:stock/domain/repositories/icategory_repository.dart' as _i836;
 import 'package:stock/domain/repositories/icustomer_repository.dart' as _i64;
 import 'package:stock/domain/repositories/iproduct_repository.dart' as _i741;
@@ -24,6 +25,8 @@ import 'package:stock/domain/usecases/customers/get_customers.dart' as _i152;
 import 'package:stock/domain/usecases/customers/update_customer.dart' as _i397;
 import 'package:stock/domain/usecases/products/add_product.dart' as _i543;
 import 'package:stock/domain/usecases/products/delete_product.dart' as _i847;
+import 'package:stock/domain/usecases/products/get_all_products_use_case.dart'
+    as _i281;
 import 'package:stock/domain/usecases/products/get_product_count_by_category.dart'
     as _i228;
 import 'package:stock/domain/usecases/products/get_products_by_category.dart'
@@ -37,6 +40,7 @@ import 'package:stock/presentation/pages/customer/form/customer_form_viewmodel.d
     as _i252;
 import 'package:stock/presentation/pages/customer/list/customer_list_viewmodel.dart'
     as _i348;
+import 'package:stock/presentation/pages/home/home_view_model.dart' as _i740;
 import 'package:stock/presentation/pages/products/form/product_form_viewmodel.dart'
     as _i3;
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_viewmodel.dart'
@@ -62,6 +66,12 @@ extension GetItInjectableX on _i174.GetIt {
         () => dataModule.categoryRepository);
     gh.lazySingleton<_i741.IProductRepository>(
         () => dataModule.productRepository);
+    gh.lazySingleton<_i468.EventBus>(
+      () => _i468.EventBus(),
+      dispose: (i) => i.dispose(),
+    );
+    gh.factory<_i281.GetAllProductsUseCase>(
+        () => _i281.GetAllProductsUseCase(gh<_i741.IProductRepository>()));
     gh.factory<_i185.UpdateProduct>(
         () => _i185.UpdateProduct(gh<_i741.IProductRepository>()));
     gh.factory<_i614.GetProductsByCategory>(
@@ -80,10 +90,14 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i337.AddCategory(gh<_i836.ICategoryRepository>()));
     gh.factory<_i588.DeleteCategory>(
         () => _i588.DeleteCategory(gh<_i836.ICategoryRepository>()));
-    gh.factory<_i3.ProductFormViewModel>(() => _i3.ProductFormViewModel(
-          gh<_i543.AddProduct>(),
-          gh<_i185.UpdateProduct>(),
-        ));
+    gh.lazySingleton<_i740.HomeViewModel>(
+      () => _i740.HomeViewModel(
+        gh<_i281.GetAllProductsUseCase>(),
+        gh<_i678.GetCategories>(),
+        gh<_i468.EventBus>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     gh.factory<_i152.GetCustomers>(
         () => _i152.GetCustomers(gh<_i64.ICustomerRepository>()));
     gh.factory<_i346.DeleteCustomer>(
@@ -109,6 +123,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i336.ProductListViewModel>(() => _i336.ProductListViewModel(
           gh<_i614.GetProductsByCategory>(),
           gh<_i847.DeleteProduct>(),
+        ));
+    gh.factory<_i3.ProductFormViewModel>(() => _i3.ProductFormViewModel(
+          gh<_i543.AddProduct>(),
+          gh<_i185.UpdateProduct>(),
+          gh<_i468.EventBus>(),
         ));
     gh.factory<_i971.CategoryListViewModel>(() => _i971.CategoryListViewModel(
           gh<_i678.GetCategories>(),
