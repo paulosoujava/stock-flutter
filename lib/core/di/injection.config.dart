@@ -21,6 +21,8 @@ import 'package:stock/domain/repositories/iproduct_repository.dart' as _i741;
 import 'package:stock/domain/repositories/ireminder_repository.dart' as _i594;
 import 'package:stock/domain/repositories/isale_repository.dart' as _i73;
 import 'package:stock/domain/repositories/isupplier_repository.dart' as _i291;
+import 'package:stock/domain/usecases/auth/get_current_user_use_case.dart'
+    as _i723;
 import 'package:stock/domain/usecases/auth/sign_in_use_case.dart' as _i517;
 import 'package:stock/domain/usecases/categories/add_category.dart' as _i337;
 import 'package:stock/domain/usecases/categories/delete_category.dart' as _i588;
@@ -200,15 +202,6 @@ extension GetItInjectableX on _i174.GetIt {
               gh<_i337.AddCategory>(),
               gh<_i460.UpdateCategory>(),
             ));
-    gh.lazySingleton<_i161.SalesViewModel>(
-      () => _i161.SalesViewModel(
-        gh<_i281.GetAllProductsUseCase>(),
-        gh<_i510.SaveSaleUseCase>(),
-        gh<_i185.UpdateProduct>(),
-        gh<_i706.Uuid>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
     gh.lazySingleton<_i348.CustomerListViewModel>(
       () => _i348.CustomerListViewModel(
         gh<_i152.GetCustomers>(),
@@ -216,6 +209,8 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
+    gh.factory<_i723.GetCurrentUserUseCase>(
+        () => _i723.GetCurrentUserUseCase(gh<_i59.FirebaseAuth>()));
     gh.factory<_i425.ProductCategoryListViewModel>(
         () => _i425.ProductCategoryListViewModel(
               gh<_i678.GetCategories>(),
@@ -234,12 +229,18 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i185.UpdateProduct>(),
           gh<_i468.EventBus>(),
         ));
+    gh.lazySingleton<_i161.SalesViewModel>(
+      () => _i161.SalesViewModel(
+        gh<_i281.GetAllProductsUseCase>(),
+        gh<_i510.SaveSaleUseCase>(),
+        gh<_i185.UpdateProduct>(),
+        gh<_i723.GetCurrentUserUseCase>(),
+        gh<_i706.Uuid>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     gh.factory<_i517.SignInUseCase>(
         () => _i517.SignInUseCase(gh<_i126.ILoginRepository>()));
-    gh.factory<_i132.ReminderFormViewModel>(() => _i132.ReminderFormViewModel(
-          gh<_i419.AddReminder>(),
-          gh<_i270.UpdateReminder>(),
-        ));
     gh.factory<_i971.CategoryListViewModel>(() => _i971.CategoryListViewModel(
           gh<_i678.GetCategories>(),
           gh<_i588.DeleteCategory>(),
@@ -248,6 +249,11 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i252.CustomerFormViewModel>(() => _i252.CustomerFormViewModel(
           gh<_i139.AddCustomer>(),
           gh<_i397.UpdateCustomer>(),
+        ));
+    gh.factory<_i132.ReminderFormViewModel>(() => _i132.ReminderFormViewModel(
+          gh<_i419.AddReminder>(),
+          gh<_i270.UpdateReminder>(),
+          gh<_i723.GetCurrentUserUseCase>(),
         ));
     gh.factory<_i183.LoginViewModel>(
         () => _i183.LoginViewModel(gh<_i517.SignInUseCase>()));

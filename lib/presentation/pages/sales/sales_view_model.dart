@@ -5,6 +5,7 @@ import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
 import 'package:stock/domain/entities/sale/sale_item.dart';
+import 'package:stock/domain/usecases/auth/get_current_user_use_case.dart';
 import 'package:stock/domain/usecases/products/get_all_products_use_case.dart';
 import 'package:stock/domain/usecases/products/update_product.dart';
 import 'package:stock/domain/usecases/sales/save_sale_use_case.dart';
@@ -17,6 +18,7 @@ class SalesViewModel {
   final GetAllProductsUseCase _getAllProductsUseCase;
   final SaveSaleUseCase _saveSaleUseCase;
   final UpdateProduct _updateProductUseCase;
+  final GetCurrentUserUseCase _getCurrentUser;
   final Uuid _uuid;
 
   final _stateController = BehaviorSubject<SalesState>();
@@ -27,6 +29,7 @@ class SalesViewModel {
     this._getAllProductsUseCase,
     this._saveSaleUseCase,
     this._updateProductUseCase,
+    this._getCurrentUser,
     this._uuid,
   ) {
     _stateController.add(SalesReadyState());
@@ -203,20 +206,25 @@ class SalesViewModel {
     final updatedCart =
         currentState.cart.where((item) => item.productId != productId).toList();
     _stateController.add(currentState.copyWith(cart: updatedCart));
-    _searchProducts(
-        currentState.currentSearchQuery);
+    _searchProducts(currentState.currentSearchQuery);
   }
 
   Future<void> _finalizeSale() async {
     final currentState = _stateController.value;
     if (currentState is! SalesReadyState) return;
     if (currentState.selectedCustomer == null || currentState.cart.isEmpty) {
-      _stateController.add(SalesErrorState("Selecione um cliente e adicione produtos ao carrinho."));
+      _stateController.add(SalesErrorState(
+          "Selecione um cliente e adicione produtos ao carrinho."));
       await Future.delayed(const Duration(seconds: 2));
       _stateController.add(currentState);
       return;
     }
-
+    // PEGAR O USUÁRIO
+    final currentUser = _getCurrentUser();
+    if (currentUser == null) {
+      _stateController.add(SalesErrorState("Erro: Nenhum vendedor autenticado. Faça login novamente."));
+        return;
+    }
     _stateController.add(SalesLoadingState());
 
     try {
@@ -225,16 +233,19 @@ class SalesViewModel {
 
       //  Itera sobre cada item do carrinho para validar estoque e preparar atualização
       for (final cartItem in currentState.cart) {
-        final productToUpdate = productsInDb.firstWhere((p) => p.id == cartItem.productId);
+        final productToUpdate =
+            productsInDb.firstWhere((p) => p.id == cartItem.productId);
 
         if (productToUpdate.stockQuantity < cartItem.quantity) {
-          throw Exception('Estoque de "${productToUpdate.name}" é insuficiente. Restam: ${productToUpdate.stockQuantity}');
+          throw Exception(
+              'Estoque de "${productToUpdate.name}" é insuficiente. Restam: ${productToUpdate.stockQuantity}');
         }
 
         final newStock = productToUpdate.stockQuantity - cartItem.quantity;
 
         //  ATUALIZA O ESTOQUE DO PRODUTO USANDO O USECASE EXISTENTE
-        await _updateProductUseCase(productToUpdate.copyWith(stockQuantity: newStock));
+        await _updateProductUseCase(
+            productToUpdate.copyWith(stockQuantity: newStock));
       }
 
       //  Se tudo deu certo, cria e salva o registro da venda
@@ -245,8 +256,8 @@ class SalesViewModel {
         saleDate: DateTime.now(),
         items: currentState.cart,
         totalAmount: currentState.cartTotal,
-        sellerId: 'user-002-mock',
-        sellerName: 'Paulo Oliveira',
+        sellerId: currentUser.uid,
+        sellerName: currentUser.displayName ?? currentUser.email ?? 'Vendedor Desconhecido',
       );
 
       await _saveSaleUseCase(newSale);
@@ -255,9 +266,9 @@ class SalesViewModel {
       _stateController.add(SalesSaleSuccessfulState());
       await Future.delayed(const Duration(milliseconds: 500));
       _stateController.add(SalesReadyState());
-
     } catch (e) {
-      _stateController.add(SalesErrorState("Erro ao finalizar a venda: ${e.toString()}"));
+      _stateController
+          .add(SalesErrorState("Erro ao finalizar a venda: ${e.toString()}"));
       // Garante que a tela não fique presa no loading
       await Future.delayed(const Duration(seconds: 3));
       if (_stateController.value is SalesErrorState) {
