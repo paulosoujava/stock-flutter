@@ -56,9 +56,6 @@ Future<void> main() async {
     });
   }
 
-  /*await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );*/
 
   //  Inicia o aplicativo.
   runApp(const MyApp());
