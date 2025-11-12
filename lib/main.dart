@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:stock/core/di/injection.dart';
@@ -10,14 +11,20 @@ import 'package:stock/domain/entities/reminder/reminder.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
 import 'package:stock/domain/entities/sale/sale_item.dart';
 import 'package:stock/domain/entities/supplier/supplier.dart';
+import 'package:stock/firebase_options.dart';
+
 import 'package:window_manager/window_manager.dart';
-import 'package:firebase_core/firebase_core.dart';
+
 
 import 'core/navigation/app_router.dart';
 
 Future<void> main() async {
   //  Garante que os bindings do Flutter estejam prontos.
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   //  Inicializa o Hive.
   await Hive.initFlutter();
@@ -36,7 +43,7 @@ Future<void> main() async {
 
     // Opções da janela que você quer definir
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(800, 600),       // Define o tamanho inicial da janela
+      size: Size(900, 850),       // Define o tamanho inicial da janela
       minimumSize: Size(800, 600), // Define o tamanho mínimo permitido
       center: true,              // Centraliza a janela na tela
       title: 'Meu App de Estoque', // Define o título da janela
@@ -49,9 +56,9 @@ Future<void> main() async {
     });
   }
 
-  await Firebase.initializeApp(
+  /*await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
-  );
+  );*/
 
   //  Inicia o aplicativo.
   runApp(const MyApp());

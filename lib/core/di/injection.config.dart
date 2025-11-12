@@ -8,16 +8,20 @@
 // coverage:ignore-file
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:firebase_auth/firebase_auth.dart' as _i59;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 import 'package:stock/core/di/data_module.dart' as _i149;
 import 'package:stock/core/events/event_bus.dart' as _i468;
+import 'package:stock/data/repositories/login_repository_impl.dart' as _i700;
 import 'package:stock/domain/repositories/icategory_repository.dart' as _i836;
 import 'package:stock/domain/repositories/icustomer_repository.dart' as _i64;
+import 'package:stock/domain/repositories/ilogin_repository.dart' as _i126;
 import 'package:stock/domain/repositories/iproduct_repository.dart' as _i741;
 import 'package:stock/domain/repositories/ireminder_repository.dart' as _i594;
 import 'package:stock/domain/repositories/isale_repository.dart' as _i73;
 import 'package:stock/domain/repositories/isupplier_repository.dart' as _i291;
+import 'package:stock/domain/usecases/auth/sign_in_use_case.dart' as _i517;
 import 'package:stock/domain/usecases/categories/add_category.dart' as _i337;
 import 'package:stock/domain/usecases/categories/delete_category.dart' as _i588;
 import 'package:stock/domain/usecases/categories/get_all_sales_use_case.dart'
@@ -57,6 +61,7 @@ import 'package:stock/presentation/pages/customer/form/customer_form_viewmodel.d
 import 'package:stock/presentation/pages/customer/list/customer_list_viewmodel.dart'
     as _i348;
 import 'package:stock/presentation/pages/home/home_view_model.dart' as _i740;
+import 'package:stock/presentation/pages/login/login_viewmodel.dart' as _i183;
 import 'package:stock/presentation/pages/products/form/product_form_viewmodel.dart'
     as _i3;
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_viewmodel.dart'
@@ -90,13 +95,14 @@ extension GetItInjectableX on _i174.GetIt {
       environmentFilter,
     );
     final dataModule = _$DataModule();
+    gh.lazySingleton<_i706.Uuid>(() => dataModule.uuid);
+    gh.lazySingleton<_i59.FirebaseAuth>(() => dataModule.firebaseAuth);
     gh.lazySingleton<_i64.ICustomerRepository>(
         () => dataModule.customerRepository);
     gh.lazySingleton<_i836.ICategoryRepository>(
         () => dataModule.categoryRepository);
     gh.lazySingleton<_i741.IProductRepository>(
         () => dataModule.productRepository);
-    gh.lazySingleton<_i706.Uuid>(() => dataModule.uuid);
     gh.lazySingleton<_i73.ISaleRepository>(() => dataModule.saleRepository);
     gh.lazySingleton<_i291.ISupplierRepository>(
         () => dataModule.supplierRepository);
@@ -175,6 +181,8 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
+    gh.lazySingleton<_i126.ILoginRepository>(
+        () => _i700.LoginRepositoryImpl(gh<_i59.FirebaseAuth>()));
     gh.lazySingleton<_i100.SalesReportViewModel>(
       () => _i100.SalesReportViewModel(gh<_i51.GetAllSalesUseCase>()),
       dispose: (i) => i.dispose(),
@@ -226,6 +234,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i185.UpdateProduct>(),
           gh<_i468.EventBus>(),
         ));
+    gh.factory<_i517.SignInUseCase>(
+        () => _i517.SignInUseCase(gh<_i126.ILoginRepository>()));
     gh.factory<_i132.ReminderFormViewModel>(() => _i132.ReminderFormViewModel(
           gh<_i419.AddReminder>(),
           gh<_i270.UpdateReminder>(),
@@ -239,6 +249,8 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i139.AddCustomer>(),
           gh<_i397.UpdateCustomer>(),
         ));
+    gh.factory<_i183.LoginViewModel>(
+        () => _i183.LoginViewModel(gh<_i517.SignInUseCase>()));
     return this;
   }
 }

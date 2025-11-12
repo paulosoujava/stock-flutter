@@ -1,3 +1,5 @@
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/navigation/app_routes.dart';
@@ -12,6 +14,7 @@ import 'package:stock/presentation/pages/customer/form/customer_form_page.dart';
 
 import 'package:stock/presentation/pages/customer/list/customer_list_page.dart';
 import 'package:stock/presentation/pages/home/home_page.dart';
+import 'package:stock/presentation/pages/login/login_page.dart';
 import 'package:stock/presentation/pages/products/form/product_form_page.dart';
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_page.dart';
 import 'package:stock/presentation/pages/products/list/products/product_list_page.dart';
@@ -23,8 +26,28 @@ import 'package:stock/presentation/pages/supplier/list/supplier_list_page.dart';
 import 'package:stock/presentation/widgets/error_route_page.dart';
 
 final appRouter = GoRouter(
-  initialLocation: AppRoutes.home,
+  initialLocation: AppRoutes.login,
   observers: [GoRouterObserver()],
+  redirect: (BuildContext context, GoRouterState state) {
+    // Pega o usuário logado atualmente. Retorna 'null' se não houver ninguém.
+    final loggedInUser = FirebaseAuth.instance.currentUser;
+    final isLoggingIn = state.matchedLocation == AppRoutes.login;
+
+    // Se o usuário NÃO está logado e NÃO está na tela de login,
+    // redirecione-o para a tela de login.
+    if (loggedInUser == null && !isLoggingIn) {
+      return AppRoutes.login;
+    }
+
+    // Se o usuário ESTÁ logado e está tentando acessar a tela de login,
+    // redirecione-o para a home.
+    if (loggedInUser != null && isLoggingIn) {
+      return AppRoutes.home;
+    }
+    // Em todos os outros casos, não faça nada (deixe o usuário ir para onde ele quer).
+    return null;
+  },
+
   routes: [
     GoRoute(
       path: AppRoutes.home,
@@ -137,6 +160,11 @@ final appRouter = GoRouter(
         final reminder = state.extra as Reminder?;
         return ReminderFormPage(reminderToEdit: reminder);
       },
+    ),
+    //LOGIN
+    GoRoute(
+      path: AppRoutes.login,
+      builder: (context, state) => const LoginPage(),
     ),
   ],
 );
