@@ -7,11 +7,13 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/presentation/pages/home/home_intent.dart';
 import 'package:stock/presentation/pages/home/home_state.dart';
 import 'package:stock/presentation/pages/home/home_view_model.dart';
+import 'package:stock/presentation/pages/lives_sales/list/live_list_page.dart';
 import 'package:stock/presentation/pages/sales/report/sales_report_page.dart';
 
 import 'package:stock/presentation/widgets/action_card.dart';
 import 'package:stock/presentation/widgets/action_item.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
+import 'package:stock/presentation/widgets/help_dialog.dart';
 import 'package:stock/presentation/widgets/low_stock_alert_card.dart';
 
 class HomePage extends StatefulWidget {
@@ -69,6 +71,13 @@ class _HomePageState extends State<HomePage> {
       iconColor: Colors.purple,
       route: AppRoutes.reminderList,
     ),
+    /*ActionItem(
+      title: 'Vendas em Live',
+      description: 'Gerencie e conduza suas vendas ao vivo.',
+      icon: Icons.live_tv,
+      iconColor: Colors.redAccent,
+      route: AppRoutes.liveList, // Use a rota que definimos
+    ),*/
   ];
 
   @override
@@ -104,21 +113,28 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Dashboard'),
           actions: [
             IconButton(
+              icon: const Icon(Icons.help_outline),
+              tooltip: 'Ajuda',
+              onPressed: () => HelpDialog.show(context),
+            ),
+            SizedBox(width: 8),
+            IconButton(
               icon: const Icon(Icons.logout),
               tooltip: 'Sair',
               onPressed: () => _onLogoffPressed(context),
             ),
+            SizedBox(width: 8),
           ],
           bottom: TabBar(
             labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withOpacity(0.7),
-            indicatorColor: Colors.white,
+            unselectedLabelColor: Colors.white.withAlpha(130),
+            indicatorColor: Colors.green,
             indicatorWeight: 3.0,
             overlayColor: WidgetStateProperty.resolveWith<Color?>(
               (Set<WidgetState> states) {
@@ -131,6 +147,7 @@ class _HomePageState extends State<HomePage> {
             tabs: const [
               Tab(icon: Icon(Icons.touch_app), text: 'Ações'),
               Tab(icon: Icon(Icons.bar_chart), text: 'Relatórios'),
+              Tab(icon: Icon(Icons.live_tv), text: 'Lives'),
             ],
           ),
         ),
@@ -146,6 +163,8 @@ class _HomePageState extends State<HomePage> {
             ),
             // 2 Aba de Relatórios agora mostra a página de relatório
             const SalesReportPage(),
+            // 3 Aba de Relatórios agora mostra a página de relatório
+            const LiveListPage()
           ],
         ),
       ),
@@ -213,9 +232,23 @@ class _HomePageState extends State<HomePage> {
               },
             ),
           ),
+
+        // ✅ Versionamento no final da tela
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12.0),
+          child: Text(
+            "Versão 1.0.0",
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
       ],
     );
   }
+
 
   void _onLogoffPressed(BuildContext context) async {
     final shouldLogoff = await showConfirmationDialog(

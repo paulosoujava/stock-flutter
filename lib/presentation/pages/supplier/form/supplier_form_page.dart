@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/supplier/supplier.dart';
 import 'package:stock/presentation/pages/supplier/form/supplier_form_intent.dart';
@@ -23,6 +24,11 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   late final TextEditingController _observationController;
   late bool _isEditing;
 
+  final _phoneMaskFormatter = MaskTextInputFormatter(
+      mask: '(##) #####-####',
+      filter: { "#": RegExp(r'[0-9]') }
+  );
+
   @override
   void initState() {
     super.initState();
@@ -34,8 +40,9 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     _emailController = TextEditingController(text: widget.supplierToEdit?.email);
     _observationController =
         TextEditingController(text: widget.supplierToEdit?.observation);
-
+    _phoneController.text = _phoneMaskFormatter.maskText(widget.supplierToEdit?.phone ?? '');
     _viewModel.state.listen((state) {
+
       if (state is SupplierFormSuccess) {
         context.pop(true);
       }
@@ -121,6 +128,14 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
                               prefixIcon: Icon(Icons.phone),
                             ),
                             keyboardType: TextInputType.phone,
+                            inputFormatters: [_phoneMaskFormatter],
+                            validator: (value) {
+                              // Você pode ajustar a validação se necessário
+                              if (value == null || value.isEmpty) {
+                                return 'O telefone é obrigatório';
+                              }
+                              return null;
+                            },
                           ),
                           const SizedBox(height: 16),
                           TextFormField(

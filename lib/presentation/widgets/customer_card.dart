@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:stock/presentation/widgets/launch.dart';
+import 'package:stock/presentation/widgets/url_launcher_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CustomerCard extends StatelessWidget {
@@ -101,13 +102,13 @@ class CustomerCard extends StatelessWidget {
                   icon: Icons.chat_bubble_outline,
                   label: 'WhatsApp',
                   value: _phoneFormatter.maskText(customer.whatsapp),
-                  onTap: () => launchWhatsApp(customer.whatsapp, context),
+                  onTap: () => UrlLauncherUtils.launchWhatsApp(context, customer.whatsapp),
                 ),
                 _buildClickableDetailRow(
                   icon: Icons.location_on_outlined,
                   label: 'Endereço',
                   value: customer.address,
-                  onTap: () => launchMap(customer.address, context),
+                  onTap: () => UrlLauncherUtils.launchMap(context, customer.address),
                 ),
                 _buildDetailRow(
                   icon: Icons.notes_outlined,

@@ -14,6 +14,9 @@ import 'package:stock/presentation/pages/customer/form/customer_form_page.dart';
 
 import 'package:stock/presentation/pages/customer/list/customer_list_page.dart';
 import 'package:stock/presentation/pages/home/home_page.dart';
+import 'package:stock/presentation/pages/lives_sales/form/live_form_page.dart';
+import 'package:stock/presentation/pages/lives_sales/list/live_list_page.dart';
+import 'package:stock/presentation/pages/lives_sales/session/live_session_page.dart';
 import 'package:stock/presentation/pages/login/login_page.dart';
 import 'package:stock/presentation/pages/products/form/product_form_page.dart';
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_page.dart';
@@ -165,6 +168,32 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.login,
       builder: (context, state) => const LoginPage(),
+    ),
+    //LIVE SESSION
+    GoRoute(
+      path: AppRoutes.liveList,
+      name: 'liveList',
+      builder: (context, state) => const LiveListPage(),
+      routes: [
+// Rota aninhada para o formulário (acessível a partir da lista)
+        GoRoute(
+          path: 'new', // Corresponde a /live/new
+          name: 'liveForm',
+          builder: (context, state) => const LiveFormPage(),
+        ),
+// Rota aninhada para a sessão da live com parâmetro
+        GoRoute(
+          path: 'session/:liveId', // Corresponde a /live/session/123
+          name: 'liveSession',
+          builder: (context, state) {
+// Extrai o ID da live da URL
+            final liveId = state.pathParameters['liveId'];
+// TODO: No futuro, você passará o liveId para a LiveSessionPage
+// return LiveSessionPage(liveId: liveId);
+            return const LiveSessionPage();
+          },
+        ),
+      ],
     ),
   ],
 );

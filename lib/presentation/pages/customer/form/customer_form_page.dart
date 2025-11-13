@@ -29,6 +29,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
   final _whatsappController = TextEditingController();
   final _addressController = TextEditingController();
   final _notesController = TextEditingController();
+  final _instagramController = TextEditingController();
 
   bool _isWhatsAppSameAsPhone = false;
 
@@ -86,6 +87,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     _emailController.text = customer.email;
     _addressController.text = customer.address;
     _notesController.text = customer.notes;
+    _instagramController.text = customer.instagram;
 
     // Para campos COM máscara, use o método .formatEditUpdate() do formatador.
     // Isso atualiza o controlador e o estado interno do formatador, mantendo-os em sincronia.
@@ -120,6 +122,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     _whatsappController.dispose();
     _addressController.dispose();
     _notesController.dispose();
+    _instagramController.dispose();
     _viewModel.dispose();
     super.dispose();
   }
@@ -144,6 +147,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
         whatsapp: _isWhatsAppSameAsPhone ? cleanPhone : cleanWhatsApp,
         address: _addressController.text.trim(),
         notes: _notesController.text.trim(),
+        instagram: _instagramController.text.trim(),
       );
 
       if (isEditing) {
@@ -207,6 +211,22 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
                         labelText: 'Email',
                         icon: Icons.email,
                         keyboardType: TextInputType.emailAddress,
+                      ),
+                      TextFormField(
+                        controller: _instagramController,
+                        decoration: const InputDecoration(
+                          labelText: 'Instagram',
+                          hintText: '@usuario',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.alternate_email),
+                        ),
+                        // Opcional: Validação para garantir que começa com @
+                        validator: (value) {
+                          if (value != null && value.isNotEmpty && !value.startsWith('@')) {
+                            return 'O Instagram deve começar com @';
+                          }
+                          return null;
+                        },
                       ),
                       CustomTextFormField(
                         controller: _phoneController,

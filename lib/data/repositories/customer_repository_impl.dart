@@ -40,6 +40,7 @@ class CustomerRepositoryImpl implements ICustomerRepository {
       whatsapp: customer.whatsapp,
       address: customer.address,
       notes: customer.notes,
+      instagram: customer.instagram
     );
     await box.put(newCustomer.id, newCustomer);
   }
