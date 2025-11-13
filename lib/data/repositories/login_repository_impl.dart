@@ -22,4 +22,9 @@ class LoginRepositoryImpl implements ILoginRepository {
       password: password,
     );
   }
+
+  @override
+  Future<void> signOut() async {
+    await _firebaseAuth.signOut();
+  }
 }

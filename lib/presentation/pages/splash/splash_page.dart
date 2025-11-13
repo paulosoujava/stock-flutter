@@ -45,7 +45,7 @@ class _SplashScreenState extends State<SplashScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Image.asset('assets/logo.png', width: 100), // tua logo
+            Image.asset('images/logo.png', width: 100), // tua logo
             const SizedBox(height: 16),
             const CircularProgressIndicator(),
           ],

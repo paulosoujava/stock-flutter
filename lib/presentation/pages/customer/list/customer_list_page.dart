@@ -5,6 +5,7 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:stock/presentation/widgets/customer_card.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'customer_list_intent.dart';
 import 'customer_list_state.dart';
 import 'customer_list_viewmodel.dart';
@@ -45,7 +46,8 @@ class _CustomerListPageState extends State<CustomerListPage> {
   }
 
   Future<void> _navigateToEditCustomer(Customer customer) async {
-    final result = await context.push<bool>(AppRoutes.customerEdit, extra: customer);
+    final result =
+        await context.push<bool>(AppRoutes.customerEdit, extra: customer);
     if (result == true) {
       _viewModel.handleIntent(FetchCustomersIntent());
     }
@@ -55,7 +57,8 @@ class _CustomerListPageState extends State<CustomerListPage> {
     final confirmed = await showConfirmationDialog(
       context: context,
       title: 'Confirmar Exclusão',
-      content: 'Tem certeza de que deseja excluir o cliente "${customer.name}"?',
+      content:
+          'Tem certeza de que deseja excluir o cliente "${customer.name}"?',
       confirmText: 'Excluir',
     );
     if (confirmed == true && mounted) {
@@ -68,7 +71,9 @@ class _CustomerListPageState extends State<CustomerListPage> {
         _viewModel.handleIntent(FetchCustomersIntent());
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Falha ao excluir o cliente.'), backgroundColor: Colors.red),
+          const SnackBar(
+              content: Text('Falha ao excluir o cliente.'),
+              backgroundColor: Colors.red),
         );
       }
     }
@@ -79,37 +84,31 @@ class _CustomerListPageState extends State<CustomerListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Clientes'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-            tooltip: 'Adicionar Cliente',
-            onPressed: _navigateToCreateCustomer,
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          // BARRA DE PESQUISA
-          Padding(
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(70),
+          child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: TextFormField(
+            child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Pesquisar por nome ou CPF',
+                hintText: 'Pesquisar por nome ou CPF',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () => _searchController.clear(),
-                )
+                        icon: const Icon(Icons.clear),
+                        onPressed: () => _searchController.clear(),
+                      )
                     : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                border: OutlineInputBorder(),
+                filled: true,
+                fillColor: Colors.white,
               ),
             ),
           ),
-          // LISTA DE RESULTADOS
+        ),
+      ),
+      body: Column(
+        children: [
           Expanded(
             child: StreamBuilder<CustomerListState>(
               stream: _viewModel.state,
@@ -123,7 +122,8 @@ class _CustomerListPageState extends State<CustomerListPage> {
                   return Center(child: Text(state.message));
                 }
                 if (state is CustomerListSuccessState) {
-                  final customers = state.filteredCustomers; // Usa a lista já filtrada
+                  final customers =
+                      state.filteredCustomers; // Usa a lista já filtrada
 
                   if (customers.isEmpty) {
                     return Center(
@@ -152,6 +152,11 @@ class _CustomerListPageState extends State<CustomerListPage> {
             ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateToCreateCustomer,
+        tooltip: 'Adicionar Fornecedor',
+        child: const Icon(Icons.add),
       ),
     );
   }

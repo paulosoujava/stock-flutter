@@ -11,6 +11,11 @@
 	<key>com.apple.security.network.server</key>
 	<true/>
 	<key>keychain-access-groups</key>
-	<array/>
+	<array>
+		<string>$(AppIdentifierPrefix)&lt;key&gt;keychain-access-groups&lt;/key&gt;
+&lt;array&gt;
+    &lt;string&gt;$(AppIdentifierPrefix)com.your.bundle.id&lt;/string&gt;
+&lt;/array&gt;</string>
+	</array>
 </dict>
 </plist>

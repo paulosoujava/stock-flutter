@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:injectable/injectable.dart';
 import 'package:rxdart/rxdart.dart';
-import 'package:stock/domain/usecases/auth/sign_in_use_case.dart'; // 1. IMPORTE O NOVO USECASE
+import 'package:stock/domain/usecases/auth/sign_in_use_case.dart';
 import 'login_intent.dart';
 import 'login_state.dart';
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
+import 'package:stock/presentation/widgets/launch.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class CustomerCard extends StatelessWidget {
@@ -18,30 +19,6 @@ class CustomerCard extends StatelessWidget {
   static final _cpfFormatter = MaskTextInputFormatter(mask: '###.###.###-##');
   static final _phoneFormatter = MaskTextInputFormatter(mask: '(##) #####-####');
 
-  /// Abre o WhatsApp de forma otimizada para desktop e mobile.
-  Future<void> _launchWhatsApp(String phoneNumber, BuildContext context) async {
-    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-    final whatsappUrlApi = Uri.parse("https://wa.me/55$cleanPhone");
-
-    try {
-      if (await canLaunchUrl(whatsappUrlApi)) {
-        // LaunchMode.externalApplication é a melhor opção multiplataforma.
-        // No mobile, abre o app. No desktop, abre o navegador que então
-        // tentará abrir o app desktop, que é o comportamento esperado.
-        await launchUrl(whatsappUrlApi, mode: LaunchMode.externalApplication);
-      } else {
-        throw 'Não foi possível abrir o WhatsApp.';
-      }
-    } catch (e) {
-      // Mostra um feedback claro para o usuário caso algo dê errado.
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Erro ao abrir o WhatsApp: Verifique se está instalado.'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -124,12 +101,13 @@ class CustomerCard extends StatelessWidget {
                   icon: Icons.chat_bubble_outline,
                   label: 'WhatsApp',
                   value: _phoneFormatter.maskText(customer.whatsapp),
-                  onTap: () => _launchWhatsApp(customer.whatsapp, context),
+                  onTap: () => launchWhatsApp(customer.whatsapp, context),
                 ),
-                _buildDetailRow(
+                _buildClickableDetailRow(
                   icon: Icons.location_on_outlined,
                   label: 'Endereço',
                   value: customer.address,
+                  onTap: () => launchMap(customer.address, context),
                 ),
                 _buildDetailRow(
                   icon: Icons.notes_outlined,

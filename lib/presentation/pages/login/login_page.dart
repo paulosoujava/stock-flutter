@@ -170,6 +170,11 @@ class _LoginPageState extends State<LoginPage> {
                               style: ElevatedButton.styleFrom(
                                 padding:
                                 const EdgeInsets.symmetric(vertical: 26),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                backgroundColor: Theme.of(context).primaryColor,
+                                foregroundColor: Colors.white,
                               ),
                               child: const Text('ENTRAR'),
                             ),

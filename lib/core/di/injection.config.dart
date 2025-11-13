@@ -24,6 +24,7 @@ import 'package:stock/domain/repositories/isupplier_repository.dart' as _i291;
 import 'package:stock/domain/usecases/auth/get_current_user_use_case.dart'
     as _i723;
 import 'package:stock/domain/usecases/auth/sign_in_use_case.dart' as _i517;
+import 'package:stock/domain/usecases/auth/sign_out_use_case.dart' as _i149;
 import 'package:stock/domain/usecases/categories/add_category.dart' as _i337;
 import 'package:stock/domain/usecases/categories/delete_category.dart' as _i588;
 import 'package:stock/domain/usecases/categories/get_all_sales_use_case.dart'
@@ -167,14 +168,6 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i761.AddSupplier>(),
           gh<_i564.UpdateSupplier>(),
         ));
-    gh.lazySingleton<_i740.HomeViewModel>(
-      () => _i740.HomeViewModel(
-        gh<_i281.GetAllProductsUseCase>(),
-        gh<_i678.GetCategories>(),
-        gh<_i468.EventBus>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
     gh.lazySingleton<_i861.ReminderListViewModel>(
       () => _i861.ReminderListViewModel(
         gh<_i76.GetReminders>(),
@@ -241,6 +234,8 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i517.SignInUseCase>(
         () => _i517.SignInUseCase(gh<_i126.ILoginRepository>()));
+    gh.factory<_i149.SignOutUseCase>(
+        () => _i149.SignOutUseCase(gh<_i126.ILoginRepository>()));
     gh.factory<_i971.CategoryListViewModel>(() => _i971.CategoryListViewModel(
           gh<_i678.GetCategories>(),
           gh<_i588.DeleteCategory>(),
@@ -255,6 +250,15 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i270.UpdateReminder>(),
           gh<_i723.GetCurrentUserUseCase>(),
         ));
+    gh.lazySingleton<_i740.HomeViewModel>(
+      () => _i740.HomeViewModel(
+        gh<_i281.GetAllProductsUseCase>(),
+        gh<_i678.GetCategories>(),
+        gh<_i468.EventBus>(),
+        gh<_i149.SignOutUseCase>(),
+      ),
+      dispose: (i) => i.dispose(),
+    );
     gh.factory<_i183.LoginViewModel>(
         () => _i183.LoginViewModel(gh<_i517.SignInUseCase>()));
     return this;

@@ -52,15 +52,6 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Produtos por Categoria'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-            tooltip: 'Adicionar Novo Produto',
-            onPressed: () {
-               context.push(AppRoutes.productByCategory);
-            },
-          ),
-        ],
       ),
       body: StreamBuilder<ProductCategoryListState>(
         stream: _viewModel.state,
@@ -106,6 +97,13 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
 
           return const SizedBox.shrink();
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed:(){
+          context.push(AppRoutes.productByCategory);
+        },
+        tooltip: 'Adicionar categoria',
+        child: const Icon(Icons.add),
       ),
     );
   }

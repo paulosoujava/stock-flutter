@@ -41,22 +41,23 @@ Future<void> main() async {
     // É necessário aguardar a inicialização do gerenciador de janelas
     await windowManager.ensureInitialized();
 
-    // Opções da janela que você quer definir
-    WindowOptions windowOptions = const WindowOptions(
-      size: Size(900, 850),       // Define o tamanho inicial da janela
-      minimumSize: Size(800, 600), // Define o tamanho mínimo permitido
-      center: true,              // Centraliza a janela na tela
-      title: 'Meu App de Estoque', // Define o título da janela
+    const windowOptions = WindowOptions(
+      size: Size(1000, 850), // Tela um pouco maior
+      minimumSize: Size(850, 650),
+      center: true,
+      title: '📦 Meu App de Estoque',
+      titleBarStyle: TitleBarStyle.normal, // Pode ser hidden, hiddenInset, etc.
+      backgroundColor: Color(0xFF1E1E1E), // Fundo escuro elegante antes de carregar
+      skipTaskbar: false, // Exibe na barra de tarefas
+      fullScreen: false, // Começa em janela normal
     );
 
-    // Aguarda até que a janela esteja pronta para ser exibida e então aplica as opções
-    windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
+      await windowManager.setBrightness(Brightness.dark);
     });
   }
-
-
   //  Inicia o aplicativo.
   runApp(const MyApp());
 }

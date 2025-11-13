@@ -66,17 +66,10 @@ class _CategoryListPageState extends State<CategoryListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gerenciar Categorias'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-            onPressed: _navigateAndRefresh,
-            tooltip: 'Nova Categoria',
-          ),
-        ],
       ),
       body: StreamBuilder<CategoryListState>(
         stream: _viewModel.state,
@@ -137,6 +130,11 @@ class _CategoryListPageState extends State<CategoryListPage> {
           }
           return _buildEmptyState();
         },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _navigateAndRefresh,
+        tooltip: 'Adicionar categoria',
+        child: const Icon(Icons.add),
       ),
     );
   }

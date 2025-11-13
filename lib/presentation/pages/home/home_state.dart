@@ -27,3 +27,7 @@ class HomeErrorState extends HomeState {
 
   HomeErrorState({required this.errorMessage});
 }
+
+/// Usado no logout
+class HomeLogoutSuccessState extends HomeState {}
+

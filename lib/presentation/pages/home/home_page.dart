@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
@@ -21,6 +23,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final HomeViewModel _viewModel;
+  late final StreamSubscription _stateSubscription;
 
   // A lista de ações da grade é estática e pode ficar aqui.
   static const List<ActionItem> _actionItems = [
@@ -72,7 +75,24 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     _viewModel = getIt<HomeViewModel>();
+    _listenToStateChanges();
     _viewModel.handleIntent(LoadInitialDataIntent());
+  }
+
+  void _listenToStateChanges() {
+    _stateSubscription = _viewModel.state.listen((state) {
+      if (!mounted) return;
+      if (state is HomeLogoutSuccessState) {
+        context.go(AppRoutes.login);
+      } else if (state is HomeErrorState) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(state.errorMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    });
   }
 
   @override
@@ -101,7 +121,7 @@ class _HomePageState extends State<HomePage> {
             indicatorColor: Colors.white,
             indicatorWeight: 3.0,
             overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                  (Set<WidgetState> states) {
+              (Set<WidgetState> states) {
                 if (states.contains(WidgetState.pressed)) {
                   return Colors.white.withOpacity(0.2);
                 }
@@ -124,7 +144,7 @@ class _HomePageState extends State<HomePage> {
                 return _buildActionsTab(context, state);
               },
             ),
-            // 2. CORREÇÃO: Aba de Relatórios agora mostra a página de relatório
+            // 2 Aba de Relatórios agora mostra a página de relatório
             const SalesReportPage(),
           ],
         ),
@@ -205,8 +225,7 @@ class _HomePageState extends State<HomePage> {
       confirmText: 'Sair',
     );
     if (shouldLogoff == true) {
-      // TODO: Implementar a lógica de logoff e navegar.
-      print("Usuário confirmou o logoff.");
+      _viewModel.handleIntent(SignOutIntent());
     }
   }
 }
