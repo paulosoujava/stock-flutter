@@ -34,11 +34,15 @@ import 'package:stock/domain/usecases/categories/get_categories.dart' as _i678;
 import 'package:stock/domain/usecases/categories/update_category.dart' as _i460;
 import 'package:stock/domain/usecases/customers/add_customer.dart' as _i139;
 import 'package:stock/domain/usecases/customers/delete_customer.dart' as _i346;
+import 'package:stock/domain/usecases/customers/get_all_customers_use_case.dart'
+    as _i480;
 import 'package:stock/domain/usecases/customers/get_customers.dart' as _i152;
 import 'package:stock/domain/usecases/customers/update_customer.dart' as _i397;
 import 'package:stock/domain/usecases/live/delete_live_use_case.dart' as _i614;
 import 'package:stock/domain/usecases/live/get_all_lives_use_case.dart'
     as _i497;
+import 'package:stock/domain/usecases/live/get_live_by_id_use_case.dart'
+    as _i1023;
 import 'package:stock/domain/usecases/live/save_live_use_case.dart' as _i340;
 import 'package:stock/domain/usecases/live/start_live_use_case.dart' as _i908;
 import 'package:stock/domain/usecases/products/add_product.dart' as _i543;
@@ -74,6 +78,8 @@ import 'package:stock/presentation/pages/lives_sales/form/live_form_viewmodel.da
     as _i342;
 import 'package:stock/presentation/pages/lives_sales/list/live_list_viewmodel.dart'
     as _i904;
+import 'package:stock/presentation/pages/lives_sales/session/live_session_viewmodel.dart'
+    as _i573;
 import 'package:stock/presentation/pages/login/login_viewmodel.dart' as _i183;
 import 'package:stock/presentation/pages/products/form/product_form_viewmodel.dart'
     as _i3;
@@ -201,6 +207,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i139.AddCustomer(gh<_i64.ICustomerRepository>()));
     gh.factory<_i397.UpdateCustomer>(
         () => _i397.UpdateCustomer(gh<_i64.ICustomerRepository>()));
+    gh.factory<_i480.GetAllCustomersUseCase>(
+        () => _i480.GetAllCustomersUseCase(gh<_i64.ICustomerRepository>()));
     gh.factory<_i851.CategoryCreateViewModel>(
         () => _i851.CategoryCreateViewModel(
               gh<_i337.AddCategory>(),
@@ -228,6 +236,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i497.GetAllLivesUseCase(gh<_i1026.ILiveRepository>()));
     gh.factory<_i908.StartLiveUseCase>(
         () => _i908.StartLiveUseCase(gh<_i1026.ILiveRepository>()));
+    gh.factory<_i1023.GetLiveByIdUseCase>(
+        () => _i1023.GetLiveByIdUseCase(gh<_i1026.ILiveRepository>()));
     gh.lazySingleton<_i832.CustomerSelectionViewModel>(
       () => _i832.CustomerSelectionViewModel(gh<_i152.GetCustomers>()),
       dispose: (i) => i.dispose(),
@@ -268,6 +278,11 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i419.AddReminder>(),
           gh<_i270.UpdateReminder>(),
           gh<_i723.GetCurrentUserUseCase>(),
+        ));
+    gh.singleton<_i573.LiveSessionViewModel>(() => _i573.LiveSessionViewModel(
+          gh<_i1023.GetLiveByIdUseCase>(),
+          gh<_i281.GetAllProductsUseCase>(),
+          gh<_i480.GetAllCustomersUseCase>(),
         ));
     gh.factory<_i342.LiveFormViewModel>(() => _i342.LiveFormViewModel(
           gh<_i340.SaveLiveUseCase>(),

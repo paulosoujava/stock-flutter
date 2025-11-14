@@ -66,4 +66,11 @@ class CustomerRepositoryImpl implements ICustomerRepository {
     final box = await _openBox();
     await box.close();
   }
+
+  @override
+  Future<List<Customer>> getAllCustomers() async {
+    final box = await _openBox();
+    return box.values.toList();
+  }
+
 }
