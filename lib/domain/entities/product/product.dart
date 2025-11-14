@@ -4,7 +4,7 @@ part 'product.g.dart';
 
 /// Representa um produto no sistema de estoque.
 @HiveType(typeId: 2) // ID de tipo único para o Hive (Customer=0, Category=1)
-class Product {
+class Product  extends HiveObject{
   @HiveField(0)
   final String id;
 

@@ -113,7 +113,7 @@ class CustomerCard extends StatelessWidget {
                 _buildDetailRow(
                   icon: Icons.notes_outlined,
                   label: 'Notas',
-                  value: customer.notes,
+                  value: customer.notes ?? "",
                 ),
                 const SizedBox(height: 8),
               ],

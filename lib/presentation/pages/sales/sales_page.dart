@@ -213,9 +213,7 @@ class _SalesPageState extends State<SalesPage> {
                     title: const Text('Observação',
                         style: TextStyle(fontWeight: FontWeight.bold)),
                     subtitle: Text(
-                        customer.notes.isEmpty
-                            ? 'Nenhuma'
-                            : customer.notes,
+                        customer.notes ?? "",
                         style: theme.textTheme.bodyLarge),
                   ),
                 ],

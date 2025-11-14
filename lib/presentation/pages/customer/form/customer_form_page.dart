@@ -86,8 +86,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     _nameController.text = customer.name;
     _emailController.text = customer.email;
     _addressController.text = customer.address;
-    _notesController.text = customer.notes;
-    _instagramController.text = customer.instagram;
+    _notesController.text = customer.notes ?? "";
+    _instagramController.text = customer.instagram ?? "";
 
     // Para campos COM máscara, use o método .formatEditUpdate() do formatador.
     // Isso atualiza o controlador e o estado interno do formatador, mantendo-os em sincronia.
@@ -212,21 +212,10 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
                         icon: Icons.email,
                         keyboardType: TextInputType.emailAddress,
                       ),
-                      TextFormField(
+                      CustomTextFormField(
                         controller: _instagramController,
-                        decoration: const InputDecoration(
-                          labelText: 'Instagram',
-                          hintText: '@usuario',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.alternate_email),
-                        ),
-                        // Opcional: Validação para garantir que começa com @
-                        validator: (value) {
-                          if (value != null && value.isNotEmpty && !value.startsWith('@')) {
-                            return 'O Instagram deve começar com @';
-                          }
-                          return null;
-                        },
+                        labelText: 'Instagram',
+                        icon: Icons.alternate_email_rounded,
                       ),
                       CustomTextFormField(
                         controller: _phoneController,

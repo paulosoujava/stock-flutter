@@ -26,10 +26,10 @@ class Customer {
   final String address;
 
   @HiveField(7)
-  final String notes;
+  final String? notes;
 
   @HiveField(8)
-  final String instagram;
+  final String? instagram;
 
   Customer({
     required this.id,
@@ -39,8 +39,8 @@ class Customer {
     required this.phone,
     required this.whatsapp,
     required this.address,
-    required this.notes,
-    required this.instagram,
+     this.notes,
+     this.instagram,
   });
 }
     

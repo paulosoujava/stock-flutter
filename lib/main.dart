@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/category/category.dart';
+import 'package:stock/domain/entities/live/live.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/domain/entities/reminder/reminder.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
@@ -96,4 +97,6 @@ void _registerHiveAdapters() {
   Hive.registerAdapter(SaleItemAdapter());
   Hive.registerAdapter(SupplierAdapter());
   Hive.registerAdapter(ReminderAdapter());
+  Hive.registerAdapter(LiveAdapter());
+  Hive.registerAdapter(LiveStatusAdapter());
 }

@@ -1,4 +1,4 @@
-// lib/app/presentation/pages/customer/list/customer_list_viewmodel.dart
+
 
 import 'dart:async';
 
@@ -10,7 +10,7 @@ import 'package:injectable/injectable.dart';
 
 import 'customer_list_intent.dart';
 import 'customer_list_state.dart';
-import 'package:rxdart/rxdart.dart'; // Usaremos BehaviorSubject para facilitar
+import 'package:rxdart/rxdart.dart';
 
 @lazySingleton
 class CustomerListViewModel {

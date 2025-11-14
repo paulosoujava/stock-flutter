@@ -1,16 +1,37 @@
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
-import 'package:stock/presentation/widgets/url_launcher_utils.dart'; // <-- IMPORTANTE: Importar o seu utils
-
-/// Enum para representar o status da live.
-/// Colocado aqui para ser acessível por todos os widgets neste ficheiro.
-enum LiveStatus { scheduled, live, finished }
+import 'package:stock/domain/entities/live/live.dart';
+import 'package:stock/presentation/pages/lives_sales/list/live_list_intent.dart';
+import 'package:stock/presentation/pages/lives_sales/list/live_list_state.dart';
+import 'package:stock/presentation/pages/lives_sales/list/live_list_viewmodel.dart';
 
 /// A tela principal que lista todas as "Vendas em Live".
-class LiveListPage extends StatelessWidget {
+/// Agora é um StatefulWidget para gerir o ciclo de vida do ViewModel.
+class LiveListPage extends StatefulWidget {
   const LiveListPage({super.key});
+
+  @override
+  State<LiveListPage> createState() => _LiveListPageState();
+}
+
+class _LiveListPageState extends State<LiveListPage> {
+  late final LiveListViewModel _viewModel;
+
+  @override
+  void initState() {
+    super.initState();
+    _viewModel = getIt<LiveListViewModel>();
+    _viewModel.handleIntent(LoadLivesIntent());
+  }
+
+  @override
+  void dispose() {
+    _viewModel.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,44 +41,75 @@ class LiveListPage extends StatelessWidget {
         elevation: 0,
         centerTitle: false,
         title: const Text(
-            'Vendas em Live',
-            style: TextStyle(color: Colors.black),
-          textAlign: TextAlign.start,
+          'Vendas em Live',
+          style: TextStyle(color: Colors.black),
         ),
         actions: [
-          Container(
-            decoration: BoxDecoration(
-              color: Colors.red,
-              borderRadius: BorderRadius.circular(8),
-            ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
             child: TextButton.icon(
-              onPressed: () {
-                context.push(AppRoutes.liveForm);
+              onPressed: () async {
+                // Navega para o formulário e, quando voltar, recarrega a lista.
+                await context.push(AppRoutes.liveForm);
+                _viewModel.handleIntent(LoadLivesIntent());
               },
-              icon: const Icon(Icons.add_circle_outline, color: Colors.white),
-              label: const Text('NOVA LIVE', style: TextStyle(color: Colors.white)),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('NOVA LIVE'),
               style: TextButton.styleFrom(
-                // Adiciona um padding para um visual melhor
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).primaryColor,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
-          SizedBox(
-            width: 10,
-          )
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(8.0),
-        itemCount: 3, // Usaremos dados mocados (falsos) por enquanto
-        itemBuilder: (context, index) {
-          // Simula diferentes status para visualização
-          final statuses = [
-            LiveStatus.scheduled, // Primeira live estará agendada
-            LiveStatus.live, // Segunda estará acontecendo
-            LiveStatus.finished, // Terceira já finalizou
-          ];
-          return _LiveCard(status: statuses[index]);
+      // 4. Use um StreamBuilder para ouvir os estados do ViewModel.
+      body: StreamBuilder<LiveListState>(
+        stream: _viewModel.state,
+        builder: (context, snapshot) {
+          final state = snapshot.data;
+
+          // Estado de Carregamento
+          if (state is LiveListLoadingState) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Estado de Erro
+          if (state is LiveListErrorState) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  state.errorMessage,
+                  style: const TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            );
+          }
+
+          // Estado de Sucesso
+          if (state is LiveListSuccessState) {
+            if (state.lives.isEmpty) {
+              return const Center(
+                  child: Text('Nenhuma live encontrada. Crie uma nova!'));
+            }
+            // Constrói a lista de lives a partir dos dados recebidos.
+            return ListView.builder(
+              padding: const EdgeInsets.all(8.0),
+              itemCount: state.lives.length,
+              itemBuilder: (context, index) {
+                final live = state.lives[index];
+                return _LiveCard(live: live);
+              },
+            );
+          }
+
+          // Estado Inicial ou Nulo
+          return const Center(child: CircularProgressIndicator());
         },
       ),
     );
@@ -65,13 +117,14 @@ class LiveListPage extends StatelessWidget {
 }
 
 /// Widget privado que representa o card de uma única live na lista.
+/// Agora recebe a entidade `Live` completa.
 class _LiveCard extends StatelessWidget {
-  final LiveStatus status;
+  final Live live;
 
-  const _LiveCard({required this.status});
+  const _LiveCard({required this.live});
 
   /// Retorna a cor e o texto correspondente ao status da live.
-  (Color, String) _getStatusStyle() {
+  (Color, String) _getStatusStyle(LiveStatus status) {
     switch (status) {
       case LiveStatus.live:
         return (Colors.red, 'EM LIVE');
@@ -84,7 +137,7 @@ class _LiveCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (statusColor, statusText) = _getStatusStyle();
+    final (statusColor, statusText) = _getStatusStyle(live.status);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -98,10 +151,11 @@ class _LiveCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Flexible(
+                Flexible(
                   child: Text(
-                    'Live de Lançamento - Coleção Verão',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    live.title, // Usa o título da entidade
+                    style: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -122,80 +176,73 @@ class _LiveCard extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Descrição curta da live sobre os novos produtos de verão que chegaram.',
-              style: TextStyle(color: Colors.black54),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
+            if (live.description != null && live.description!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(
+                live.description!, // Usa a descrição da entidade
+                style: const TextStyle(color: Colors.black54),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
             const Divider(height: 24),
 
             // --- INFORMAÇÕES DE DATA E HORA ---
-            const Row(
+            Row(
               children: [
-                Icon(Icons.calendar_today, size: 14, color: Colors.grey),
-                SizedBox(width: 8),
-                Text('Início: 20/11/2025 às 19:00'),
+                const Icon(Icons.calendar_today, size: 14, color: Colors.grey),
+                const SizedBox(width: 8),
+                Text(
+                    'Início: ${live.startDateTime.day}/${live.startDateTime.month}/${live.startDateTime.year} às ${live.startDateTime.hour}:${live.startDateTime.minute.toString().padLeft(2, '0')}'),
               ],
             ),
-            const SizedBox(height: 4),
-            const Row(
-              children: [
-                Icon(Icons.watch_later_outlined, size: 14, color: Colors.grey),
-                SizedBox(width: 8),
-                Text('Fim: 20/11/2025 às 21:00'),
-              ],
-            ),
+
             const Divider(height: 24),
 
             // --- DADOS DA LIVE (Vendas, Compradores) ---
+            // (Estes dados ainda são mocados, serão preenchidos no futuro)
             const Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _InfoTile(
                     icon: Icons.monetization_on,
                     label: 'Valor Total',
-                    value: 'R\$ 1.250,75'),
+                    value: 'R\$ 0,00'),
                 _InfoTile(
                     icon: Icons.shopping_cart,
                     label: 'Itens Vendidos',
-                    value: '35'),
+                    value: '0'),
                 _InfoTile(
-                    icon: Icons.people, label: 'Compradores', value: '12'),
+                    icon: Icons.people, label: 'Compradores', value: '0'),
               ],
             ),
             const SizedBox(height: 16),
 
             // --- TÍTULO DA SEÇÃO DE COMPRADORES ---
-            Text(
-              "Compradores da Live",
-              style: Theme.of(context)
-                  .textTheme
-                  .titleMedium
-                  ?.copyWith(color: Colors.black54),
-            ),
-            const SizedBox(height: 8),
-
-            // --- EXEMPLOS DE COMPRADORES ---
-            _buildBuyerKnown(context), // Exemplo de cliente conhecido
-            _buildBuyerUnknown(context), // Exemplo de cliente desconhecido
+            // (A lógica de compradores será adicionada no futuro)
+            // Text(
+            //   "Compradores da Live",
+            //   style: Theme.of(context)
+            //       .textTheme
+            //       .titleMedium
+            //       ?.copyWith(color: Colors.black54),
+            // ),
+            // const SizedBox(height: 8),
+            // _buildBuyerKnown(context),
+            // _buildBuyerUnknown(context),
 
             // --- BOTÃO DE AÇÃO "INICIAR LIVE" ---
-            if (status == LiveStatus.scheduled)
+            if (live.status == LiveStatus.scheduled)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
                     onPressed: () {
-                      // ROTA 2: Navegar para a sessão da live
                       context.push(
                         GoRouter.of(context).namedLocation(
                           'liveSession',
-                          pathParameters: {
-                            'liveId': '123'
-                          }, // O ID virá do seu modelo de dados
+                          pathParameters: {'liveId': live.id},
                         ),
                       );
                     },
@@ -209,142 +256,6 @@ class _LiveCard extends StatelessWidget {
                   ),
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Exemplo visual para um cliente que JÁ ESTÁ na sua base de dados.
-  Widget _buildBuyerKnown(BuildContext context) {
-    // Dados mocados para o exemplo
-    const email = 'paulosoujava@gmail.com';
-    const phone = '(48) 99629-7813';
-    const address = 'Rua das Flores, 123, Centro, Florianópolis - SC';
-    const notes = 'Cliente VIP, prefere embalagem para presente.';
-
-    return Card(
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ExpansionTile(
-        leading: const Icon(Icons.person, color: Colors.blue),
-        title: const Text(
-          'Paulo Jorge', // Nome do cliente
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-        ),
-        subtitle: const Text('@paulo.jorge'), // @ do Instagram
-        children: [
-          Padding(
-            padding:
-            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _DetailRow(
-                  icon: Icons.email,
-                  text: email,
-                  onTap: () => UrlLauncherUtils.launchEmail(context, email),
-                ),
-                _DetailRow(icon: Icons.badge, text: '123.456.789-00'), // CPF não é clicável
-                _DetailRow(
-                  icon: Icons.phone,
-                  text: phone,
-                  onTap: () => UrlLauncherUtils.launchPhone(context, phone),
-                ),
-                _DetailRow(
-                  icon: Icons.chat_bubble,
-                  text: '$phone (WhatsApp)',
-                  onTap: () => UrlLauncherUtils.launchWhatsApp(context, phone),
-                ),
-                _DetailRow(
-                  icon: Icons.location_on,
-                  text: address,
-                  onTap: () => UrlLauncherUtils.launchMap(context, address),
-                ),
-                _DetailRow(icon: Icons.note, text: notes), // Notas não são clicáveis
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {
-                      // TODO: Navegar para a tela de edição do cliente
-                      // Ex: context.push('/customers/edit/clientId');
-                    },
-                    child: const Text('Ver/Editar Cadastro'),
-                  ),
-                )
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Exemplo visual para um comprador que NÃO ESTÁ na sua base de dados.
-  Widget _buildBuyerUnknown(BuildContext context) {
-    const instagramHandle = '@ana.dev';
-    return Card(
-      color: Colors.orange.shade50,
-      elevation: 1,
-      margin: const EdgeInsets.symmetric(vertical: 4),
-      child: ListTile(
-        leading: const Icon(Icons.person_add_alt_1, color: Colors.orange),
-        title: const Text(
-          'Comprador não cadastrado',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange),
-        ),
-        subtitle: const Text(instagramHandle),
-        trailing: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
-          ),
-          onPressed: () {
-            // ROTA: Navegar para a tela de cadastro, passando o @
-            context.push(
-              '${AppRoutes.customerCreate}?instagram=$instagramHandle',
-            );
-          },
-          child: const Text('Cadastrar'),
-        ),
-      ),
-    );
-  }
-}
-
-/// Widget auxiliar para as linhas de detalhes dentro do ExpansionTile,
-/// agora com suporte para ação de clique.
-class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final VoidCallback? onTap; // Ação de clique é opcional
-
-  const _DetailRow({required this.icon, required this.text, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final bool isClickable = onTap != null;
-    final Color textColor = isClickable ? Theme.of(context).primaryColor : Colors.black87;
-
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 10.0, top: 4.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, size: 16, color: Colors.grey.shade700),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: textColor,
-                  decoration: isClickable ? TextDecoration.underline : null,
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -368,8 +279,7 @@ class _InfoTile extends StatelessWidget {
         Icon(icon, color: Colors.grey.shade700),
         const SizedBox(height: 4),
         Text(value,
-            style:
-            const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
       ],
     );

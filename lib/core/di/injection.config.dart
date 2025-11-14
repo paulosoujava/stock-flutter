@@ -16,6 +16,7 @@ import 'package:stock/core/events/event_bus.dart' as _i468;
 import 'package:stock/data/repositories/login_repository_impl.dart' as _i700;
 import 'package:stock/domain/repositories/icategory_repository.dart' as _i836;
 import 'package:stock/domain/repositories/icustomer_repository.dart' as _i64;
+import 'package:stock/domain/repositories/ilive_repository.dart' as _i1026;
 import 'package:stock/domain/repositories/ilogin_repository.dart' as _i126;
 import 'package:stock/domain/repositories/iproduct_repository.dart' as _i741;
 import 'package:stock/domain/repositories/ireminder_repository.dart' as _i594;
@@ -35,6 +36,10 @@ import 'package:stock/domain/usecases/customers/add_customer.dart' as _i139;
 import 'package:stock/domain/usecases/customers/delete_customer.dart' as _i346;
 import 'package:stock/domain/usecases/customers/get_customers.dart' as _i152;
 import 'package:stock/domain/usecases/customers/update_customer.dart' as _i397;
+import 'package:stock/domain/usecases/live/delete_live_use_case.dart' as _i614;
+import 'package:stock/domain/usecases/live/get_all_lives_use_case.dart'
+    as _i497;
+import 'package:stock/domain/usecases/live/save_live_use_case.dart' as _i340;
 import 'package:stock/domain/usecases/products/add_product.dart' as _i543;
 import 'package:stock/domain/usecases/products/delete_product.dart' as _i847;
 import 'package:stock/domain/usecases/products/get_all_products_use_case.dart'
@@ -64,6 +69,10 @@ import 'package:stock/presentation/pages/customer/form/customer_form_viewmodel.d
 import 'package:stock/presentation/pages/customer/list/customer_list_viewmodel.dart'
     as _i348;
 import 'package:stock/presentation/pages/home/home_view_model.dart' as _i740;
+import 'package:stock/presentation/pages/lives_sales/form/live_form_viewmodel.dart'
+    as _i342;
+import 'package:stock/presentation/pages/lives_sales/list/live_list_viewmodel.dart'
+    as _i904;
 import 'package:stock/presentation/pages/login/login_viewmodel.dart' as _i183;
 import 'package:stock/presentation/pages/products/form/product_form_viewmodel.dart'
     as _i3;
@@ -111,6 +120,7 @@ extension GetItInjectableX on _i174.GetIt {
         () => dataModule.supplierRepository);
     gh.lazySingleton<_i594.IReminderRepository>(
         () => dataModule.reminderRepository);
+    gh.lazySingleton<_i1026.ILiveRepository>(() => dataModule.liveRepository);
     gh.lazySingleton<_i468.EventBus>(
       () => _i468.EventBus(),
       dispose: (i) => i.dispose(),
@@ -209,6 +219,12 @@ extension GetItInjectableX on _i174.GetIt {
               gh<_i678.GetCategories>(),
               gh<_i228.GetProductCountByCategory>(),
             ));
+    gh.factory<_i340.SaveLiveUseCase>(
+        () => _i340.SaveLiveUseCase(gh<_i1026.ILiveRepository>()));
+    gh.factory<_i614.DeleteLiveUseCase>(
+        () => _i614.DeleteLiveUseCase(gh<_i1026.ILiveRepository>()));
+    gh.factory<_i497.GetAllLivesUseCase>(
+        () => _i497.GetAllLivesUseCase(gh<_i1026.ILiveRepository>()));
     gh.lazySingleton<_i832.CustomerSelectionViewModel>(
       () => _i832.CustomerSelectionViewModel(gh<_i152.GetCustomers>()),
       dispose: (i) => i.dispose(),
@@ -232,6 +248,10 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
+    gh.factory<_i904.LiveListViewModel>(() => _i904.LiveListViewModel(
+          gh<_i497.GetAllLivesUseCase>(),
+          gh<_i614.DeleteLiveUseCase>(),
+        ));
     gh.factory<_i517.SignInUseCase>(
         () => _i517.SignInUseCase(gh<_i126.ILoginRepository>()));
     gh.factory<_i149.SignOutUseCase>(
@@ -249,6 +269,10 @@ extension GetItInjectableX on _i174.GetIt {
           gh<_i419.AddReminder>(),
           gh<_i270.UpdateReminder>(),
           gh<_i723.GetCurrentUserUseCase>(),
+        ));
+    gh.factory<_i342.LiveFormViewModel>(() => _i342.LiveFormViewModel(
+          gh<_i340.SaveLiveUseCase>(),
+          gh<_i281.GetAllProductsUseCase>(),
         ));
     gh.lazySingleton<_i740.HomeViewModel>(
       () => _i740.HomeViewModel(
