@@ -50,7 +50,7 @@ class CustomerCard extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         subtitle: Text(
-          _phoneFormatter.maskText(customer.phone),
+          customer.instagram ?? "",
           style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600),
         ),
         trailing: PopupMenuButton<String>(
@@ -91,6 +91,11 @@ class CustomerCard extends StatelessWidget {
                   icon: Icons.badge_outlined,
                   label: 'CPF',
                   value: _cpfFormatter.maskText(customer.cpf),
+                ),
+                _buildDetailRow(
+                  icon: Icons.phone,
+                  label: 'Telefone',
+                  value:  _phoneFormatter.maskText(customer.phone),
                 ),
                 _buildDetailRow(
                   icon: Icons.email_outlined,
