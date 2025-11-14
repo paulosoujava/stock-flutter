@@ -34,7 +34,15 @@ class LiveListViewModel {
     try {
       final lives = await _getAllLivesUseCase();
       // Ordena as lives, por exemplo, por data de início mais recente.
-      lives.sort((a, b) => b.startDateTime.compareTo(a.startDateTime));
+      lives.sort((a, b) {
+        // Se b não tem data, ele vai para o fim.
+        if (b.startDateTime == null) return -1;
+        // Se a não tem data, ele vai para o fim.
+        if (a.startDateTime == null) return 1;
+        // Se ambos têm data, compara normalmente.
+        return b.startDateTime!.compareTo(a.startDateTime!);
+      });
+
       _stateController.add(LiveListSuccessState(lives));
     } catch (e) {
       _stateController

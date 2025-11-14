@@ -46,35 +46,30 @@ class LiveFormViewModel {
   }
 
   void _addProduct(Product product) {
-    if (_currentState is! LiveFormReadyState) return;
-    final currentState = _currentState as LiveFormReadyState;
-    final currentProducts = List<Product>.from(currentState.tempProductsInLive);
+    if (currentState is! LiveFormReadyState) return;
+    final currentProducts = List<Product>.from((currentState as LiveFormReadyState).tempProductsInLive);
 
     if (!currentProducts.any((p) => p.id == product.id)) {
       currentProducts.add(product);
-      _currentState = currentState.copyWith(tempProductsInLive: currentProducts);
+      _currentState = (currentState as LiveFormReadyState).copyWith(tempProductsInLive: currentProducts);
       _stateController.add(_currentState);
     }
   }
 
   void _removeProduct(Product product) {
-    if (_currentState is! LiveFormReadyState) return;
-    final currentState = _currentState as LiveFormReadyState;
-    final currentProducts = List<Product>.from(currentState.tempProductsInLive);
+    if (currentState is! LiveFormReadyState) return;
+    final currentProducts = List<Product>.from((currentState as LiveFormReadyState).tempProductsInLive);
     currentProducts.removeWhere((p) => p.id == product.id);
-    _currentState = currentState.copyWith(tempProductsInLive: currentProducts);
+    _currentState = (currentState as LiveFormReadyState).copyWith(tempProductsInLive: currentProducts);
     _stateController.add(_currentState);
   }
 
   Future<void> _saveLive(SaveLiveIntent intent) async {
     try {
-      // Cria a entidade Live sem a lista de produtos...
       final liveToSave = Live(
         title: intent.title,
         description: intent.description,
-        startDateTime: intent.startDateTime,
       );
-      // ... e passa a lista de produtos separadamente.
       await _saveLiveUseCase(liveToSave, intent.productsInLive);
       _stateController.add(LiveFormSaveSuccessState());
     } catch (e) {
@@ -87,3 +82,4 @@ class LiveFormViewModel {
     _stateController.close();
   }
 }
+

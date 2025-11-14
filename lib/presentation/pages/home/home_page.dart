@@ -31,46 +31,53 @@ class _HomePageState extends State<HomePage> {
   static const List<ActionItem> _actionItems = [
     ActionItem(
       title: 'Clientes',
-      description: 'Cadastre, edite e visualize sua base de clientes.',
+      description:
+      'Cadastre, edite e visualize seus clientes de forma rápida e prática, mantendo sua base sempre organizada e atualizada.',
       icon: Icons.people_alt,
       iconColor: Colors.blue,
       route: AppRoutes.customerList,
     ),
     ActionItem(
       title: 'Categorias',
-      description: 'Gerencie as categorias dos seus produtos.',
+      description:
+      'Gerencie as categorias de seus produtos, organize seu estoque e facilite a navegação e busca de itens no seu sistema.',
       icon: Icons.category,
       iconColor: Colors.teal,
       route: AppRoutes.categoryList,
     ),
     ActionItem(
       title: 'Produtos',
-      description: 'Controle seu estoque, preços e categorias.',
+      description:
+      'Controle seu estoque, preços e categorias de produtos, garantindo um gerenciamento eficiente e preciso de suas mercadorias.',
       icon: Icons.inventory_2,
       iconColor: Colors.orange,
       route: AppRoutes.productByCategory,
     ),
     ActionItem(
       title: 'Vendas',
-      description: 'Registre novas vendas e consulte o histórico.',
+      description:
+      'Registre novas vendas, consulte o histórico de transações e mantenha o controle total das operações comerciais.',
       icon: Icons.point_of_sale,
       iconColor: Colors.green,
       route: AppRoutes.orderCreate,
     ),
     ActionItem(
       title: 'Fornecedores',
-      description: 'Registre os fornecedores.',
+      description:
+      'Cadastre e gerencie seus fornecedores, mantendo suas informações sempre organizadas para otimizar o processo de compra.',
       icon: Icons.recent_actors_outlined,
       iconColor: Colors.deepOrange,
       route: AppRoutes.supplierList,
     ),
     ActionItem(
       title: 'Lembretes',
-      description: 'Registre o que você não deve esquecer.',
+      description:
+      'Crie lembretes para não esquecer de tarefas importantes, como prazos e compromissos, e se mantenha organizado.',
       icon: Icons.today_outlined,
       iconColor: Colors.purple,
       route: AppRoutes.reminderList,
     ),
+
     /*ActionItem(
       title: 'Vendas em Live',
       description: 'Gerencie e conduza suas vendas ao vivo.',
@@ -137,7 +144,7 @@ class _HomePageState extends State<HomePage> {
             indicatorColor: Colors.green,
             indicatorWeight: 3.0,
             overlayColor: WidgetStateProperty.resolveWith<Color?>(
-              (Set<WidgetState> states) {
+                  (Set<WidgetState> states) {
                 if (states.contains(WidgetState.pressed)) {
                   return Colors.white.withOpacity(0.2);
                 }
@@ -174,6 +181,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildActionsTab(BuildContext context, HomeState? state) {
     return Column(
       children: [
+        // 🔔 Header: alertas e erros fora do scroll
         if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
@@ -181,59 +189,66 @@ class _HomePageState extends State<HomePage> {
               lowStockInfoList: state.lowStockInfo,
             ),
           ),
-        if (state is HomeLoadingState)
-          const Expanded(
-            child: Center(child: CircularProgressIndicator()),
-          ),
+
         if (state is HomeErrorState)
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(6.0),
             child: Text(
               state.errorMessage,
               style: const TextStyle(color: Colors.red, fontSize: 16),
               textAlign: TextAlign.center,
             ),
           ),
-        if (state is! HomeLoadingState)
+
+        // 🔄 Carregando (ocupa tudo exceto o footer)
+        if (state is HomeLoadingState)
+          const Expanded(
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else
+        // 🟦 Conteúdo principal scrollável
           Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16.0),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 16.0,
-                mainAxisSpacing: 16.0,
-                mainAxisExtent: 140,
+            child: SingleChildScrollView(
+              child: GridView.builder(
+                padding: const EdgeInsets.all(16.0),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 16.0,
+                  mainAxisSpacing: 16.0,
+                  mainAxisExtent: 140,
+                ),
+                itemCount: _actionItems.length,
+                itemBuilder: (context, index) {
+                  final item = _actionItems[index];
+
+                  VoidCallback onTapAction;
+                  if (item.title == 'Produtos' ||
+                      item.title == 'Categorias' ||
+                      item.title == 'Clientes' ||
+                      item.title == 'Vendas') {
+                    onTapAction = () async {
+                      await context.push(item.route);
+                      _viewModel.handleIntent(LoadInitialDataIntent());
+                    };
+                  } else {
+                    onTapAction = () => context.push(item.route);
+                  }
+
+                  return ActionCard(
+                    title: item.title,
+                    description: item.description,
+                    icon: item.icon,
+                    iconColor: item.iconColor,
+                    onTap: onTapAction,
+                  );
+                },
               ),
-              itemCount: _actionItems.length,
-              itemBuilder: (context, index) {
-                final item = _actionItems[index];
-
-                VoidCallback onTapAction;
-
-                if (item.title == 'Produtos' ||
-                    item.title == 'Categorias' ||
-                    item.title == 'Clientes' ||
-                    item.title == 'Vendas') {
-                  onTapAction = () async {
-                    await context.push(item.route);
-                    _viewModel.handleIntent(LoadInitialDataIntent());
-                  };
-                } else {
-                  onTapAction = () => context.push(item.route);
-                }
-
-                return ActionCard(
-                  title: item.title,
-                  description: item.description,
-                  icon: item.icon,
-                  iconColor: item.iconColor,
-                  onTap: onTapAction,
-                );
-              },
             ),
           ),
 
-        // ✅ Versionamento no final da tela
+        // 📌 FOOTER FIXO
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 12.0),
           child: Text(
@@ -247,6 +262,7 @@ class _HomePageState extends State<HomePage> {
         ),
       ],
     );
+
   }
 
 

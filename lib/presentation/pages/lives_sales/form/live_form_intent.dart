@@ -24,13 +24,11 @@ class RemoveProductFromLiveIntent extends LiveFormIntent {
 class SaveLiveIntent extends LiveFormIntent {
   final String title;
   final String? description;
-  final DateTime startDateTime;
   final List<Product> productsInLive;
 
   SaveLiveIntent({
     required this.title,
     this.description,
-    required this.startDateTime,
     required this.productsInLive,
   });
 }

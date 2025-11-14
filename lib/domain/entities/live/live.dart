@@ -23,7 +23,7 @@ class Live extends HiveObject {
   @HiveField(2)
   final String? description;
   @HiveField(3)
-  final DateTime startDateTime;
+  final DateTime? startDateTime;
   @HiveField(4)
   DateTime? endDateTime;
   @HiveField(5)
@@ -35,7 +35,7 @@ class Live extends HiveObject {
   Live({
     required this.title,
     this.description,
-    required this.startDateTime,
+    this.startDateTime,
     this.endDateTime,
   }) {
     status = LiveStatus.scheduled;

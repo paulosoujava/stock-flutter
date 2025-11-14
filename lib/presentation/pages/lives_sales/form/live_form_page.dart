@@ -19,8 +19,6 @@ class _LiveFormPageState extends State<LiveFormPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _startDateController = TextEditingController();
-  final _startTimeController = TextEditingController();
 
   late final LiveFormViewModel _viewModel;
   DateTime? _startDateTime;
@@ -54,8 +52,6 @@ class _LiveFormPageState extends State<LiveFormPage> {
     _viewModel.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
-    _startDateController.dispose();
-    _startTimeController.dispose();
     super.dispose();
   }
 
@@ -140,16 +136,7 @@ class _LiveFormPageState extends State<LiveFormPage> {
 
   void _saveLive() {
     if (_formKey.currentState?.validate() ?? false) {
-      if (_startDateTime == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Por favor, selecione a data e hora de início.'),
-              backgroundColor: Colors.orange),
-        );
-        return;
-      }
 
-      // AQUI ESTÁ A SEGUNDA CORREÇÃO:
       final currentProductsInLive = (_viewModel.currentState as LiveFormReadyState).tempProductsInLive;
 
       if (currentProductsInLive.isEmpty) {
@@ -164,7 +151,6 @@ class _LiveFormPageState extends State<LiveFormPage> {
       _viewModel.handleIntent(SaveLiveIntent(
         title: _titleController.text,
         description: _descriptionController.text,
-        startDateTime: _startDateTime!,
         productsInLive: currentProductsInLive,
       ));
     }
@@ -192,35 +178,6 @@ class _LiveFormPageState extends State<LiveFormPage> {
           maxLines: 3,
         ),
         const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _startDateController,
-                decoration: const InputDecoration(
-                    labelText: 'Data de Início',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.calendar_today)),
-                readOnly: true,
-                onTap: _pickStartDate,
-                validator: (value) => (value?.isEmpty ?? true) ? 'Selecione uma data' : null,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _startTimeController,
-                decoration: const InputDecoration(
-                    labelText: 'Hora de Início',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.access_time)),
-                readOnly: true,
-                onTap: _pickStartTime,
-                validator: (value) => (value?.isEmpty ?? true) ? 'Selecione uma hora' : null,
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }
@@ -313,38 +270,4 @@ class _LiveFormPageState extends State<LiveFormPage> {
     );
   }
 
-  Future<void> _pickStartDate() async {
-    final DateTime? pickedDate = await showDatePicker(
-        context: context,
-        initialDate: _startDateTime ?? DateTime.now(),
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2101));
-    if (pickedDate != null) {
-      final currentTime = _startDateTime ?? DateTime.now();
-      setState(() {
-        _startDateTime = DateTime(pickedDate.year, pickedDate.month,
-            pickedDate.day, currentTime.hour, currentTime.minute);
-        _startDateController.text =
-            DateFormat('dd/MM/yyyy').format(_startDateTime!);
-      });
-    }
-  }
-
-  Future<void> _pickStartTime() async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.fromDateTime(_startDateTime ?? DateTime.now()));
-    if (pickedTime != null) {
-      final datePart = _startDateTime ?? DateTime.now();
-      setState(() {
-        _startDateTime = DateTime(datePart.year, datePart.month, datePart.day,
-            pickedTime.hour, pickedTime.minute);
-        _startTimeController.text = pickedTime.format(context);
-        if (_startDateController.text.isEmpty) {
-          _startDateController.text =
-              DateFormat('dd/MM/yyyy').format(_startDateTime!);
-        }
-      });
-    }
-  }
 }
