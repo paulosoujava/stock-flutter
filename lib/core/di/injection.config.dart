@@ -251,6 +251,7 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i904.LiveListViewModel>(() => _i904.LiveListViewModel(
           gh<_i497.GetAllLivesUseCase>(),
           gh<_i614.DeleteLiveUseCase>(),
+          gh<_i468.EventBus>(),
         ));
     gh.factory<_i517.SignInUseCase>(
         () => _i517.SignInUseCase(gh<_i126.ILoginRepository>()));

@@ -9,6 +9,17 @@ class ProductUpdatedEvent extends AppEvent {}// Você pode adicionar outros even
 // class CategoryUpdatedEvent extends AppEvent {}
 // class CustomerUpdatedEvent extends AppEvent {}
 
+/// Um evento genérico que pode ser usado para outras listas no futuro.
+/// Ou um evento específico como `class LiveListChangedEvent {}`
+class ListChangedEvent extends AppEvent{
+  final Type entityType;
+  ListChangedEvent(this.entityType);
+  @override
+  String toString() {
+    return 'ListChangedEvent para a entidade: $entityType';
+  }
+}
+
 @lazySingleton
 class EventBus {
   // Usamos um StreamController.broadcast para permitir múltiplos ouvintes.

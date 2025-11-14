@@ -19,7 +19,7 @@ class LiveAdapter extends TypeAdapter<Live> {
     return Live(
       title: fields[1] as String,
       description: fields[2] as String?,
-      startDateTime: fields[3] as DateTime,
+      startDateTime: fields[3] as DateTime?,
       endDateTime: fields[4] as DateTime?,
     )
       ..id = fields[0] as String

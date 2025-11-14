@@ -1,23 +1,28 @@
-
 import 'dart:async';
 import 'package:injectable/injectable.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:stock/core/events/event_bus.dart';
+import 'package:stock/domain/entities/live/live.dart';
 import 'package:stock/domain/usecases/live/delete_live_use_case.dart';
 import 'package:stock/domain/usecases/live/get_all_lives_use_case.dart';
 import 'package:stock/presentation/pages/lives_sales/list/live_list_intent.dart';
 import 'package:stock/presentation/pages/lives_sales/list/live_list_state.dart';
 
-
 @injectable
 class LiveListViewModel {
   final GetAllLivesUseCase _getAllLivesUseCase;
   final DeleteLiveUseCase _deleteLiveUseCase;
+  final EventBus _eventBus;
 
-  // Controller para gerir e emitir os estados para a View.
-  final StreamController<LiveListState> _stateController =
-  StreamController.broadcast();
-  Stream<LiveListState> get state => _stateController.stream;
+  final _stateSubject = BehaviorSubject<LiveListState>();
 
-  LiveListViewModel(this._getAllLivesUseCase, this._deleteLiveUseCase);
+  Stream<LiveListState> get state => _stateSubject.stream;
+
+  LiveListViewModel(
+    this._getAllLivesUseCase,
+    this._deleteLiveUseCase,
+    this._eventBus,
+  );
 
   /// Ponto de entrada para qualquer ação vinda da View.
   void handleIntent(LiveListIntent intent) {
@@ -30,7 +35,7 @@ class LiveListViewModel {
 
   /// Carrega a lista de lives do repositório.
   Future<void> _loadLives() async {
-    _stateController.add(LiveListLoadingState());
+    _stateSubject.add(LiveListLoadingState());
     try {
       final lives = await _getAllLivesUseCase();
       // Ordena as lives, por exemplo, por data de início mais recente.
@@ -43,10 +48,9 @@ class LiveListViewModel {
         return b.startDateTime!.compareTo(a.startDateTime!);
       });
 
-      _stateController.add(LiveListSuccessState(lives));
+      _stateSubject.add(LiveListSuccessState(lives));
     } catch (e) {
-      _stateController
-          .add(LiveListErrorState('Falha ao carregar as lives: $e'));
+      _stateSubject.add(LiveListErrorState('Falha ao carregar as lives: $e'));
     }
   }
 
@@ -56,16 +60,17 @@ class LiveListViewModel {
       await _deleteLiveUseCase(liveId);
       // Após deletar com sucesso, recarrega a lista para refletir a mudança.
       _loadLives();
+      // E dispara um evento para notificar outras partes da aplicação (como a HomePage)
+      _eventBus.fire(ListChangedEvent(Live));
     } catch (e) {
       // Em caso de erro ao deletar, emita um estado de erro.
       // A lista original não será alterada.
-      _stateController
-          .add(LiveListErrorState('Falha ao deletar a live: $e'));
+      _stateSubject.add(LiveListErrorState('Falha ao deletar a live: $e'));
     }
   }
 
   /// Fecha o StreamController para evitar memory leaks.
   void dispose() {
-    _stateController.close();
+    _stateSubject.close();
   }
 }

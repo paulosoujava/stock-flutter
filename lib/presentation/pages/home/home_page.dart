@@ -3,11 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
+import 'package:stock/core/events/event_bus.dart';
 import 'package:stock/core/navigation/app_routes.dart';
+import 'package:stock/domain/entities/live/live.dart';
 import 'package:stock/presentation/pages/home/home_intent.dart';
 import 'package:stock/presentation/pages/home/home_state.dart';
 import 'package:stock/presentation/pages/home/home_view_model.dart';
+import 'package:stock/presentation/pages/lives_sales/list/live_list_intent.dart';
 import 'package:stock/presentation/pages/lives_sales/list/live_list_page.dart';
+import 'package:stock/presentation/pages/lives_sales/list/live_list_viewmodel.dart';
 import 'package:stock/presentation/pages/sales/report/sales_report_page.dart';
 
 import 'package:stock/presentation/widgets/action_card.dart';
@@ -25,7 +29,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   late final HomeViewModel _viewModel;
-  late final StreamSubscription _stateSubscription;
+  late final StreamSubscription<HomeState> _stateSubscription;
+
 
   // A lista de ações da grade é estática e pode ficar aqui.
   static const List<ActionItem> _actionItems = [
@@ -113,6 +118,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _stateSubscription.cancel();
     _viewModel.dispose();
     super.dispose();
   }
