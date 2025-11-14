@@ -19,9 +19,8 @@ class LiveListPage extends StatefulWidget {
 class _LiveListPageState extends State<LiveListPage> {
   late final LiveListViewModel _viewModel;
   late final StreamSubscription _eventSubscription;
+  late final StreamSubscription _stateSubscription;
   late final EventBus _eventBus;
-  // Garantimos que a página seja mantida em memória, mas controlamos as atualizações.
-
 
   @override
   void initState() {
@@ -30,27 +29,57 @@ class _LiveListPageState extends State<LiveListPage> {
     _viewModel.handleIntent(LoadLivesIntent());
     _eventBus = getIt<EventBus>();
     _listenToEvents();
+    _listenToNavigation();
   }
 
   void _listenToEvents() {
-    debugPrint("[LIVELIST_PAGE_LOG] Página de Lives está a ouvir o EventBus...");
+    debugPrint(
+        "[LIVELIST_PAGE_LOG] Página de Lives está a ouvir o EventBus...");
     _eventSubscription = _eventBus.stream.listen((event) {
-      debugPrint("[LIVELIST_PAGE_LOG] Página de Lives recebeu um evento: ${event.toString()}");
+      debugPrint(
+          "[LIVELIST_PAGE_LOG] Página de Lives recebeu um evento: ${event.toString()}");
       if (event is ListChangedEvent && event.entityType == Live) {
-        debugPrint("[LIVELIST_PAGE_LOG] Evento de alteração de Lives detectado. Chamando o ViewModel para recarregar.");
+        debugPrint(
+            "[LIVELIST_PAGE_LOG] Evento de alteração de Lives detectado. Chamando o ViewModel para recarregar.");
         _viewModel.handleIntent(LoadLivesIntent());
+      } else if (event is ShowAlertDialogEvent) {
+        // AQUI ESTÁ A LÓGICA CORRETA: A View reage ao evento para mostrar o diálogo
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(event.title),
+            content: Text(event.message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
+    });
+  }
+
+  void _listenToNavigation() {
+    _stateSubscription = _viewModel.state.listen((state) {
+      if (state is NavigateToLiveSessionState) {
+        context.pushNamed(
+          AppRoutes.liveSession,
+          pathParameters: {'liveId': state.liveId},
+        );
       }
     });
   }
 
   @override
   void dispose() {
-    debugPrint("[LIVELIST_PAGE_LOG] Removendo subscrição do EventBus da página de Lives.");
+    debugPrint(
+        "[LIVELIST_PAGE_LOG] Removendo subscrição do EventBus da página de Lives.");
     _eventSubscription.cancel();
     _viewModel.dispose();
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -111,13 +140,17 @@ class _LiveListPageState extends State<LiveListPage> {
               return const Center(
                   child: Text('Nenhuma live encontrada. Crie uma nova!'));
             }
-            return ListView.builder(
-              padding: const EdgeInsets.all(8.0),
-              itemCount: state.lives.length,
-              itemBuilder: (context, index) {
-                final live = state.lives[index];
-                return _LiveCard(live: live);
-              },
+            return Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ListView.builder(
+                padding: const EdgeInsets.all(8.0),
+                itemCount: state.lives.length,
+                itemBuilder: (context, index) {
+                  final live = state.lives[index];
+                  return _LiveCard(live: live);
+                },
+              ),
             );
           }
 
@@ -131,6 +164,7 @@ class _LiveListPageState extends State<LiveListPage> {
 // O _LiveCard agora é um StatefulWidget para gerir o seu estado de expansão.
 class _LiveCard extends StatefulWidget {
   final Live live;
+
   const _LiveCard({required this.live});
 
   @override
@@ -179,20 +213,67 @@ class _LiveCardState extends State<_LiveCard> {
     );
   }
 
+  void _showStartConfirmationDialog(BuildContext context, Live live) {
+    final viewModel = getIt<LiveListViewModel>();
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Atenção'),
+          content: const Text(
+              'Você deseja iniciar a live? Ao iniciar, não será possível deletar esta live. Deseja continuar?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Não'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Sim', style: TextStyle(color: Colors.green)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                viewModel.handleIntent(StartLiveIntent(live));
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final (statusColor, statusText) = _getStatusStyle(widget.live.status);
-
     // Usamos um Card que envolve um ExpansionTile para obter o comportamento desejado.
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       elevation: 2.0,
       child: ExpansionTile(
         // O título do ExpansionTile mostra as informações principais
-        title: Text(
-          widget.live.title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          overflow: TextOverflow.ellipsis,
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                statusText,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 10),
+              ),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              widget.live.title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
         subtitle: Row(
           children: [
@@ -203,18 +284,7 @@ class _LiveCardState extends State<_LiveCard> {
               ),
           ],
         ),
-        leading: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: statusColor,
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            statusText,
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
-          ),
-        ),
+
         // O ícone de expandir/contrair é adicionado automaticamente pelo ExpansionTile
         // Os detalhes da live agora ficam dentro do 'children' do ExpansionTile
         children: [
@@ -231,7 +301,7 @@ class _LiveCardState extends State<_LiveCard> {
                     style: const TextStyle(color: Colors.black54),
                   ),
                 ],
-                const Divider(height: 24),
+
                 // As datas completas são mostradas quando expandido
                 if (widget.live.startDateTime != null)
                   Padding(
@@ -256,7 +326,10 @@ class _LiveCardState extends State<_LiveCard> {
                           'Fim: ${widget.live.endDateTime!.day}/${widget.live.endDateTime!.month}/${widget.live.endDateTime!.year} às ${widget.live.endDateTime!.hour}:${widget.live.endDateTime!.minute.toString().padLeft(2, '0')}'),
                     ],
                   ),
-                const Divider(height: 24),
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: const Divider(height: 24),
+                ),
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
@@ -274,6 +347,7 @@ class _LiveCardState extends State<_LiveCard> {
                 ),
                 const SizedBox(height: 16),
                 const Divider(),
+
                 if (widget.live.status == LiveStatus.scheduled)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -292,8 +366,7 @@ class _LiveCardState extends State<_LiveCard> {
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.red,
                               foregroundColor: Colors.white,
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
@@ -304,20 +377,43 @@ class _LiveCardState extends State<_LiveCard> {
                           width: 150,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              context.push(
-                                GoRouter.of(context).namedLocation(
-                                  'liveSession',
-                                  pathParameters: {'liveId': widget.live.id},
-                                ),
-                              );
+                              _showStartConfirmationDialog(
+                                  context, widget.live);
                             },
                             icon: const Icon(Icons.play_circle_fill),
                             label: const Text('INICIAR'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.green,
                               foregroundColor: Colors.white,
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                if (widget.live.status == LiveStatus.live)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(top: 16.0),
+                        child: SizedBox(
+                          width: 150,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              context.push(
+                                AppRoutes.liveSession,
+                                // Reutiliza a mesma rota/tela do formulário
+                                extra: widget.live.id,
+                              );
+                            },
+                            icon: const Icon(Icons.live_tv),
+                            label: const Text('IR PARA LIVE'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                             ),
                           ),
                         ),
@@ -344,6 +440,8 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(icon, color: Colors.grey.shade700),
         const SizedBox(height: 4),

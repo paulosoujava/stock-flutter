@@ -25,6 +25,6 @@ class AppRoutes {
   static const String reminderCreate = '/reminder-create';
 
   static const String liveList = '/live';
-  static const String liveForm = '/live/new';
-  static const String liveSession = '/live/session/:liveId';
+  static const String liveForm = '/live-form';
+  static const String liveSession = '/live-session';
 }

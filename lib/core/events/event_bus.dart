@@ -20,6 +20,14 @@ class ListChangedEvent extends AppEvent{
   }
 }
 
+
+class ShowAlertDialogEvent extends AppEvent {
+  final String title;
+  final String message;
+  ShowAlertDialogEvent({required this.title, required this.message});
+}
+
+
 @lazySingleton
 class EventBus {
   // Usamos um StreamController.broadcast para permitir múltiplos ouvintes.

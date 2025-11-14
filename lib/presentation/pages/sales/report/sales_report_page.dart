@@ -23,7 +23,6 @@ class _SalesReportPageState extends State<SalesReportPage> {
   void initState() {
     super.initState();
     _viewModel = getIt<SalesReportViewModel>();
-    // A sua lógica de carregamento de dados aqui
   }
 
   String _getMonthName(int month) {

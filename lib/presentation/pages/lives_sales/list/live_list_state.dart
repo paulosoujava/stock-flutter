@@ -25,3 +25,9 @@ class LiveListErrorState extends LiveListState {
 
   LiveListErrorState(this.errorMessage);
 }
+
+class NavigateToLiveSessionState extends LiveListState {
+  final String liveId;
+  NavigateToLiveSessionState(this.liveId);
+}
+

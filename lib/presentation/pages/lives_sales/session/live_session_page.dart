@@ -1,8 +1,7 @@
-// Ficheiro: lib/presentation/pages/live_sales/session/live_session_page.dart
 import 'package:flutter/material.dart';
 
 class LiveSessionPage extends StatefulWidget {
-  const LiveSessionPage({super.key});
+  const LiveSessionPage({super.key, String? liveId});
 
   @override
   State<LiveSessionPage> createState() => _LiveSessionPageState();

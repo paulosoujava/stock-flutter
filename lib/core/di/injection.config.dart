@@ -40,6 +40,7 @@ import 'package:stock/domain/usecases/live/delete_live_use_case.dart' as _i614;
 import 'package:stock/domain/usecases/live/get_all_lives_use_case.dart'
     as _i497;
 import 'package:stock/domain/usecases/live/save_live_use_case.dart' as _i340;
+import 'package:stock/domain/usecases/live/start_live_use_case.dart' as _i908;
 import 'package:stock/domain/usecases/products/add_product.dart' as _i543;
 import 'package:stock/domain/usecases/products/delete_product.dart' as _i847;
 import 'package:stock/domain/usecases/products/get_all_products_use_case.dart'
@@ -225,6 +226,8 @@ extension GetItInjectableX on _i174.GetIt {
         () => _i614.DeleteLiveUseCase(gh<_i1026.ILiveRepository>()));
     gh.factory<_i497.GetAllLivesUseCase>(
         () => _i497.GetAllLivesUseCase(gh<_i1026.ILiveRepository>()));
+    gh.factory<_i908.StartLiveUseCase>(
+        () => _i908.StartLiveUseCase(gh<_i1026.ILiveRepository>()));
     gh.lazySingleton<_i832.CustomerSelectionViewModel>(
       () => _i832.CustomerSelectionViewModel(gh<_i152.GetCustomers>()),
       dispose: (i) => i.dispose(),
@@ -248,11 +251,6 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
-    gh.factory<_i904.LiveListViewModel>(() => _i904.LiveListViewModel(
-          gh<_i497.GetAllLivesUseCase>(),
-          gh<_i614.DeleteLiveUseCase>(),
-          gh<_i468.EventBus>(),
-        ));
     gh.factory<_i517.SignInUseCase>(
         () => _i517.SignInUseCase(gh<_i126.ILoginRepository>()));
     gh.factory<_i149.SignOutUseCase>(
@@ -284,6 +282,12 @@ extension GetItInjectableX on _i174.GetIt {
       ),
       dispose: (i) => i.dispose(),
     );
+    gh.factory<_i904.LiveListViewModel>(() => _i904.LiveListViewModel(
+          gh<_i497.GetAllLivesUseCase>(),
+          gh<_i614.DeleteLiveUseCase>(),
+          gh<_i468.EventBus>(),
+          gh<_i908.StartLiveUseCase>(),
+        ));
     gh.factory<_i183.LoginViewModel>(
         () => _i183.LoginViewModel(gh<_i517.SignInUseCase>()));
     return this;

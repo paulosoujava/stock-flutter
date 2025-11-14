@@ -1,3 +1,5 @@
+import 'package:stock/domain/entities/live/live.dart';
+
 /// Define a intenção base para a tela de listagem de lives.
 abstract class LiveListIntent {}
 
@@ -9,4 +11,10 @@ class DeleteLiveIntent extends LiveListIntent {
   final String liveId;
 
   DeleteLiveIntent(this.liveId);
+}
+
+/// Intenção de iniciar uma live específica, mudando seu status.
+class StartLiveIntent extends LiveListIntent {
+  final Live live;
+  StartLiveIntent(this.live);
 }

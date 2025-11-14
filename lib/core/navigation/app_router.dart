@@ -1,4 +1,3 @@
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +49,6 @@ final appRouter = GoRouter(
     // Em todos os outros casos, não faça nada (deixe o usuário ir para onde ele quer).
     return null;
   },
-
   routes: [
     GoRoute(
       path: AppRoutes.home,
@@ -124,15 +122,16 @@ final appRouter = GoRouter(
       },
     ),
     GoRoute(
-        path: AppRoutes.productList,
-        builder: (context, state) {
-          final categoryToShow = state.extra as Category?;
-          if (categoryToShow != null) {
-            return ProductListPage(category: categoryToShow);
-          }
-          return const ErrorRoutePage(
-              errorMessage: 'Erro: Categoria não encontrada.');
-        }),
+      path: AppRoutes.productList,
+      builder: (context, state) {
+        final categoryToShow = state.extra as Category?;
+        if (categoryToShow != null) {
+          return ProductListPage(category: categoryToShow);
+        }
+        return const ErrorRoutePage(
+            errorMessage: 'Erro: Categoria não encontrada.');
+      },
+    ),
 
     //ORDER
     GoRoute(
@@ -174,26 +173,22 @@ final appRouter = GoRouter(
       path: AppRoutes.liveList,
       name: 'liveList',
       builder: (context, state) => const LiveListPage(),
-      routes: [
-// Rota aninhada para o formulário (acessível a partir da lista)
-        GoRoute(
-          path: 'new', // Corresponde a /live/new
-          name: 'liveForm',
-          builder: (context, state) => const LiveFormPage(),
-        ),
-// Rota aninhada para a sessão da live com parâmetro
-        GoRoute(
-          path: 'session/:liveId', // Corresponde a /live/session/123
-          name: 'liveSession',
-          builder: (context, state) {
-// Extrai o ID da live da URL
-            final liveId = state.pathParameters['liveId'];
-// TODO: No futuro, você passará o liveId para a LiveSessionPage
-// return LiveSessionPage(liveId: liveId);
-            return const LiveSessionPage();
-          },
-        ),
-      ],
+    ),
+
+    GoRoute(
+      path: AppRoutes.liveForm,
+      builder: (context, state) => const LiveFormPage(),
+    ),
+    GoRoute(
+      path: AppRoutes.liveSession,
+      builder: (context, state) {
+        final liveId = state.extra as String?;
+        if (liveId != null) {
+          return LiveSessionPage(liveId: liveId);
+        }
+        return const ErrorRoutePage(
+            errorMessage: 'Erro: Categoria não encontrada.');
+      },
     ),
   ],
 );
