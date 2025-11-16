@@ -35,7 +35,7 @@ class ProductFormViewModel {
     try {
       await _addProduct(product);
       _stateController.add(ProductFormSuccess());
-
+      _eventBus.fire(ProductEvent());
     } catch (e) {
       _stateController.add(ProductFormError('Erro ao salvar produto: ${e.toString()}'));
     }
@@ -46,7 +46,7 @@ class ProductFormViewModel {
     try {
       await _updateProduct(product);
       _stateController.add(ProductFormSuccess());
-      _eventBus.fire(ProductUpdatedEvent());
+      _eventBus.fire(ProductEvent());
     } catch (e) {
       _stateController.add(ProductFormError('Erro ao atualizar produto: ${e.toString()}'));
     }

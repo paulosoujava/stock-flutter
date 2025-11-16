@@ -6,6 +6,7 @@ import 'package:badges/badges.dart' as badges;
 import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/presentation/widgets/category_card.dart';
 
+import '../../../../../core/di/app_module.dart';
 import 'product_category_list_intent.dart';
 import 'product_category_list_state.dart';
 import 'product_category_list_viewmodel.dart';

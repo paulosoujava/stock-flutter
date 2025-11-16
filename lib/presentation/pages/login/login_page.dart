@@ -7,6 +7,8 @@ import 'package:stock/presentation/pages/login/login_intent.dart';
 import 'package:stock/presentation/pages/login/login_state.dart';
 import 'package:stock/presentation/pages/login/login_viewmodel.dart';
 
+import '../../../core/di/app_module.dart';
+
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 

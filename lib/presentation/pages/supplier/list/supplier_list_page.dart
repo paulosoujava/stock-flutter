@@ -9,6 +9,8 @@ import 'package:stock/presentation/pages/supplier/list/supplier_list_state.dart'
 import 'package:stock/presentation/pages/supplier/list/supplier_list_viewmodel.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 
+import '../../../../core/di/app_module.dart';
+
 class SupplierListPage extends StatefulWidget {
   const SupplierListPage({super.key});
 

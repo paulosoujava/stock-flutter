@@ -9,6 +9,8 @@ import 'package:stock/presentation/pages/reminder/list/reminder_list_state.dart'
 import 'package:stock/presentation/pages/reminder/list/reminder_list_viewmodel.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 
+import '../../../../core/di/app_module.dart';
+
 class ReminderListPage extends StatefulWidget {
   const ReminderListPage({super.key});
 

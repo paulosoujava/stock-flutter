@@ -6,6 +6,8 @@ import 'package:stock/domain/entities/sale/sale_item.dart';
 import 'package:stock/presentation/pages/sales/report/sales_report_state.dart';
 import 'package:stock/presentation/pages/sales/report/sales_report_view_model.dart';
 
+import '../../../../core/di/app_module.dart';
+
 class SalesReportPage extends StatefulWidget {
   const SalesReportPage({super.key});
 

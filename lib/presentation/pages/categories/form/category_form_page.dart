@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/category/category.dart';
+import '../../../../core/di/app_module.dart';
 import '../../../widgets/custom_text_form_field.dart';
 import 'category_form_intent.dart';
 import 'category_form_state.dart';

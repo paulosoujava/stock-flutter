@@ -6,6 +6,7 @@ import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:stock/presentation/widgets/customer_card.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/di/app_module.dart';
 import 'customer_list_intent.dart';
 import 'customer_list_state.dart';
 import 'customer_list_viewmodel.dart';

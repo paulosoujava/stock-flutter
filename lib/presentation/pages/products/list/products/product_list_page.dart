@@ -1,12 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
+import 'package:stock/core/events/event_bus.dart';
 import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:stock/presentation/widgets/product_card.dart';
 
+import '../../../../../core/di/app_module.dart';
 import 'product_list_intent.dart';
 import 'product_list_state.dart';
 import 'product_list_viewmodel.dart';
@@ -23,6 +27,7 @@ class ProductListPage extends StatefulWidget {
 class _ProductListPageState extends State<ProductListPage> {
   late final ProductListViewModel _viewModel;
 
+
   @override
   void initState() {
     super.initState();
@@ -33,6 +38,7 @@ class _ProductListPageState extends State<ProductListPage> {
   void _loadProducts() {
     _viewModel.handleIntent(LoadProducts(widget.category.id));
   }
+
 
   @override
   void dispose() {

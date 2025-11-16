@@ -7,6 +7,8 @@ import 'package:stock/presentation/pages/supplier/form/supplier_form_state.dart'
 import 'package:stock/presentation/pages/supplier/form/supplier_form_viewmodel.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/di/app_module.dart';
+
 class SupplierFormPage extends StatefulWidget {
   final Supplier? supplierToEdit;
   const SupplierFormPage({super.key, this.supplierToEdit});

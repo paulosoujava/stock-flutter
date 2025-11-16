@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:injectable/injectable.dart';
+import 'package:stock/core/events/event_bus.dart';
 import 'package:stock/domain/usecases/products/delete_product.dart';
 import 'package:stock/domain/usecases/products/get_products_by_category.dart';
 import 'package:stock/presentation/pages/products/list/products/product_list_intent.dart';
@@ -9,21 +10,28 @@ import 'package:stock/presentation/pages/products/list/products/product_list_sta
 class ProductListViewModel {
   final GetProductsByCategory _getProductsByCategory;
   final DeleteProduct _deleteProduct;
-
+  late final StreamSubscription _eventBusSubscription;
 
   final _stateController = StreamController<ProductListState>.broadcast();
+
   Stream<ProductListState> get state => _stateController.stream;
+  late String idCategory;
 
-  ProductListViewModel(this._getProductsByCategory, this._deleteProduct);
-
+  ProductListViewModel(
+    this._getProductsByCategory,
+    this._deleteProduct,
+  );
 
   void handleIntent(ProductListIntent intent) async {
     if (intent is LoadProducts) {
+      idCategory = intent.categoryId;
       _loadProducts(intent.categoryId);
-    }else if (intent is DeleteProductIntent) {
+    } else if (intent is DeleteProductIntent) {
       await _deleteProductById(intent.productId);
     }
   }
+
+
 
   Future<void> _loadProducts(String categoryId) async {
     _stateController.add(ProductListLoading());
@@ -47,5 +55,7 @@ class ProductListViewModel {
 
   void dispose() {
     _stateController.close();
+    _eventBusSubscription.cancel();
+
   }
 }

@@ -6,6 +6,7 @@ import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/presentation/widgets/custom_text_form_field.dart';
 
+import '../../../../core/di/app_module.dart';
 import 'product_form_intent.dart';
 import 'product_form_state.dart';
 import 'product_form_viewmodel.dart';

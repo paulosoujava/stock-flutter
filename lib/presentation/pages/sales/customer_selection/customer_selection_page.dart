@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
+import '../../../../core/di/app_module.dart';
 import 'customer_selection_intent.dart';
 import 'customer_selection_state.dart';
 import 'customer_selection_view_model.dart';

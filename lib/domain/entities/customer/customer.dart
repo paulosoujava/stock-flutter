@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'customer.g.dart';
 
 @HiveType(typeId: 0)
-class Customer {
+class Customer extends HiveObject{
   @HiveField(0)
   final String id;
 
@@ -42,5 +42,29 @@ class Customer {
      this.notes,
      this.instagram,
   });
+
+  Customer copyWith({
+    String? id,
+    String? name,
+    String? cpf,
+    String? email,
+    String? phone,
+    String? whatsapp,
+    String? address,
+    String? notes,
+    String? instagram,
+  }){
+    return Customer(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      cpf: cpf ?? this.cpf,
+      email: email ?? this.email,
+      phone: phone ?? this.phone,
+      whatsapp: whatsapp ?? this.whatsapp,
+      address: address ?? this.address,
+      notes: notes ?? this.notes,
+      instagram: instagram ?? this.instagram,
+    );
+  }
 }
     

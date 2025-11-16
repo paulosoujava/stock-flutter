@@ -5,6 +5,7 @@ import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/presentation/pages/sales/customer_selection/customer_selection_page.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../core/di/app_module.dart';
 import '../../../core/navigation/app_routes.dart';
 import 'sales_intent.dart';
 import 'sales_state.dart';

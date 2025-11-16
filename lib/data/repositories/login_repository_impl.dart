@@ -4,7 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:injectable/injectable.dart';
 import 'package:stock/domain/repositories/ilogin_repository.dart';
 
-@LazySingleton(as: ILoginRepository)
+
 class LoginRepositoryImpl implements ILoginRepository {
   final FirebaseAuth _firebaseAuth;
 

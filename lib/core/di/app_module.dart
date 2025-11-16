@@ -1,11 +1,9 @@
-// lib/app/data/di/data_module.dart
-
+// Ficheiro: lib/core/di/app_module.dart
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:injectable/injectable.dart';
 import 'package:stock/data/repositories/category_repository_impl.dart';
 import 'package:stock/data/repositories/customer_repository_impl.dart';
-import 'package:stock/data/repositories/live_repository_impl.dart';
 import 'package:stock/data/repositories/login_repository_impl.dart';
 import 'package:stock/data/repositories/product_repository_impl.dart';
 import 'package:stock/data/repositories/reminder_repository_impl.dart';
@@ -13,7 +11,6 @@ import 'package:stock/data/repositories/sale_repository_impl.dart';
 import 'package:stock/data/repositories/supplier_repository_impl.dart';
 import 'package:stock/domain/repositories/icategory_repository.dart';
 import 'package:stock/domain/repositories/icustomer_repository.dart';
-import 'package:stock/domain/repositories/ilive_repository.dart';
 import 'package:stock/domain/repositories/ilogin_repository.dart';
 import 'package:stock/domain/repositories/iproduct_repository.dart';
 import 'package:stock/domain/repositories/ireminder_repository.dart';
@@ -21,8 +18,9 @@ import 'package:stock/domain/repositories/isale_repository.dart';
 import 'package:stock/domain/repositories/isupplier_repository.dart';
 import 'package:uuid/uuid.dart';
 
+
 @module
-abstract class DataModule {
+abstract class AppModule {
   @lazySingleton
   Uuid get uuid => const Uuid();
 
@@ -47,8 +45,11 @@ abstract class DataModule {
   @lazySingleton
   IReminderRepository get reminderRepository => ReminderRepositoryImpl();
 
-  @lazySingleton
-  ILiveRepository get liveRepository => LiveRepositoryImpl();
-}
 
+  @lazySingleton
+  ILoginRepository get loginRepository => LoginRepositoryImpl(firebaseAuth);
+
+// O @factoryMethod para o CustomerFormViewModel foi removido daqui
+// pois o injectable já o cria automaticamente se ele estiver anotado com @injectable.
+}
 

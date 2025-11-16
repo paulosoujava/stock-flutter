@@ -4,6 +4,7 @@ import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/domain/usecases/categories/get_categories.dart';
 import 'package:stock/domain/usecases/products/get_products_by_category.dart';
 import 'package:stock/domain/usecases/products/get_product_count_by_category.dart';
+import '../../../../../core/events/event_bus.dart';
 import 'product_category_list_intent.dart';
 import 'product_category_list_state.dart';
 
@@ -11,18 +12,35 @@ import 'product_category_list_state.dart';
 class ProductCategoryListViewModel {
   final GetCategories _getCategories;
   final GetProductCountByCategory _getProductCountByCategory;
+  final EventBus _eventBus;
 
-  final _stateController = StreamController<ProductCategoryListState>.broadcast();
+
+  final _stateController = StreamController<
+      ProductCategoryListState>.broadcast();
+
   Stream<ProductCategoryListState> get state => _stateController.stream;
 
-  ProductCategoryListViewModel(this._getCategories, this._getProductCountByCategory) {
+  ProductCategoryListViewModel(this._getCategories,
+      this._getProductCountByCategory, this._eventBus,) {
     handleIntent(LoadCategoriesWithProductCount());
+    _listenToEvents();
   }
+
+
 
   void handleIntent(ProductCategoryListIntent intent) {
     if (intent is LoadCategoriesWithProductCount) {
       _loadData();
     }
+  }
+
+  void _listenToEvents() {
+    _eventBus.stream.listen((event) {
+      if (event is ProductEvent) {
+        print("Evento recebido: $event");
+        handleIntent(LoadCategoriesWithProductCount());
+      }
+    });
   }
 
   Future<void> _loadData() async {
@@ -40,9 +58,11 @@ class ProductCategoryListViewModel {
         categoriesWithCount[category] = count;
       }
 
-      _stateController.add(CategoriesWithProductsCountLoaded(categoriesWithCount));
+      _stateController.add(
+          CategoriesWithProductsCountLoaded(categoriesWithCount));
     } catch (e) {
-      _stateController.add(ProductCategoryListError("Falha ao carregar dados."));
+      _stateController.add(
+          ProductCategoryListError("Falha ao carregar dados."));
     }
   }
 

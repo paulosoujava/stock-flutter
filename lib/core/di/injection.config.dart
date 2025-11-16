@@ -11,302 +11,250 @@
 import 'package:firebase_auth/firebase_auth.dart' as _i59;
 import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
-import 'package:stock/core/di/data_module.dart' as _i149;
-import 'package:stock/core/events/event_bus.dart' as _i468;
-import 'package:stock/data/repositories/login_repository_impl.dart' as _i700;
-import 'package:stock/domain/repositories/icategory_repository.dart' as _i836;
-import 'package:stock/domain/repositories/icustomer_repository.dart' as _i64;
-import 'package:stock/domain/repositories/ilive_repository.dart' as _i1026;
-import 'package:stock/domain/repositories/ilogin_repository.dart' as _i126;
-import 'package:stock/domain/repositories/iproduct_repository.dart' as _i741;
-import 'package:stock/domain/repositories/ireminder_repository.dart' as _i594;
-import 'package:stock/domain/repositories/isale_repository.dart' as _i73;
-import 'package:stock/domain/repositories/isupplier_repository.dart' as _i291;
-import 'package:stock/domain/usecases/auth/get_current_user_use_case.dart'
-    as _i723;
-import 'package:stock/domain/usecases/auth/sign_in_use_case.dart' as _i517;
-import 'package:stock/domain/usecases/auth/sign_out_use_case.dart' as _i149;
-import 'package:stock/domain/usecases/categories/add_category.dart' as _i337;
-import 'package:stock/domain/usecases/categories/delete_category.dart' as _i588;
-import 'package:stock/domain/usecases/categories/get_all_sales_use_case.dart'
-    as _i51;
-import 'package:stock/domain/usecases/categories/get_categories.dart' as _i678;
-import 'package:stock/domain/usecases/categories/update_category.dart' as _i460;
-import 'package:stock/domain/usecases/customers/add_customer.dart' as _i139;
-import 'package:stock/domain/usecases/customers/delete_customer.dart' as _i346;
-import 'package:stock/domain/usecases/customers/get_all_customers_use_case.dart'
-    as _i480;
-import 'package:stock/domain/usecases/customers/get_customers.dart' as _i152;
-import 'package:stock/domain/usecases/customers/update_customer.dart' as _i397;
-import 'package:stock/domain/usecases/live/delete_live_use_case.dart' as _i614;
-import 'package:stock/domain/usecases/live/get_all_lives_use_case.dart'
-    as _i497;
-import 'package:stock/domain/usecases/live/get_live_by_id_use_case.dart'
-    as _i1023;
-import 'package:stock/domain/usecases/live/save_live_use_case.dart' as _i340;
-import 'package:stock/domain/usecases/live/start_live_use_case.dart' as _i908;
-import 'package:stock/domain/usecases/products/add_product.dart' as _i543;
-import 'package:stock/domain/usecases/products/delete_product.dart' as _i847;
-import 'package:stock/domain/usecases/products/get_all_products_use_case.dart'
-    as _i281;
-import 'package:stock/domain/usecases/products/get_product_count_by_category.dart'
-    as _i228;
-import 'package:stock/domain/usecases/products/get_products_by_category.dart'
-    as _i614;
-import 'package:stock/domain/usecases/products/update_product.dart' as _i185;
-import 'package:stock/domain/usecases/reminder/add_reminder.dart' as _i419;
-import 'package:stock/domain/usecases/reminder/delete_reminder.dart' as _i618;
-import 'package:stock/domain/usecases/reminder/get_reminders.dart' as _i76;
-import 'package:stock/domain/usecases/reminder/update_reminder.dart' as _i270;
-import 'package:stock/domain/usecases/sales/get_sales_by_month_use_case.dart'
-    as _i554;
-import 'package:stock/domain/usecases/sales/save_sale_use_case.dart' as _i510;
-import 'package:stock/domain/usecases/supplier/add_supplier.dart' as _i761;
-import 'package:stock/domain/usecases/supplier/delete_supplier.dart' as _i838;
-import 'package:stock/domain/usecases/supplier/get_suppliers.dart' as _i902;
-import 'package:stock/domain/usecases/supplier/update_supplier.dart' as _i564;
-import 'package:stock/presentation/pages/categories/form/category_form_viewmodel.dart'
-    as _i851;
-import 'package:stock/presentation/pages/categories/list/category_list_viewmodel.dart'
-    as _i971;
-import 'package:stock/presentation/pages/customer/form/customer_form_viewmodel.dart'
-    as _i252;
-import 'package:stock/presentation/pages/customer/list/customer_list_viewmodel.dart'
-    as _i348;
-import 'package:stock/presentation/pages/home/home_view_model.dart' as _i740;
-import 'package:stock/presentation/pages/lives_sales/form/live_form_viewmodel.dart'
-    as _i342;
-import 'package:stock/presentation/pages/lives_sales/list/live_list_viewmodel.dart'
-    as _i904;
-import 'package:stock/presentation/pages/lives_sales/session/live_session_viewmodel.dart'
-    as _i573;
-import 'package:stock/presentation/pages/login/login_viewmodel.dart' as _i183;
-import 'package:stock/presentation/pages/products/form/product_form_viewmodel.dart'
-    as _i3;
-import 'package:stock/presentation/pages/products/list/categories/product_category_list_viewmodel.dart'
-    as _i425;
-import 'package:stock/presentation/pages/products/list/products/product_list_viewmodel.dart'
-    as _i336;
-import 'package:stock/presentation/pages/reminder/form/reminder_form_viewmodel.dart'
-    as _i132;
-import 'package:stock/presentation/pages/reminder/list/reminder_list_viewmodel.dart'
-    as _i861;
-import 'package:stock/presentation/pages/sales/customer_selection/customer_selection_view_model.dart'
-    as _i832;
-import 'package:stock/presentation/pages/sales/report/sales_report_view_model.dart'
-    as _i100;
-import 'package:stock/presentation/pages/sales/sales_view_model.dart' as _i161;
-import 'package:stock/presentation/pages/supplier/form/supplier_form_viewmodel.dart'
-    as _i509;
-import 'package:stock/presentation/pages/supplier/list/supplier_list_viewmodel.dart'
-    as _i443;
 import 'package:uuid/uuid.dart' as _i706;
 
-extension GetItInjectableX on _i174.GetIt {
+import '../../domain/repositories/icategory_repository.dart' as _i204;
+import '../../domain/repositories/icustomer_repository.dart' as _i141;
+import '../../domain/repositories/ilogin_repository.dart' as _i93;
+import '../../domain/repositories/iproduct_repository.dart' as _i213;
+import '../../domain/repositories/ireminder_repository.dart' as _i657;
+import '../../domain/repositories/isale_repository.dart' as _i666;
+import '../../domain/repositories/isupplier_repository.dart' as _i377;
+import '../../domain/usecases/auth/get_current_user_use_case.dart' as _i439;
+import '../../domain/usecases/auth/sign_in_use_case.dart' as _i561;
+import '../../domain/usecases/auth/sign_out_use_case.dart' as _i137;
+import '../../domain/usecases/categories/add_category.dart' as _i159;
+import '../../domain/usecases/categories/delete_category.dart' as _i618;
+import '../../domain/usecases/categories/get_all_sales_use_case.dart' as _i729;
+import '../../domain/usecases/categories/get_categories.dart' as _i263;
+import '../../domain/usecases/categories/update_category.dart' as _i339;
+import '../../domain/usecases/customers/add_customer.dart' as _i798;
+import '../../domain/usecases/customers/delete_customer.dart' as _i627;
+import '../../domain/usecases/customers/get_customers.dart' as _i286;
+import '../../domain/usecases/customers/update_customer.dart' as _i531;
+import '../../domain/usecases/products/add_product.dart' as _i125;
+import '../../domain/usecases/products/delete_product.dart' as _i403;
+import '../../domain/usecases/products/get_all_products_use_case.dart' as _i237;
+import '../../domain/usecases/products/get_product_count_by_category.dart'
+    as _i811;
+import '../../domain/usecases/products/get_products_by_category.dart' as _i887;
+import '../../domain/usecases/products/update_product.dart' as _i421;
+import '../../domain/usecases/reminder/add_reminder.dart' as _i487;
+import '../../domain/usecases/reminder/delete_reminder.dart' as _i859;
+import '../../domain/usecases/reminder/get_reminders.dart' as _i130;
+import '../../domain/usecases/reminder/update_reminder.dart' as _i244;
+import '../../domain/usecases/sales/get_sales_by_month_use_case.dart' as _i853;
+import '../../domain/usecases/sales/save_sale_use_case.dart' as _i378;
+import '../../domain/usecases/supplier/add_supplier.dart' as _i773;
+import '../../domain/usecases/supplier/delete_supplier.dart' as _i82;
+import '../../domain/usecases/supplier/get_suppliers.dart' as _i504;
+import '../../domain/usecases/supplier/update_supplier.dart' as _i699;
+import '../../presentation/pages/categories/form/category_form_viewmodel.dart'
+    as _i393;
+import '../../presentation/pages/categories/list/category_list_viewmodel.dart'
+    as _i706;
+import '../../presentation/pages/customer/form/customer_form_viewmodel.dart'
+    as _i580;
+import '../../presentation/pages/customer/list/customer_list_viewmodel.dart'
+    as _i282;
+import '../../presentation/pages/home/home_view_model.dart' as _i222;
+import '../../presentation/pages/login/login_viewmodel.dart' as _i447;
+import '../../presentation/pages/products/form/product_form_viewmodel.dart'
+    as _i689;
+import '../../presentation/pages/products/list/categories/product_category_list_viewmodel.dart'
+    as _i724;
+import '../../presentation/pages/products/list/products/product_list_viewmodel.dart'
+    as _i922;
+import '../../presentation/pages/reminder/form/reminder_form_viewmodel.dart'
+    as _i520;
+import '../../presentation/pages/reminder/list/reminder_list_viewmodel.dart'
+    as _i1053;
+import '../../presentation/pages/sales/customer_selection/customer_selection_view_model.dart'
+    as _i466;
+import '../../presentation/pages/sales/report/sales_report_view_model.dart'
+    as _i417;
+import '../../presentation/pages/sales/sales_view_model.dart' as _i387;
+import '../../presentation/pages/supplier/form/supplier_form_viewmodel.dart'
+    as _i926;
+import '../../presentation/pages/supplier/list/supplier_list_viewmodel.dart'
+    as _i387;
+import '../events/event_bus.dart' as _i557;
+import 'app_module.dart' as _i460;
+
 // initializes the registration of main-scope dependencies inside of GetIt
-  _i174.GetIt init({
-    String? environment,
-    _i526.EnvironmentFilter? environmentFilter,
-  }) {
-    final gh = _i526.GetItHelper(
-      this,
-      environment,
-      environmentFilter,
-    );
-    final dataModule = _$DataModule();
-    gh.lazySingleton<_i706.Uuid>(() => dataModule.uuid);
-    gh.lazySingleton<_i59.FirebaseAuth>(() => dataModule.firebaseAuth);
-    gh.lazySingleton<_i64.ICustomerRepository>(
-        () => dataModule.customerRepository);
-    gh.lazySingleton<_i836.ICategoryRepository>(
-        () => dataModule.categoryRepository);
-    gh.lazySingleton<_i741.IProductRepository>(
-        () => dataModule.productRepository);
-    gh.lazySingleton<_i73.ISaleRepository>(() => dataModule.saleRepository);
-    gh.lazySingleton<_i291.ISupplierRepository>(
-        () => dataModule.supplierRepository);
-    gh.lazySingleton<_i594.IReminderRepository>(
-        () => dataModule.reminderRepository);
-    gh.lazySingleton<_i1026.ILiveRepository>(() => dataModule.liveRepository);
-    gh.lazySingleton<_i468.EventBus>(
-      () => _i468.EventBus(),
-      dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i281.GetAllProductsUseCase>(
-        () => _i281.GetAllProductsUseCase(gh<_i741.IProductRepository>()));
-    gh.factory<_i185.UpdateProduct>(
-        () => _i185.UpdateProduct(gh<_i741.IProductRepository>()));
-    gh.factory<_i614.GetProductsByCategory>(
-        () => _i614.GetProductsByCategory(gh<_i741.IProductRepository>()));
-    gh.factory<_i847.DeleteProduct>(
-        () => _i847.DeleteProduct(gh<_i741.IProductRepository>()));
-    gh.factory<_i228.GetProductCountByCategory>(
-        () => _i228.GetProductCountByCategory(gh<_i741.IProductRepository>()));
-    gh.factory<_i543.AddProduct>(
-        () => _i543.AddProduct(gh<_i741.IProductRepository>()));
-    gh.factory<_i460.UpdateCategory>(
-        () => _i460.UpdateCategory(gh<_i836.ICategoryRepository>()));
-    gh.factory<_i678.GetCategories>(
-        () => _i678.GetCategories(gh<_i836.ICategoryRepository>()));
-    gh.factory<_i337.AddCategory>(
-        () => _i337.AddCategory(gh<_i836.ICategoryRepository>()));
-    gh.factory<_i588.DeleteCategory>(
-        () => _i588.DeleteCategory(gh<_i836.ICategoryRepository>()));
-    gh.factory<_i902.GetSuppliers>(
-        () => _i902.GetSuppliers(gh<_i291.ISupplierRepository>()));
-    gh.factory<_i564.UpdateSupplier>(
-        () => _i564.UpdateSupplier(gh<_i291.ISupplierRepository>()));
-    gh.factory<_i761.AddSupplier>(
-        () => _i761.AddSupplier(gh<_i291.ISupplierRepository>()));
-    gh.factory<_i838.DeleteSupplier>(
-        () => _i838.DeleteSupplier(gh<_i291.ISupplierRepository>()));
-    gh.lazySingleton<_i443.SupplierListViewModel>(
-      () => _i443.SupplierListViewModel(
-        gh<_i902.GetSuppliers>(),
-        gh<_i838.DeleteSupplier>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i554.GetSalesByMonthUseCase>(
-        () => _i554.GetSalesByMonthUseCase(gh<_i73.ISaleRepository>()));
-    gh.factory<_i510.SaveSaleUseCase>(
-        () => _i510.SaveSaleUseCase(gh<_i73.ISaleRepository>()));
-    gh.factory<_i51.GetAllSalesUseCase>(
-        () => _i51.GetAllSalesUseCase(gh<_i73.ISaleRepository>()));
-    gh.factory<_i270.UpdateReminder>(
-        () => _i270.UpdateReminder(gh<_i594.IReminderRepository>()));
-    gh.factory<_i419.AddReminder>(
-        () => _i419.AddReminder(gh<_i594.IReminderRepository>()));
-    gh.factory<_i618.DeleteReminder>(
-        () => _i618.DeleteReminder(gh<_i594.IReminderRepository>()));
-    gh.factory<_i76.GetReminders>(
-        () => _i76.GetReminders(gh<_i594.IReminderRepository>()));
-    gh.factory<_i509.SupplierFormViewModel>(() => _i509.SupplierFormViewModel(
-          gh<_i761.AddSupplier>(),
-          gh<_i564.UpdateSupplier>(),
-        ));
-    gh.lazySingleton<_i861.ReminderListViewModel>(
-      () => _i861.ReminderListViewModel(
-        gh<_i76.GetReminders>(),
-        gh<_i270.UpdateReminder>(),
-        gh<_i618.DeleteReminder>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    gh.lazySingleton<_i126.ILoginRepository>(
-        () => _i700.LoginRepositoryImpl(gh<_i59.FirebaseAuth>()));
-    gh.lazySingleton<_i100.SalesReportViewModel>(
-      () => _i100.SalesReportViewModel(gh<_i51.GetAllSalesUseCase>()),
-      dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i152.GetCustomers>(
-        () => _i152.GetCustomers(gh<_i64.ICustomerRepository>()));
-    gh.factory<_i346.DeleteCustomer>(
-        () => _i346.DeleteCustomer(gh<_i64.ICustomerRepository>()));
-    gh.factory<_i139.AddCustomer>(
-        () => _i139.AddCustomer(gh<_i64.ICustomerRepository>()));
-    gh.factory<_i397.UpdateCustomer>(
-        () => _i397.UpdateCustomer(gh<_i64.ICustomerRepository>()));
-    gh.factory<_i480.GetAllCustomersUseCase>(
-        () => _i480.GetAllCustomersUseCase(gh<_i64.ICustomerRepository>()));
-    gh.factory<_i851.CategoryCreateViewModel>(
-        () => _i851.CategoryCreateViewModel(
-              gh<_i337.AddCategory>(),
-              gh<_i460.UpdateCategory>(),
-            ));
-    gh.lazySingleton<_i348.CustomerListViewModel>(
-      () => _i348.CustomerListViewModel(
-        gh<_i152.GetCustomers>(),
-        gh<_i346.DeleteCustomer>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i723.GetCurrentUserUseCase>(
-        () => _i723.GetCurrentUserUseCase(gh<_i59.FirebaseAuth>()));
-    gh.factory<_i425.ProductCategoryListViewModel>(
-        () => _i425.ProductCategoryListViewModel(
-              gh<_i678.GetCategories>(),
-              gh<_i228.GetProductCountByCategory>(),
-            ));
-    gh.factory<_i340.SaveLiveUseCase>(
-        () => _i340.SaveLiveUseCase(gh<_i1026.ILiveRepository>()));
-    gh.factory<_i614.DeleteLiveUseCase>(
-        () => _i614.DeleteLiveUseCase(gh<_i1026.ILiveRepository>()));
-    gh.factory<_i497.GetAllLivesUseCase>(
-        () => _i497.GetAllLivesUseCase(gh<_i1026.ILiveRepository>()));
-    gh.factory<_i908.StartLiveUseCase>(
-        () => _i908.StartLiveUseCase(gh<_i1026.ILiveRepository>()));
-    gh.factory<_i1023.GetLiveByIdUseCase>(
-        () => _i1023.GetLiveByIdUseCase(gh<_i1026.ILiveRepository>()));
-    gh.lazySingleton<_i832.CustomerSelectionViewModel>(
-      () => _i832.CustomerSelectionViewModel(gh<_i152.GetCustomers>()),
-      dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i336.ProductListViewModel>(() => _i336.ProductListViewModel(
-          gh<_i614.GetProductsByCategory>(),
-          gh<_i847.DeleteProduct>(),
-        ));
-    gh.factory<_i3.ProductFormViewModel>(() => _i3.ProductFormViewModel(
-          gh<_i543.AddProduct>(),
-          gh<_i185.UpdateProduct>(),
-          gh<_i468.EventBus>(),
-        ));
-    gh.lazySingleton<_i161.SalesViewModel>(
-      () => _i161.SalesViewModel(
-        gh<_i281.GetAllProductsUseCase>(),
-        gh<_i510.SaveSaleUseCase>(),
-        gh<_i185.UpdateProduct>(),
-        gh<_i723.GetCurrentUserUseCase>(),
-        gh<_i706.Uuid>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i517.SignInUseCase>(
-        () => _i517.SignInUseCase(gh<_i126.ILoginRepository>()));
-    gh.factory<_i149.SignOutUseCase>(
-        () => _i149.SignOutUseCase(gh<_i126.ILoginRepository>()));
-    gh.factory<_i971.CategoryListViewModel>(() => _i971.CategoryListViewModel(
-          gh<_i678.GetCategories>(),
-          gh<_i588.DeleteCategory>(),
-          gh<_i228.GetProductCountByCategory>(),
-        ));
-    gh.factory<_i252.CustomerFormViewModel>(() => _i252.CustomerFormViewModel(
-          gh<_i139.AddCustomer>(),
-          gh<_i397.UpdateCustomer>(),
-        ));
-    gh.factory<_i132.ReminderFormViewModel>(() => _i132.ReminderFormViewModel(
-          gh<_i419.AddReminder>(),
-          gh<_i270.UpdateReminder>(),
-          gh<_i723.GetCurrentUserUseCase>(),
-        ));
-    gh.singleton<_i573.LiveSessionViewModel>(() => _i573.LiveSessionViewModel(
-          gh<_i1023.GetLiveByIdUseCase>(),
-          gh<_i281.GetAllProductsUseCase>(),
-          gh<_i480.GetAllCustomersUseCase>(),
-        ));
-    gh.factory<_i342.LiveFormViewModel>(() => _i342.LiveFormViewModel(
-          gh<_i340.SaveLiveUseCase>(),
-          gh<_i281.GetAllProductsUseCase>(),
-        ));
-    gh.lazySingleton<_i740.HomeViewModel>(
-      () => _i740.HomeViewModel(
-        gh<_i281.GetAllProductsUseCase>(),
-        gh<_i678.GetCategories>(),
-        gh<_i468.EventBus>(),
-        gh<_i149.SignOutUseCase>(),
-      ),
-      dispose: (i) => i.dispose(),
-    );
-    gh.factory<_i904.LiveListViewModel>(() => _i904.LiveListViewModel(
-          gh<_i497.GetAllLivesUseCase>(),
-          gh<_i614.DeleteLiveUseCase>(),
-          gh<_i468.EventBus>(),
-          gh<_i908.StartLiveUseCase>(),
-        ));
-    gh.factory<_i183.LoginViewModel>(
-        () => _i183.LoginViewModel(gh<_i517.SignInUseCase>()));
-    return this;
-  }
+_i174.GetIt $initGetIt(
+  _i174.GetIt getIt, {
+  String? environment,
+  _i526.EnvironmentFilter? environmentFilter,
+}) {
+  final gh = _i526.GetItHelper(
+    getIt,
+    environment,
+    environmentFilter,
+  );
+  final appModule = _$AppModule();
+  gh.lazySingleton<_i706.Uuid>(() => appModule.uuid);
+  gh.lazySingleton<_i59.FirebaseAuth>(() => appModule.firebaseAuth);
+  gh.lazySingleton<_i141.ICustomerRepository>(
+      () => appModule.customerRepository);
+  gh.lazySingleton<_i204.ICategoryRepository>(
+      () => appModule.categoryRepository);
+  gh.lazySingleton<_i213.IProductRepository>(() => appModule.productRepository);
+  gh.lazySingleton<_i666.ISaleRepository>(() => appModule.saleRepository);
+  gh.lazySingleton<_i377.ISupplierRepository>(
+      () => appModule.supplierRepository);
+  gh.lazySingleton<_i657.IReminderRepository>(
+      () => appModule.reminderRepository);
+  gh.lazySingleton<_i93.ILoginRepository>(() => appModule.loginRepository);
+  gh.lazySingleton<_i557.EventBus>(
+    () => _i557.EventBus(),
+    dispose: (i) => i.dispose(),
+  );
+  gh.factory<_i237.GetAllProductsUseCase>(
+      () => _i237.GetAllProductsUseCase(gh<_i213.IProductRepository>()));
+  gh.factory<_i421.UpdateProduct>(
+      () => _i421.UpdateProduct(gh<_i213.IProductRepository>()));
+  gh.factory<_i887.GetProductsByCategory>(
+      () => _i887.GetProductsByCategory(gh<_i213.IProductRepository>()));
+  gh.factory<_i403.DeleteProduct>(
+      () => _i403.DeleteProduct(gh<_i213.IProductRepository>()));
+  gh.factory<_i811.GetProductCountByCategory>(
+      () => _i811.GetProductCountByCategory(gh<_i213.IProductRepository>()));
+  gh.factory<_i125.AddProduct>(
+      () => _i125.AddProduct(gh<_i213.IProductRepository>()));
+  gh.factory<_i561.SignInUseCase>(
+      () => _i561.SignInUseCase(gh<_i93.ILoginRepository>()));
+  gh.factory<_i137.SignOutUseCase>(
+      () => _i137.SignOutUseCase(gh<_i93.ILoginRepository>()));
+  gh.factory<_i339.UpdateCategory>(
+      () => _i339.UpdateCategory(gh<_i204.ICategoryRepository>()));
+  gh.factory<_i263.GetCategories>(
+      () => _i263.GetCategories(gh<_i204.ICategoryRepository>()));
+  gh.factory<_i159.AddCategory>(
+      () => _i159.AddCategory(gh<_i204.ICategoryRepository>()));
+  gh.factory<_i618.DeleteCategory>(
+      () => _i618.DeleteCategory(gh<_i204.ICategoryRepository>()));
+  gh.factory<_i504.GetSuppliers>(
+      () => _i504.GetSuppliers(gh<_i377.ISupplierRepository>()));
+  gh.factory<_i699.UpdateSupplier>(
+      () => _i699.UpdateSupplier(gh<_i377.ISupplierRepository>()));
+  gh.factory<_i773.AddSupplier>(
+      () => _i773.AddSupplier(gh<_i377.ISupplierRepository>()));
+  gh.factory<_i82.DeleteSupplier>(
+      () => _i82.DeleteSupplier(gh<_i377.ISupplierRepository>()));
+  gh.lazySingleton<_i387.SupplierListViewModel>(
+    () => _i387.SupplierListViewModel(
+      gh<_i504.GetSuppliers>(),
+      gh<_i82.DeleteSupplier>(),
+    ),
+    dispose: (i) => i.dispose(),
+  );
+  gh.factory<_i853.GetSalesByMonthUseCase>(
+      () => _i853.GetSalesByMonthUseCase(gh<_i666.ISaleRepository>()));
+  gh.factory<_i378.SaveSaleUseCase>(
+      () => _i378.SaveSaleUseCase(gh<_i666.ISaleRepository>()));
+  gh.factory<_i729.GetAllSalesUseCase>(
+      () => _i729.GetAllSalesUseCase(gh<_i666.ISaleRepository>()));
+  gh.factory<_i244.UpdateReminder>(
+      () => _i244.UpdateReminder(gh<_i657.IReminderRepository>()));
+  gh.factory<_i487.AddReminder>(
+      () => _i487.AddReminder(gh<_i657.IReminderRepository>()));
+  gh.factory<_i859.DeleteReminder>(
+      () => _i859.DeleteReminder(gh<_i657.IReminderRepository>()));
+  gh.factory<_i130.GetReminders>(
+      () => _i130.GetReminders(gh<_i657.IReminderRepository>()));
+  gh.factory<_i926.SupplierFormViewModel>(() => _i926.SupplierFormViewModel(
+        gh<_i773.AddSupplier>(),
+        gh<_i699.UpdateSupplier>(),
+      ));
+  gh.lazySingleton<_i1053.ReminderListViewModel>(
+    () => _i1053.ReminderListViewModel(
+      gh<_i130.GetReminders>(),
+      gh<_i244.UpdateReminder>(),
+      gh<_i859.DeleteReminder>(),
+    ),
+    dispose: (i) => i.dispose(),
+  );
+  gh.lazySingleton<_i417.SalesReportViewModel>(
+    () => _i417.SalesReportViewModel(gh<_i729.GetAllSalesUseCase>()),
+    dispose: (i) => i.dispose(),
+  );
+  gh.factory<_i286.GetCustomers>(
+      () => _i286.GetCustomers(gh<_i141.ICustomerRepository>()));
+  gh.factory<_i627.DeleteCustomer>(
+      () => _i627.DeleteCustomer(gh<_i141.ICustomerRepository>()));
+  gh.factory<_i798.AddCustomer>(
+      () => _i798.AddCustomer(gh<_i141.ICustomerRepository>()));
+  gh.lazySingleton<_i222.HomeViewModel>(
+    () => _i222.HomeViewModel(
+      gh<_i237.GetAllProductsUseCase>(),
+      gh<_i263.GetCategories>(),
+      gh<_i557.EventBus>(),
+      gh<_i137.SignOutUseCase>(),
+    ),
+    dispose: (i) => i.dispose(),
+  );
+  gh.factory<_i531.UpdateCustomer>(
+      () => _i531.UpdateCustomer(gh<_i141.ICustomerRepository>()));
+  gh.factory<_i393.CategoryCreateViewModel>(() => _i393.CategoryCreateViewModel(
+        gh<_i159.AddCategory>(),
+        gh<_i339.UpdateCategory>(),
+      ));
+  gh.lazySingleton<_i282.CustomerListViewModel>(
+    () => _i282.CustomerListViewModel(
+      gh<_i286.GetCustomers>(),
+      gh<_i627.DeleteCustomer>(),
+    ),
+    dispose: (i) => i.dispose(),
+  );
+  gh.factory<_i439.GetCurrentUserUseCase>(
+      () => _i439.GetCurrentUserUseCase(gh<_i59.FirebaseAuth>()));
+  gh.factory<_i447.LoginViewModel>(
+      () => _i447.LoginViewModel(gh<_i561.SignInUseCase>()));
+  gh.lazySingleton<_i466.CustomerSelectionViewModel>(
+    () => _i466.CustomerSelectionViewModel(gh<_i286.GetCustomers>()),
+    dispose: (i) => i.dispose(),
+  );
+  gh.factory<_i922.ProductListViewModel>(() => _i922.ProductListViewModel(
+        gh<_i887.GetProductsByCategory>(),
+        gh<_i403.DeleteProduct>(),
+      ));
+  gh.factory<_i689.ProductFormViewModel>(() => _i689.ProductFormViewModel(
+        gh<_i125.AddProduct>(),
+        gh<_i421.UpdateProduct>(),
+        gh<_i557.EventBus>(),
+      ));
+  gh.lazySingleton<_i387.SalesViewModel>(
+    () => _i387.SalesViewModel(
+      gh<_i237.GetAllProductsUseCase>(),
+      gh<_i378.SaveSaleUseCase>(),
+      gh<_i421.UpdateProduct>(),
+      gh<_i439.GetCurrentUserUseCase>(),
+      gh<_i706.Uuid>(),
+    ),
+    dispose: (i) => i.dispose(),
+  );
+  gh.factory<_i706.CategoryListViewModel>(() => _i706.CategoryListViewModel(
+        gh<_i263.GetCategories>(),
+        gh<_i618.DeleteCategory>(),
+        gh<_i811.GetProductCountByCategory>(),
+      ));
+  gh.factory<_i724.ProductCategoryListViewModel>(
+      () => _i724.ProductCategoryListViewModel(
+            gh<_i263.GetCategories>(),
+            gh<_i811.GetProductCountByCategory>(),
+            gh<_i557.EventBus>(),
+          ));
+  gh.factory<_i580.CustomerFormViewModel>(() => _i580.CustomerFormViewModel(
+        gh<_i798.AddCustomer>(),
+        gh<_i531.UpdateCustomer>(),
+      ));
+  gh.factory<_i520.ReminderFormViewModel>(() => _i520.ReminderFormViewModel(
+        gh<_i487.AddReminder>(),
+        gh<_i244.UpdateReminder>(),
+        gh<_i439.GetCurrentUserUseCase>(),
+      ));
+  return getIt;
 }
 
-class _$DataModule extends _i149.DataModule {}
+class _$AppModule extends _i460.AppModule {}

@@ -4,6 +4,7 @@ import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/presentation/widgets/custom_text_form_field.dart';
+import '../../../../core/di/app_module.dart';
 import 'customer_form_intent.dart';
 import 'customer_form_state.dart';
 import 'customer_form_viewmodel.dart'; // Para gerar um ID aleatório

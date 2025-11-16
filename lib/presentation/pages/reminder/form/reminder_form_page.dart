@@ -6,6 +6,8 @@ import 'package:stock/presentation/pages/reminder/form/reminder_form_state.dart'
 import 'package:stock/presentation/pages/reminder/form/reminder_form_viewmodel.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../core/di/app_module.dart';
+
 class ReminderFormPage extends StatefulWidget {
   final Reminder? reminderToEdit;
   const ReminderFormPage({super.key, this.reminderToEdit});

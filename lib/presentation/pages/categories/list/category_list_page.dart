@@ -7,6 +7,7 @@ import 'package:stock/presentation/widgets/category_card.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:badges/badges.dart' as badges;
 
+import '../../../../core/di/app_module.dart';
 import 'category_list_intent.dart';
 import 'category_list_state.dart';
 import 'category_list_viewmodel.dart';

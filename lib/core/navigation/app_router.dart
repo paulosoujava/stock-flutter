@@ -13,9 +13,6 @@ import 'package:stock/presentation/pages/customer/form/customer_form_page.dart';
 
 import 'package:stock/presentation/pages/customer/list/customer_list_page.dart';
 import 'package:stock/presentation/pages/home/home_page.dart';
-import 'package:stock/presentation/pages/lives_sales/form/live_form_page.dart';
-import 'package:stock/presentation/pages/lives_sales/list/live_list_page.dart';
-import 'package:stock/presentation/pages/lives_sales/session/live_session_page.dart';
 import 'package:stock/presentation/pages/login/login_page.dart';
 import 'package:stock/presentation/pages/products/form/product_form_page.dart';
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_page.dart';
@@ -168,28 +165,7 @@ final appRouter = GoRouter(
       path: AppRoutes.login,
       builder: (context, state) => const LoginPage(),
     ),
-    //LIVE SESSION
-    GoRoute(
-      path: AppRoutes.liveList,
-      name: 'liveList',
-      builder: (context, state) => const LiveListPage(),
-    ),
 
-    GoRoute(
-      path: AppRoutes.liveForm,
-      builder: (context, state) => const LiveFormPage(),
-    ),
-    GoRoute(
-      path: AppRoutes.liveSession,
-      builder: (context, state) {
-        final liveId = state.extra as String?;
-        if (liveId != null) {
-          return LiveSessionPage(liveId: liveId);
-        }
-        return const ErrorRoutePage(
-            errorMessage: 'Erro: Categoria não encontrada.');
-      },
-    ),
   ],
 );
 

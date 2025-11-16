@@ -16,8 +16,8 @@ dependencies:
     sdk: flutter
   hive: ^2.2.3
   hive_flutter: ^1.1.0
-  get_it: ^9.0.5 # O Service Locator
-  injectable: ^2.4.2 # O gerador de código para o get_it
+  get_it: ^7.6.0
+  injectable: ^2.3.0
   go_router: ^17.0.0
   mask_text_input_formatter: ^2.9.0
   flutter_masked_text2: ^0.9.1
@@ -41,7 +41,7 @@ dev_dependencies:
     sdk: flutter
   hive_generator: ^2.0.1
   build_runner: ^2.4.7
-  injectable_generator: ^2.6.1 # O gerador de código
+  injectable_generator: ^2.3.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is

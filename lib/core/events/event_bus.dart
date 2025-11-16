@@ -4,20 +4,17 @@ import 'package:injectable/injectable.dart';
 /// Define a classe base para todos os eventos que podem ser enviados.
 abstract class AppEvent {}
 
-/// Evento específico para quando um produto for atualizado.
-class ProductUpdatedEvent extends AppEvent {}// Você pode adicionar outros eventos no futuro:
-// class CategoryUpdatedEvent extends AppEvent {}
-// class CustomerUpdatedEvent extends AppEvent {}
+/// Evento específico para avisaar outas paginas para atualizarem
+class ProductEvent extends AppEvent {}
 
-/// Um evento genérico que pode ser usado para outras listas no futuro.
-/// Ou um evento específico como `class LiveListChangedEvent {}`
-class ListChangedEvent extends AppEvent{
-  final Type entityType;
-  ListChangedEvent(this.entityType);
+
+class ListChangedEvent extends AppEvent {
+  final Object entity;
+
+  ListChangedEvent(this.entity);
+
   @override
-  String toString() {
-    return 'ListChangedEvent para a entidade: $entityType';
-  }
+  String toString() => 'ListChangedEvent: $entity';
 }
 
 

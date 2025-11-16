@@ -33,7 +33,7 @@ class HomeViewModel {
 
   void _listenToEvents() {
     _eventBusSubscription = _eventBus.stream.listen((event) {
-      if (event is ProductUpdatedEvent) {
+      if (event is ProductEvent) {
         _loadInitialData();
       }
     });
