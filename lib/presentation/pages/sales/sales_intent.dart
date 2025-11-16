@@ -1,13 +1,13 @@
+// sales_intent.dart
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/product/product.dart';
 
 abstract class SalesIntent {}
 
-class SelectCustomerIntent extends SalesIntent {final Customer customer;
-SelectCustomerIntent(this.customer);
+class SelectCustomerIntent extends SalesIntent {
+  final Customer customer;
+  SelectCustomerIntent(this.customer);
 }
-
-class ClearCustomerIntent extends SalesIntent {}
 
 class SearchProductsIntent extends SalesIntent {
   final String query;
@@ -17,7 +17,8 @@ class SearchProductsIntent extends SalesIntent {
 class AddProductToCartIntent extends SalesIntent {
   final Product product;
   final int quantity;
-  AddProductToCartIntent(this.product, this.quantity);
+  final int discount;
+  AddProductToCartIntent(this.product, this.quantity, this.discount);
 }
 
 class RemoveProductFromCartIntent extends SalesIntent {
@@ -35,4 +36,10 @@ class IncrementCartItemIntent extends SalesIntent {
 class DecrementCartItemIntent extends SalesIntent {
   final String productId;
   DecrementCartItemIntent(this.productId);
+}
+
+class SetGlobalDiscountIntent extends SalesIntent {
+  final int discount;
+  final String description;
+  SetGlobalDiscountIntent(this.discount, this.description);
 }

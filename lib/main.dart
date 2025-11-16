@@ -12,6 +12,7 @@ import 'package:stock/domain/entities/sale/sale.dart';
 import 'package:stock/domain/entities/sale/sale_item.dart';
 import 'package:stock/domain/entities/supplier/supplier.dart';
 import 'package:stock/firebase_options.dart';
+import 'package:stock/presentation/widgets/date_format_initializer.dart';
 
 import 'package:window_manager/window_manager.dart';
 
@@ -25,6 +26,8 @@ Future<void> main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  // 📅 INITIALIZA O LOCALE pt_BR
+  await initializeDateFormattingBR();
 
   // 📦 Hive
   await Hive.initFlutter();

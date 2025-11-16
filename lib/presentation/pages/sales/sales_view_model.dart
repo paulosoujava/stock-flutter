@@ -1,3 +1,4 @@
+// sales_view_model.dart
 import 'dart:async';
 import 'package:injectable/injectable.dart';
 import 'package:rxdart/rxdart.dart';
@@ -25,26 +26,27 @@ class SalesViewModel {
 
   Stream<SalesState> get state => _stateController.stream;
 
+  int get globalDiscount => (_stateController.value as SalesReadyState?)?.globalDiscount ?? 0;
+  String get globalDescription => (_stateController.value as SalesReadyState?)?.globalDescription ?? '';
+
   SalesViewModel(
-    this._getAllProductsUseCase,
-    this._saveSaleUseCase,
-    this._updateProductUseCase,
-    this._getCurrentUser,
-    this._uuid,
-  ) {
+      this._getAllProductsUseCase,
+      this._saveSaleUseCase,
+      this._updateProductUseCase,
+      this._getCurrentUser,
+      this._uuid,
+      ) {
     _stateController.add(SalesReadyState());
   }
 
   void handleIntent(SalesIntent intent) {
     switch (intent) {
       case SelectCustomerIntent():
-        _selectCustomer(intent.customer);
-      case ClearCustomerIntent():
-        _clearCustomer();
+          _selectCustomer(intent.customer);
       case SearchProductsIntent():
         _searchProducts(intent.query);
       case AddProductToCartIntent():
-        _addProductToCart(intent.product, intent.quantity);
+        _addProductToCart(intent.product, intent.quantity, intent.discount);
       case RemoveProductFromCartIntent():
         _removeProductFromCart(intent.productId);
       case IncrementCartItemIntent():
@@ -53,54 +55,13 @@ class SalesViewModel {
         _decrementCartItem(intent.productId);
       case FinalizeSaleIntent():
         _finalizeSale();
+      case SetGlobalDiscountIntent():
+        _setGlobalDiscount(intent.discount, intent.description);
     }
   }
 
-  void _incrementCartItem(String productId) async {
-    final currentState = _stateController.value;
-    if (currentState is! SalesReadyState) return;
-
-    // Precisamos do produto original para saber o estoque máximo
-    final allProducts = await _getAllProductsUseCase();
-    final originalProduct = allProducts.firstWhere((p) => p.id == productId);
-
-    final updatedCart = List<SaleItem>.from(currentState.cart);
-    final itemIndex =
-        updatedCart.indexWhere((item) => item.productId == productId);
-
-    if (itemIndex != -1) {
-      final currentItem = updatedCart[itemIndex];
-      // Só incrementa se a nova quantidade não exceder o estoque
-      if (currentItem.quantity < originalProduct.stockQuantity) {
-        updatedCart[itemIndex] =
-            currentItem.copyWith(quantity: currentItem.quantity + 1);
-        _stateController.add(currentState.copyWith(cart: updatedCart));
-        _searchProducts(currentState.currentSearchQuery); // Atualiza a busca
-      }
-    }
-  }
-
-  void _decrementCartItem(String productId) {
-    final currentState = _stateController.value;
-    if (currentState is! SalesReadyState) return;
-
-    final updatedCart = List<SaleItem>.from(currentState.cart);
-    final itemIndex =
-        updatedCart.indexWhere((item) => item.productId == productId);
-
-    if (itemIndex != -1) {
-      final currentItem = updatedCart[itemIndex];
-      // Se a quantidade for maior que 1, apenas decrementa
-      if (currentItem.quantity > 1) {
-        updatedCart[itemIndex] =
-            currentItem.copyWith(quantity: currentItem.quantity - 1);
-      } else {
-        // Se for 1, remove o item do carrinho
-        updatedCart.removeAt(itemIndex);
-      }
-      _stateController.add(currentState.copyWith(cart: updatedCart));
-      _searchProducts(currentState.currentSearchQuery); // Atualiza a busca
-    }
+  void reset() {
+    _stateController.add(SalesReadyState());
   }
 
   void _selectCustomer(Customer customer) {
@@ -110,166 +71,207 @@ class SalesViewModel {
     }
   }
 
-  void _clearCustomer() {
-    _stateController.add(SalesReadyState());
-  }
-
   Future<void> _searchProducts(String query) async {
     final currentState = _stateController.value;
     if (currentState is! SalesReadyState) return;
 
+    // LIMPEZA IMEDIATA SE QUERY VAZIA
+    if (query.isEmpty) {
+      _stateController.add(SalesReadyState(
+        selectedCustomer: currentState.selectedCustomer,
+        cart: currentState.cart,
+        originalProducts: currentState.originalProducts,
+        searchResults: [],
+        currentSearchQuery: '',
+        isSearching: false,
+        globalDiscount: currentState.globalDiscount,
+        globalDescription: currentState.globalDescription,
+      ));
+      return;
+    }
+
+    // Inicia a busca
     _stateController.add(currentState.copyWith(
       isSearching: true,
       currentSearchQuery: query,
     ));
 
-    if (query.isEmpty) {
-      _stateController.add(currentState.copyWith(
-        searchResults: [],
-        isSearching: false,
-      ));
-      return;
-    }
-
     try {
       final allProducts = await _getAllProductsUseCase();
-      final lowerCaseQuery = query.toLowerCase();
-
-      var results = allProducts.where((product) {
-        return product.name.toLowerCase().contains(lowerCaseQuery) ||
-            product.id.toLowerCase().contains(lowerCaseQuery) ||
-            product.salePrice.toString().contains(lowerCaseQuery);
+      List<Product> results = allProducts.where((product) {
+        final searchLower = query.toLowerCase();
+        return product.name.toLowerCase().contains(searchLower) ||
+            product.id.toLowerCase().contains(searchLower) ||
+            product.salePrice.toString().contains(searchLower);
       }).toList();
 
-      final cart = currentState.cart;
-      results = results.map((product) {
-        final itemInCart = cart.where((item) => item.productId == product.id);
-        if (itemInCart.isNotEmpty) {
-          final quantityInCart = itemInCart.first.quantity;
-          // Retorna uma cópia do produto com o estoque restante real
-          return product.copyWith(
-              stockQuantity: product.stockQuantity - quantityInCart);
+      // Ajusta estoque com base no carrinho
+      for (final cartItem in currentState.cart) {
+        final index = results.indexWhere((p) => p.id == cartItem.productId);
+        if (index != -1) {
+          results[index] = results[index].copyWith(
+            stockQuantity: results[index].stockQuantity - cartItem.quantity,
+          );
         }
-        // Se não está no carrinho, retorna o produto como está
-        return product;
-      }).toList();
-
-      final newState = _stateController.value;
-      if (newState is SalesReadyState) {
-        _stateController.add(newState.copyWith(
-          searchResults: results,
-          isSearching: false,
-          originalProducts: allProducts,
-        ));
       }
+
+      // Emite o novo estado com resultados
+      final newState = currentState.copyWith(
+        searchResults: results,
+        isSearching: false,
+        originalProducts: allProducts,
+      );
+      _stateController.add(newState);
     } catch (e) {
-      _stateController
-          .add(SalesErrorState("Erro ao buscar produtos: ${e.toString()}"));
+      _stateController.add(SalesErrorState("Erro ao buscar produtos: ${e.toString()}"));
     }
   }
 
-  void _addProductToCart(Product product, int quantity) {
+  void _addProductToCart(Product product, int quantity, int discount) {
     final currentState = _stateController.value;
     if (currentState is! SalesReadyState) return;
 
     final List<SaleItem> updatedCart = List.from(currentState.cart);
 
-    // O preço de venda é o do produto original, não o do produto "ajustado" da busca.
+    final effectiveDiscount = currentState.globalDiscount > 0 ? 0 : discount;
+
     final newItem = SaleItem(
       productId: product.id,
       productName: product.name,
       quantity: quantity,
       pricePerUnit: product.salePrice,
+      discount: effectiveDiscount,
     );
 
-    final existingIndex =
-        updatedCart.indexWhere((item) => item.productId == product.id);
+    final existingIndex = updatedCart.indexWhere((item) => item.productId == product.id);
 
     if (existingIndex != -1) {
-      // Se o item já existe, apenas atualiza a quantidade
-      updatedCart[existingIndex] =
-          updatedCart[existingIndex].copyWith(quantity: quantity);
+      updatedCart[existingIndex] = updatedCart[existingIndex].copyWith(
+        quantity: quantity,
+        discount: effectiveDiscount,
+      );
     } else {
       updatedCart.add(newItem);
     }
 
-    // Emite o novo estado com o carrinho atualizado
     _stateController.add(currentState.copyWith(cart: updatedCart));
-
-    _searchProducts(currentState.currentSearchQuery);
+    //_searchProducts(currentState.currentSearchQuery);
+    _stateController.add(currentState.copyWith(cart: updatedCart));
   }
 
   void _removeProductFromCart(String productId) {
     final currentState = _stateController.value;
     if (currentState is! SalesReadyState) return;
 
-    final updatedCart =
-        currentState.cart.where((item) => item.productId != productId).toList();
+    final updatedCart = currentState.cart.where((item) => item.productId != productId).toList();
     _stateController.add(currentState.copyWith(cart: updatedCart));
     _searchProducts(currentState.currentSearchQuery);
+  }
+
+  void _incrementCartItem(String productId) async {
+    final currentState = _stateController.value;
+    if (currentState is! SalesReadyState) return;
+
+    final allProducts = await _getAllProductsUseCase();
+    final originalProduct = allProducts.firstWhere((p) => p.id == productId);
+
+    final updatedCart = List<SaleItem>.from(currentState.cart);
+    final itemIndex = updatedCart.indexWhere((item) => item.productId == productId);
+
+    if (itemIndex != -1) {
+      final currentItem = updatedCart[itemIndex];
+      if (currentItem.quantity < originalProduct.stockQuantity) {
+        updatedCart[itemIndex] = currentItem.copyWith(quantity: currentItem.quantity + 1);
+        _stateController.add(currentState.copyWith(cart: updatedCart));
+        _searchProducts(currentState.currentSearchQuery);
+      }
+    }
+  }
+
+  void _decrementCartItem(String productId) {
+    final currentState = _stateController.value;
+    if (currentState is! SalesReadyState) return;
+
+    final updatedCart = List<SaleItem>.from(currentState.cart);
+    final itemIndex = updatedCart.indexWhere((item) => item.productId == productId);
+
+    if (itemIndex != -1) {
+      final currentItem = updatedCart[itemIndex];
+      if (currentItem.quantity > 1) {
+        updatedCart[itemIndex] = currentItem.copyWith(quantity: currentItem.quantity - 1);
+      } else {
+        updatedCart.removeAt(itemIndex);
+      }
+      _stateController.add(currentState.copyWith(cart: updatedCart));
+      _searchProducts(currentState.currentSearchQuery);
+    }
+  }
+
+  void _setGlobalDiscount(int discount, String description) {
+    final currentState = _stateController.value;
+    if (currentState is SalesReadyState) {
+      final updatedCart = currentState.cart.map((item) {
+        return item.copyWith(discount: 0); // limpa descontos individuais
+      }).toList();
+
+      _stateController.add(currentState.copyWith(
+        cart: updatedCart,
+        globalDiscount: discount,
+        globalDescription: description,
+      ));
+    }
   }
 
   Future<void> _finalizeSale() async {
     final currentState = _stateController.value;
     if (currentState is! SalesReadyState) return;
     if (currentState.selectedCustomer == null || currentState.cart.isEmpty) {
-      _stateController.add(SalesErrorState(
-          "Selecione um cliente e adicione produtos ao carrinho."));
+      _stateController.add(SalesErrorState("Selecione um cliente e adicione produtos ao carrinho."));
       await Future.delayed(const Duration(seconds: 2));
       _stateController.add(currentState);
       return;
     }
-    // PEGAR O USUÁRIO
     final currentUser = _getCurrentUser();
     if (currentUser == null) {
       _stateController.add(SalesErrorState("Erro: Nenhum vendedor autenticado. Faça login novamente."));
-        return;
+      return;
     }
     _stateController.add(SalesLoadingState());
 
     try {
-      //  Busca os produtos do banco de dados para garantir o estoque real
       final productsInDb = await _getAllProductsUseCase();
 
-      //  Itera sobre cada item do carrinho para validar estoque e preparar atualização
       for (final cartItem in currentState.cart) {
-        final productToUpdate =
-            productsInDb.firstWhere((p) => p.id == cartItem.productId);
+        final productToUpdate = productsInDb.firstWhere((p) => p.id == cartItem.productId);
 
         if (productToUpdate.stockQuantity < cartItem.quantity) {
-          throw Exception(
-              'Estoque de "${productToUpdate.name}" é insuficiente. Restam: ${productToUpdate.stockQuantity}');
+          throw Exception('Estoque de "${productToUpdate.name}" é insuficiente. Restam: ${productToUpdate.stockQuantity}');
         }
 
         final newStock = productToUpdate.stockQuantity - cartItem.quantity;
-
-        //  ATUALIZA O ESTOQUE DO PRODUTO USANDO O USECASE EXISTENTE
-        await _updateProductUseCase(
-            productToUpdate.copyWith(stockQuantity: newStock));
+        await _updateProductUseCase(productToUpdate.copyWith(stockQuantity: newStock));
       }
 
-      //  Se tudo deu certo, cria e salva o registro da venda
+      final totalWithGlobal = currentState.cartTotal * (1 - currentState.globalDiscount / 100);
+
       final newSale = Sale(
         id: _uuid.v4(),
         customerId: currentState.selectedCustomer!.id,
         customerName: currentState.selectedCustomer!.name,
         saleDate: DateTime.now(),
         items: currentState.cart,
-        totalAmount: currentState.cartTotal,
+        totalAmount: currentState.globalDiscount > 0 ? totalWithGlobal : currentState.cartTotal,
         sellerId: currentUser.uid,
         sellerName: currentUser.displayName ?? currentUser.email ?? 'Vendedor Desconhecido',
       );
 
       await _saveSaleUseCase(newSale);
 
-      //  Sucesso
       _stateController.add(SalesSaleSuccessfulState());
       await Future.delayed(const Duration(milliseconds: 500));
       _stateController.add(SalesReadyState());
     } catch (e) {
-      _stateController
-          .add(SalesErrorState("Erro ao finalizar a venda: ${e.toString()}"));
-      // Garante que a tela não fique presa no loading
+      _stateController.add(SalesErrorState("Erro ao finalizar a venda: ${e.toString()}"));
       await Future.delayed(const Duration(seconds: 3));
       if (_stateController.value is SalesErrorState) {
         _stateController.add(currentState);
