@@ -1,9 +1,10 @@
+// sale_repository_impl.dart (adiciona updateSale)
 import 'package:hive/hive.dart';
 import 'package:injectable/injectable.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
 import 'package:stock/domain/repositories/isale_repository.dart';
 
-const String _kSalesBox = 'salesBox';
+const String _kSalesBox = 'saleBox';
 
 class SaleRepositoryImpl implements ISaleRepository {
   Future<Box<Sale>> _openBox() async {
@@ -13,7 +14,14 @@ class SaleRepositoryImpl implements ISaleRepository {
   @override
   Future<void> saveSale(Sale sale) async {
     final box = await _openBox();
-    // Chave estruturada para otimizar buscas por período.
+    final key =
+        '${sale.saleDate.year}-${sale.saleDate.month.toString().padLeft(2, '0')}-${sale.id}';
+    await box.put(key, sale);
+  }
+
+  @override
+  Future<void> updateSale(Sale sale) async {
+    final box = await _openBox();
     final key =
         '${sale.saleDate.year}-${sale.saleDate.month.toString().padLeft(2, '0')}-${sale.id}';
     await box.put(key, sale);
@@ -24,7 +32,6 @@ class SaleRepositoryImpl implements ISaleRepository {
     final box = await _openBox();
     final prefix = '$year-${month.toString().padLeft(2, '0')}-';
 
-    // Filtra as chaves que começam com o prefixo do ano e mês.
     final sales = box.keys
         .where((key) => (key as String).startsWith(prefix))
         .map((key) => box.get(key)!)
@@ -51,7 +58,6 @@ class SaleRepositoryImpl implements ISaleRepository {
   @override
   Future<List<Sale>> getAllSales() async {
     final box = await _openBox();
-    // Simplesmente retorna todos os valores do box
     return box.values.toList();
   }
 }

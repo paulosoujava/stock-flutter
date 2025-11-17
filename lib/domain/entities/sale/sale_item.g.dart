@@ -8,7 +8,7 @@ part of 'sale_item.dart';
 
 class SaleItemAdapter extends TypeAdapter<SaleItem> {
   @override
-  final int typeId = 5;
+  final int typeId = 3;
 
   @override
   SaleItem read(BinaryReader reader) {
@@ -21,7 +21,7 @@ class SaleItemAdapter extends TypeAdapter<SaleItem> {
       productName: fields[1] as String,
       quantity: fields[2] as int,
       pricePerUnit: fields[3] as double,
-      discount: fields[4] as int,
+      discount: fields[4] as int?,
     );
   }
 

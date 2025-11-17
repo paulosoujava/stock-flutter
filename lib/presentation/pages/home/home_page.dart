@@ -15,7 +15,7 @@ import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:stock/presentation/widgets/help_dialog.dart';
 import 'package:stock/presentation/widgets/low_stock_alert_card.dart';
 
-import '../../../core/di/app_module.dart';
+
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

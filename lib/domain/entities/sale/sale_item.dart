@@ -3,33 +3,29 @@ import 'package:hive/hive.dart';
 
 part 'sale_item.g.dart';
 
-@HiveType(typeId: 5)
+@HiveType(typeId: 3)
 class SaleItem extends HiveObject {
-  @HiveField(0)
-  final String productId;
+  @HiveField(0) final String productId;
+  @HiveField(1) final String productName;
+  @HiveField(2) final int quantity;
+  @HiveField(3) final double pricePerUnit;
 
-  @HiveField(1)
-  final String productName;
-
-  @HiveField(2)
-  final int quantity;
-
-  @HiveField(3)
-  final double pricePerUnit;
-
-  @HiveField(4)
-  final int discount; // desconto individual (%)
+  // MUDE DE int → int?
+  @HiveField(4) final int? discount;
 
   SaleItem({
     required this.productId,
     required this.productName,
     required this.quantity,
     required this.pricePerUnit,
-    this.discount = 0,
+    this.discount,
   });
-
-  double get totalPrice => (quantity * pricePerUnit) * (1 - discount / 100);
-
+  double get totalPrice {
+    final discountValue = (discount ?? 0) / 100.0;
+    final discountedPrice = pricePerUnit * (1 - discountValue);
+    return quantity * discountedPrice;
+  }
+  // Adicione copyWith
   SaleItem copyWith({
     String? productId,
     String? productName,

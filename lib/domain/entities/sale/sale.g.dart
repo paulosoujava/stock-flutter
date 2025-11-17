@@ -8,7 +8,7 @@ part of 'sale.dart';
 
 class SaleAdapter extends TypeAdapter<Sale> {
   @override
-  final int typeId = 4;
+  final int typeId = 5;
 
   @override
   Sale read(BinaryReader reader) {
@@ -25,13 +25,17 @@ class SaleAdapter extends TypeAdapter<Sale> {
       totalAmount: fields[5] as double,
       sellerId: fields[6] as String,
       sellerName: fields[7] as String,
+      globalDiscount: fields[8] as int?,
+      globalDescription: fields[9] as String?,
+      isCanceled: fields[10] as bool?,
+      cancelReason: fields[11] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Sale obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -47,7 +51,15 @@ class SaleAdapter extends TypeAdapter<Sale> {
       ..writeByte(6)
       ..write(obj.sellerId)
       ..writeByte(7)
-      ..write(obj.sellerName);
+      ..write(obj.sellerName)
+      ..writeByte(8)
+      ..write(obj.globalDiscount)
+      ..writeByte(9)
+      ..write(obj.globalDescription)
+      ..writeByte(10)
+      ..write(obj.isCanceled)
+      ..writeByte(11)
+      ..write(obj.cancelReason);
   }
 
   @override

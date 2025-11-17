@@ -275,7 +275,22 @@ class _SalesPageState extends State<SalesPage> {
                 builder: (context, snapshot) {
                   final state = snapshot.data;
                   if (state is SalesLoadingState) {
-                    return const Center(child: CircularProgressIndicator());
+                    return Container(
+                      color: Colors.white.withOpacity(0.95),
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(color: Colors.deepPurple),
+                            SizedBox(height: 16),
+                            Text(
+                              "Finalizando venda...",
+                              style: TextStyle(fontSize: 16, color: Colors.deepPurple),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   }
                   if (state is SalesErrorState) {
                     return Center(

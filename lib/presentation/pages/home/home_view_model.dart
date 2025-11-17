@@ -11,7 +11,7 @@ import 'package:stock/presentation/pages/home/home_intent.dart';
 import 'package:stock/presentation/pages/home/home_state.dart';
 import 'package:stock/presentation/widgets/LowStockInfo.dart';
 
-@lazySingleton
+@injectable
 class HomeViewModel {
   final GetAllProductsUseCase _getAllProductsUseCase;
   final GetCategories _getCategoriesUseCase;
@@ -90,7 +90,7 @@ class HomeViewModel {
       }
     }
 
-    @disposeMethod
+
     void dispose() {
       _eventBusSubscription.cancel();
       _stateController.close();

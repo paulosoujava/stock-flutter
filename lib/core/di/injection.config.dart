@@ -25,7 +25,6 @@ import '../../domain/usecases/auth/sign_in_use_case.dart' as _i561;
 import '../../domain/usecases/auth/sign_out_use_case.dart' as _i137;
 import '../../domain/usecases/categories/add_category.dart' as _i159;
 import '../../domain/usecases/categories/delete_category.dart' as _i618;
-import '../../domain/usecases/categories/get_all_sales_use_case.dart' as _i729;
 import '../../domain/usecases/categories/get_categories.dart' as _i263;
 import '../../domain/usecases/categories/update_category.dart' as _i339;
 import '../../domain/usecases/customers/add_customer.dart' as _i798;
@@ -43,8 +42,10 @@ import '../../domain/usecases/reminder/add_reminder.dart' as _i487;
 import '../../domain/usecases/reminder/delete_reminder.dart' as _i859;
 import '../../domain/usecases/reminder/get_reminders.dart' as _i130;
 import '../../domain/usecases/reminder/update_reminder.dart' as _i244;
+import '../../domain/usecases/sales/get_all_sales_use_case.dart' as _i217;
 import '../../domain/usecases/sales/get_sales_by_month_use_case.dart' as _i853;
 import '../../domain/usecases/sales/save_sale_use_case.dart' as _i378;
+import '../../domain/usecases/sales/update_sale_use_case.dart' as _i1051;
 import '../../domain/usecases/supplier/add_supplier.dart' as _i773;
 import '../../domain/usecases/supplier/delete_supplier.dart' as _i82;
 import '../../domain/usecases/supplier/get_suppliers.dart' as _i504;
@@ -149,12 +150,14 @@ _i174.GetIt $initGetIt(
     ),
     dispose: (i) => i.dispose(),
   );
+  gh.factory<_i1051.UpdateSaleUseCase>(
+      () => _i1051.UpdateSaleUseCase(gh<_i666.ISaleRepository>()));
   gh.factory<_i853.GetSalesByMonthUseCase>(
       () => _i853.GetSalesByMonthUseCase(gh<_i666.ISaleRepository>()));
+  gh.factory<_i217.GetAllSalesUseCase>(
+      () => _i217.GetAllSalesUseCase(gh<_i666.ISaleRepository>()));
   gh.factory<_i378.SaveSaleUseCase>(
       () => _i378.SaveSaleUseCase(gh<_i666.ISaleRepository>()));
-  gh.factory<_i729.GetAllSalesUseCase>(
-      () => _i729.GetAllSalesUseCase(gh<_i666.ISaleRepository>()));
   gh.factory<_i244.UpdateReminder>(
       () => _i244.UpdateReminder(gh<_i657.IReminderRepository>()));
   gh.factory<_i487.AddReminder>(
@@ -175,25 +178,18 @@ _i174.GetIt $initGetIt(
     ),
     dispose: (i) => i.dispose(),
   );
-  gh.lazySingleton<_i417.SalesReportViewModel>(
-    () => _i417.SalesReportViewModel(gh<_i729.GetAllSalesUseCase>()),
-    dispose: (i) => i.dispose(),
-  );
   gh.factory<_i286.GetCustomers>(
       () => _i286.GetCustomers(gh<_i141.ICustomerRepository>()));
   gh.factory<_i627.DeleteCustomer>(
       () => _i627.DeleteCustomer(gh<_i141.ICustomerRepository>()));
   gh.factory<_i798.AddCustomer>(
       () => _i798.AddCustomer(gh<_i141.ICustomerRepository>()));
-  gh.lazySingleton<_i222.HomeViewModel>(
-    () => _i222.HomeViewModel(
-      gh<_i237.GetAllProductsUseCase>(),
-      gh<_i263.GetCategories>(),
-      gh<_i557.EventBus>(),
-      gh<_i137.SignOutUseCase>(),
-    ),
-    dispose: (i) => i.dispose(),
-  );
+  gh.factory<_i222.HomeViewModel>(() => _i222.HomeViewModel(
+        gh<_i237.GetAllProductsUseCase>(),
+        gh<_i263.GetCategories>(),
+        gh<_i557.EventBus>(),
+        gh<_i137.SignOutUseCase>(),
+      ));
   gh.factory<_i531.UpdateCustomer>(
       () => _i531.UpdateCustomer(gh<_i141.ICustomerRepository>()));
   gh.factory<_i393.CategoryCreateViewModel>(() => _i393.CategoryCreateViewModel(
@@ -231,6 +227,14 @@ _i174.GetIt $initGetIt(
       gh<_i421.UpdateProduct>(),
       gh<_i439.GetCurrentUserUseCase>(),
       gh<_i706.Uuid>(),
+    ),
+    dispose: (i) => i.dispose(),
+  );
+  gh.lazySingleton<_i417.SalesReportViewModel>(
+    () => _i417.SalesReportViewModel(
+      gh<_i217.GetAllSalesUseCase>(),
+      gh<_i1051.UpdateSaleUseCase>(),
+      gh<_i286.GetCustomers>(),
     ),
     dispose: (i) => i.dispose(),
   );

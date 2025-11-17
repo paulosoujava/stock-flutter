@@ -18,44 +18,31 @@ import 'package:window_manager/window_manager.dart';
 
 import 'core/navigation/app_router.dart';
 
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // 📅 INITIALIZA O LOCALE pt_BR
   await initializeDateFormattingBR();
 
-  // 📦 Hive
   await Hive.initFlutter();
 
-  // ❗ REMOVER EM PRODUÇÃO
-   //await Hive.deleteBoxFromDisk('liveBox');
-   //await Hive.deleteBoxFromDisk('liveSalesBox');
-
+  // REGISTRE ADAPTERS
   _registerHiveAdapters();
 
-  // 🧩 Injeção de dependências
+  //Injeção de dependências
   await configureDependencies();
 
-  // 🖥️ Configuração de Janelas (Somente Desktop)
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
-
     const windowOptions = WindowOptions(
-      //size: Size(1000, 850),
       minimumSize: Size(850, 650),
       center: true,
-      title: '📦 Meu App de Estoque',
+      title: 'Meu App de Estoque',
       titleBarStyle: TitleBarStyle.normal,
       backgroundColor: Color(0xFF1E1E1E),
-      skipTaskbar: false,
-      fullScreen: false,
     );
-
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
@@ -64,6 +51,16 @@ Future<void> main() async {
   }
 
   runApp(const MyApp());
+}
+
+void _registerHiveAdapters() {
+  Hive.registerAdapter(SaleItemAdapter());
+  Hive.registerAdapter(SaleAdapter());
+  Hive.registerAdapter(CustomerAdapter());
+  Hive.registerAdapter(CategoryAdapter());
+  Hive.registerAdapter(ProductAdapter());
+  Hive.registerAdapter(SupplierAdapter());
+  Hive.registerAdapter(ReminderAdapter());
 }
 
 class MyApp extends StatelessWidget {
@@ -89,16 +86,5 @@ class MyApp extends StatelessWidget {
   }
 }
 
-/// Registra todos os adapters do Hive.
-/// Não precisa ser async.
-Future<void> _registerHiveAdapters() async {
-  Hive.registerAdapter(CustomerAdapter());
-  Hive.registerAdapter(CategoryAdapter());
-  Hive.registerAdapter(ProductAdapter());
-  Hive.registerAdapter(SaleAdapter());
-  Hive.registerAdapter(SaleItemAdapter());
-  Hive.registerAdapter(SupplierAdapter());
-  Hive.registerAdapter(ReminderAdapter());
 
-}
 

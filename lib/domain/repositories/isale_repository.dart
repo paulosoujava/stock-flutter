@@ -11,4 +11,6 @@ abstract class ISaleRepository {
   Future<List<Sale>> getSalesByYear(int year);
 
   Future<List<Sale>> getAllSales();
+
+  Future<void> updateSale(Sale sale);
 }

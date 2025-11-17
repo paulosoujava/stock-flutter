@@ -1,4 +1,4 @@
-// Estados da tela de relatório
+
 import 'package:stock/domain/entities/sale/month_sales.dart';
 
 abstract class SalesReportState {}
