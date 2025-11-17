@@ -6,6 +6,7 @@ abstract class AppEvent {}
 
 /// Evento específico para avisaar outas paginas para atualizarem
 class ProductEvent extends AppEvent {}
+class SalesEvent extends AppEvent {}
 
 
 class ListChangedEvent extends AppEvent {

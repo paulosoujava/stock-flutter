@@ -285,7 +285,8 @@ class _SalesPageState extends State<SalesPage> {
                             SizedBox(height: 16),
                             Text(
                               "Finalizando venda...",
-                              style: TextStyle(fontSize: 16, color: Colors.deepPurple),
+                              style: TextStyle(
+                                  fontSize: 16, color: Colors.deepPurple),
                             ),
                           ],
                         ),
@@ -307,15 +308,59 @@ class _SalesPageState extends State<SalesPage> {
                   }
                   if (state is SalesSaleSuccessfulState) {
                     WidgetsBinding.instance.addPostFrameCallback((_) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Venda finalizada com sucesso!'),
-                          backgroundColor: Colors.green,
-                          behavior: SnackBarBehavior.floating,
-                          shape: StadiumBorder(),
+                      showDialog(
+                        context: context,
+                        builder: (dialogContext) => Dialog(
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20)),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                                vertical: 30, horizontal: 20),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircleAvatar(
+                                  radius: 35,
+                                  backgroundColor: Colors.green,
+                                  child: Icon(
+                                    Icons.check_circle_outline,
+                                    color: Colors.white,
+                                    size: 40,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                const Text(
+                                  'Venda Registrada!',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'A venda foi concluída com sucesso e o carrinho foi limpo.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                FilledButton(
+                                  onPressed: () {
+                                    _viewModel.reset();
+                                    Navigator.pop(dialogContext);
+                                  },
+                                  child: const Text('Ótimo!'),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       );
                     });
+
                   }
                   if (state is SalesReadyState) {
                     return _buildSalesReadyView(context, state);
@@ -635,7 +680,6 @@ class _SalesPageState extends State<SalesPage> {
       ),
     );
   }
-
 
   Widget _buildShoppingCart(BuildContext context, SalesReadyState state) {
     final theme = Theme.of(context);
@@ -994,7 +1038,8 @@ class __ProductSearchItemState extends State<_ProductSearchItem>
                         controller: _discountController,
                         keyboardType: TextInputType.number,
                         inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly, // ACEITA APENAS DÍGITOS
+                          FilteringTextInputFormatter.digitsOnly,
+                          // ACEITA APENAS DÍGITOS
                         ],
                         onChanged: (value) {
                           final parsed = int.tryParse(value);
@@ -1006,7 +1051,8 @@ class __ProductSearchItemState extends State<_ProductSearchItem>
                         },
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
-                          contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                          contentPadding:
+                              EdgeInsets.symmetric(vertical: 8, horizontal: 8),
                           hintText: '0', // opcional
                         ),
                       ),

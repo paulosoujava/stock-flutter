@@ -31,6 +31,12 @@ class Customer extends HiveObject{
   @HiveField(8)
   final String? instagram;
 
+  @HiveField(9)
+  final String address1;
+
+  @HiveField(10)
+  final String address2;
+
   Customer({
     required this.id,
     required this.name,
@@ -39,6 +45,8 @@ class Customer extends HiveObject{
     required this.phone,
     required this.whatsapp,
     required this.address,
+    required this.address1,
+    required this.address2,
      this.notes,
      this.instagram,
   });
@@ -51,6 +59,8 @@ class Customer extends HiveObject{
     String? phone,
     String? whatsapp,
     String? address,
+    String? address1,
+    String? address2,
     String? notes,
     String? instagram,
   }){
@@ -62,6 +72,8 @@ class Customer extends HiveObject{
       phone: phone ?? this.phone,
       whatsapp: whatsapp ?? this.whatsapp,
       address: address ?? this.address,
+      address1: address1 ?? this.address1,
+      address2: address2 ?? this.address2,
       notes: notes ?? this.notes,
       instagram: instagram ?? this.instagram,
     );

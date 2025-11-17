@@ -24,6 +24,8 @@ import 'package:stock/presentation/pages/supplier/form/supplier_form_page.dart';
 import 'package:stock/presentation/pages/supplier/list/supplier_list_page.dart';
 import 'package:stock/presentation/widgets/error_route_page.dart';
 
+import '../../presentation/pages/sales/report/sales_report_page.dart';
+
 final appRouter = GoRouter(
   initialLocation: AppRoutes.login,
   observers: [GoRouterObserver()],
@@ -166,6 +168,11 @@ final appRouter = GoRouter(
       builder: (context, state) => const LoginPage(),
     ),
 
+    //REPORT
+    GoRoute(
+      path: AppRoutes.reportPage,
+      builder: (context, state) => const SalesReportPage(),
+    )
   ],
 );
 

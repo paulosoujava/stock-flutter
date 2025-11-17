@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:injectable/injectable.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:stock/core/events/event_bus.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
@@ -21,6 +22,7 @@ class SalesViewModel {
   final UpdateProduct _updateProductUseCase;
   final GetCurrentUserUseCase _getCurrentUser;
   final Uuid _uuid;
+  final EventBus _eventBus;
 
   final _stateController = BehaviorSubject<SalesState>();
 
@@ -38,6 +40,7 @@ class SalesViewModel {
     this._updateProductUseCase,
     this._getCurrentUser,
     this._uuid,
+    this._eventBus,
   ) {
     _stateController.add(SalesReadyState());
   }
@@ -257,17 +260,20 @@ class SalesViewModel {
       // 4. ESTOQUE
       final productsInDb = await _getAllProductsUseCase();
       for (final cartItem in currentState.cart) {
-        final product = productsInDb.firstWhere((p) => p.id == cartItem.productId);
+        final product =
+            productsInDb.firstWhere((p) => p.id == cartItem.productId);
         if (product.stockQuantity < cartItem.quantity) {
           throw Exception('Estoque insuficiente: ${product.name}');
         }
         await _updateProductUseCase(
-          product.copyWith(stockQuantity: product.stockQuantity - cartItem.quantity),
+          product.copyWith(
+              stockQuantity: product.stockQuantity - cartItem.quantity),
         );
       }
 
       // 5. TOTAL COM DESCONTO
-      final totalWithDiscount = currentState.cartTotal * (1 - currentState.globalDiscount / 100);
+      final totalWithDiscount =
+          currentState.cartTotal * (1 - currentState.globalDiscount / 100);
 
       // 6. CRIA VENDA
       final sale = Sale(
@@ -276,7 +282,9 @@ class SalesViewModel {
         customerName: currentState.selectedCustomer!.name,
         saleDate: DateTime.now(),
         items: currentState.cart,
-        totalAmount: currentState.globalDiscount > 0 ? totalWithDiscount : currentState.cartTotal,
+        totalAmount: currentState.globalDiscount > 0
+            ? totalWithDiscount
+            : currentState.cartTotal,
         sellerId: currentUser.uid,
         sellerName: currentUser.displayName ?? 'Vendedor',
         globalDiscount: currentState.globalDiscount,
@@ -288,9 +296,7 @@ class SalesViewModel {
 
       // 8. SUCESSO
       _stateController.add(SalesSaleSuccessfulState());
-      await Future.delayed(const Duration(milliseconds: 800));
-      _stateController.add(SalesReadyState());
-
+      _eventBus.fire(SalesEvent());
     } catch (e) {
       _stateController.add(SalesErrorState(e.toString()));
       await Future.delayed(const Duration(seconds: 3));

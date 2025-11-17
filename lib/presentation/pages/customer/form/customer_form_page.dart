@@ -29,6 +29,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
   final _phoneController = TextEditingController();
   final _whatsappController = TextEditingController();
   final _addressController = TextEditingController();
+  final _addressController1 = TextEditingController();
+  final _addressController2 = TextEditingController();
   final _notesController = TextEditingController();
   final _instagramController = TextEditingController();
 
@@ -87,6 +89,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     _nameController.text = customer.name;
     _emailController.text = customer.email;
     _addressController.text = customer.address;
+    _addressController1.text = customer.address1;
+    _addressController2.text = customer.address2;
     _notesController.text = customer.notes ?? "";
     _instagramController.text = customer.instagram ?? "";
 
@@ -122,6 +126,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     _phoneController.dispose();
     _whatsappController.dispose();
     _addressController.dispose();
+    _addressController1.dispose();
+    _addressController2.dispose();
     _notesController.dispose();
     _instagramController.dispose();
     _viewModel.dispose();
@@ -147,6 +153,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
         phone: cleanPhone,
         whatsapp: _isWhatsAppSameAsPhone ? cleanPhone : cleanWhatsApp,
         address: _addressController.text.trim(),
+        address1: _addressController1.text.trim(),
+        address2: _addressController2.text.trim(),
         notes: _notesController.text.trim(),
         instagram: _instagramController.text.trim(),
       );
@@ -248,6 +256,16 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
                       CustomTextFormField(
                         controller: _addressController,
                         labelText: 'Endereço',
+                        icon: Icons.location_on,
+                      ),
+                      CustomTextFormField(
+                        controller: _addressController1,
+                        labelText: 'Endereço 2',
+                        icon: Icons.location_on,
+                      ),
+                      CustomTextFormField(
+                        controller: _addressController2,
+                        labelText: 'Endereço 3',
                         icon: Icons.location_on,
                       ),
                       CustomTextFormField(

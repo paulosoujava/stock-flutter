@@ -18,16 +18,16 @@ class CustomerListPage extends StatefulWidget {
   State<CustomerListPage> createState() => _CustomerListPageState();
 }
 
-class _CustomerListPageState extends State<CustomerListPage> with TickerProviderStateMixin {
+class _CustomerListPageState extends State<CustomerListPage>
+    with TickerProviderStateMixin {
   late final CustomerListViewModel _viewModel;
   final _searchController = TextEditingController();
-  late final AnimationController _fabController;
+
 
   @override
   void initState() {
     super.initState();
     _viewModel = getIt<CustomerListViewModel>();
-    _fabController = AnimationController(vsync: this, duration: const Duration(milliseconds: 300));
 
     _searchController.addListener(() {
       _viewModel.handleIntent(SearchCustomerIntent(_searchController.text));
@@ -37,22 +37,20 @@ class _CustomerListPageState extends State<CustomerListPage> with TickerProvider
   @override
   void dispose() {
     _searchController.dispose();
-    _fabController.dispose();
     _viewModel.dispose();
     super.dispose();
   }
 
   Future<void> _navigateToCreateCustomer() async {
-    _fabController.forward();
     final result = await context.push<bool>(AppRoutes.customerCreate);
     if (result == true) {
       _viewModel.handleIntent(FetchCustomersIntent());
     }
-    _fabController.reverse();
   }
 
   Future<void> _navigateToEditCustomer(Customer customer) async {
-    final result = await context.push<bool>(AppRoutes.customerEdit, extra: customer);
+    final result =
+        await context.push<bool>(AppRoutes.customerEdit, extra: customer);
     if (result == true) {
       _viewModel.handleIntent(FetchCustomersIntent());
     }
@@ -94,43 +92,53 @@ class _CustomerListPageState extends State<CustomerListPage> with TickerProvider
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          'Clientes',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Pesquisar por nome, CPF ou telefone...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
+          title: const Text(
+            'Clientes',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
+          ),
+          backgroundColor: theme.primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(80),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Pesquisar por nome, CPF ou telefone...',
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            _viewModel.handleIntent(SearchCustomerIntent(''));
+                          },
+                        )
+                      : null,
                 ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _viewModel.handleIntent(SearchCustomerIntent(''));
-                  },
-                )
-                    : null,
               ),
             ),
           ),
-        ),
-      ),
+          actions: [
+            IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'Cadastrar cliente',
+                onPressed: () {
+                  _navigateToCreateCustomer();
+                }),
+            SizedBox(
+              width: 20,
+            )
+          ]),
       body: StreamBuilder<CustomerListState>(
         stream: _viewModel.state,
         builder: (context, snapshot) {
@@ -146,7 +154,8 @@ class _CustomerListPageState extends State<CustomerListPage> with TickerProvider
                 children: [
                   Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
                   const SizedBox(height: 16),
-                  Text(state.message, style: const TextStyle(color: Colors.black54)),
+                  Text(state.message,
+                      style: const TextStyle(color: Colors.black54)),
                 ],
               ),
             );
@@ -163,29 +172,10 @@ class _CustomerListPageState extends State<CustomerListPage> with TickerProvider
               itemCount: customers.length,
               itemBuilder: (context, index) {
                 final customer = customers[index];
-                final animationController = AnimationController(
-                  vsync: this,
-                  duration: const Duration(milliseconds: 300),
-                );
-                final animation = CurvedAnimation(
-                  parent: animationController,
-                  curve: Curves.easeOut,
-                );
-
-                Future.delayed(Duration(milliseconds: index * 80), () {
-                  if (mounted) animationController.forward();
-                });
-
-                return FadeTransition(
-                  opacity: animation,
-                  child: SlideTransition(
-                    position: Tween<Offset>(begin: const Offset(0, 0.1), end: Offset.zero).animate(animation),
-                    child: _AnimatedCustomerCard(
-                      customer: customer,
-                      onEdit: () => _navigateToEditCustomer(customer),
-                      onDelete: () => _showDeleteConfirmation(customer),
-                    ),
-                  ),
+                return _AnimatedCustomerCard(
+                  customer: customer,
+                  onEdit: () => _navigateToEditCustomer(customer),
+                  onDelete: () => _showDeleteConfirmation(customer),
                 );
               },
             );
@@ -193,18 +183,6 @@ class _CustomerListPageState extends State<CustomerListPage> with TickerProvider
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: ScaleTransition(
-        scale: _fabController,
-        child: FloatingActionButton.extended(
-          onPressed: _navigateToCreateCustomer,
-          backgroundColor: theme.primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 8,
-          label: const Text('Novo Cliente', style: TextStyle(fontWeight: FontWeight.bold)),
-          icon: const Icon(Icons.person_add),
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -217,7 +195,10 @@ class _CustomerListPageState extends State<CustomerListPage> with TickerProvider
           const SizedBox(height: 24),
           const Text(
             'Nenhum cliente cadastrado',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black54),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54),
           ),
           const SizedBox(height: 8),
           Text(
@@ -249,15 +230,18 @@ class _AnimatedCustomerCard extends StatefulWidget {
   State<_AnimatedCustomerCard> createState() => __AnimatedCustomerCardState();
 }
 
-class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard> with SingleTickerProviderStateMixin {
+class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
-    _scale = Tween<double>(begin: 1.0, end: 0.97).animate(CurvedAnimation(parent: _controller, curve: Curves.ease));
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 150));
+    _scale = Tween<double>(begin: 1.0, end: 0.97)
+        .animate(CurvedAnimation(parent: _controller, curve: Curves.ease));
   }
 
   @override
@@ -269,7 +253,8 @@ class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard> with Sing
   void _showCustomerDetails() {
     showDialog(
       context: context,
-      builder: (dialogContext) => _CustomerDetailsDialog(customer: widget.customer),
+      builder: (dialogContext) =>
+          _CustomerDetailsDialog(customer: widget.customer),
     );
   }
 
@@ -313,7 +298,9 @@ class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard> with Sing
                   radius: 28,
                   backgroundColor: theme.primaryColor.withOpacity(0.1),
                   child: Text(
-                    widget.customer.name.isNotEmpty ? widget.customer.name[0].toUpperCase() : '?',
+                    widget.customer.name.isNotEmpty
+                        ? widget.customer.name[0].toUpperCase()
+                        : '?',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -328,19 +315,24 @@ class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard> with Sing
                     children: [
                       Text(
                         widget.customer.name,
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 17, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       if (widget.customer.phone.isNotEmpty)
                         Row(
                           children: [
-                            const Icon(Icons.phone, size: 14, color: Colors.green),
+                            const Icon(Icons.phone,
+                                size: 14, color: Colors.green),
                             const SizedBox(width: 4),
-                            Text(widget.customer.phone, style: const TextStyle(fontSize: 13)),
+                            Text(widget.customer.phone,
+                                style: const TextStyle(fontSize: 13)),
                           ],
                         ),
                       if (widget.customer.cpf.isNotEmpty)
-                        Text('CPF: ${widget.customer.cpf}', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                        Text('CPF: ${widget.customer.cpf}',
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.black54)),
                     ],
                   ),
                 ),
@@ -353,18 +345,14 @@ class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard> with Sing
                       IconButton(
                         icon: const Icon(Icons.message, color: Colors.green),
                         tooltip: 'WhatsApp',
-                        onPressed: () => _launchWhatsApp(widget.customer.whatsapp),
+                        onPressed: () =>
+                            _launchWhatsApp(widget.customer.whatsapp),
                       ),
-                    // Mapa
-                    if (widget.customer.address.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.location_on, color: Colors.blue),
-                        tooltip: 'Abrir no mapa',
-                        onPressed: () => UrlLauncherUtils.launchMap(context, widget.customer.address),
-                      ),
+
                     // Editar
                     IconButton(
-                      icon: const Icon(Icons.edit_outlined, color: Colors.orange),
+                      icon:
+                          const Icon(Icons.edit_outlined, color: Colors.orange),
                       tooltip: 'Editar',
                       onPressed: widget.onEdit,
                     ),
@@ -423,8 +411,13 @@ class _CustomerDetailsDialog extends StatelessWidget {
                   radius: 30,
                   backgroundColor: theme.primaryColor.withOpacity(0.1),
                   child: Text(
-                    customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: theme.primaryColor),
+                    customer.name.isNotEmpty
+                        ? customer.name[0].toUpperCase()
+                        : '?',
+                    style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: theme.primaryColor),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -434,17 +427,21 @@ class _CustomerDetailsDialog extends StatelessWidget {
                     children: [
                       Text(
                         customer.name,
-                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                       if (customer.cpf.isNotEmpty)
-                        Text('CPF: ${customer.cpf}', style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                        Text('CPF: ${customer.cpf}',
+                            style: const TextStyle(
+                                fontSize: 13, color: Colors.black54)),
                     ],
                   ),
                 ),
               ],
             ),
             const Divider(height: 32),
-            _infoRow('Telefone', customer.phone, Icons.phone, color: Colors.green),
+            _infoRow('Telefone', customer.phone, Icons.phone,
+                color: Colors.green),
             _infoRow(
               'WhatsApp',
               customer.whatsapp.isEmpty ? 'Não informado' : customer.whatsapp,
@@ -452,10 +449,11 @@ class _CustomerDetailsDialog extends StatelessWidget {
               color: Colors.green,
               trailing: customer.whatsapp.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.open_in_new, color: Colors.green),
-                onPressed: () => _launchWhatsApp(context, customer.whatsapp),
-                tooltip: 'Abrir WhatsApp',
-              )
+                      icon: const Icon(Icons.open_in_new, color: Colors.green),
+                      onPressed: () =>
+                          _launchWhatsApp(context, customer.whatsapp),
+                      tooltip: 'Abrir WhatsApp',
+                    )
                   : null,
             ),
             _infoRow(
@@ -465,19 +463,50 @@ class _CustomerDetailsDialog extends StatelessWidget {
               color: Colors.blue,
               trailing: customer.address.isNotEmpty
                   ? IconButton(
-                icon: const Icon(Icons.map, color: Colors.blue),
-                onPressed: () => UrlLauncherUtils.launchMap(context, customer.address),
-                tooltip: 'Abrir no mapa',
-              )
+                      icon: const Icon(Icons.map, color: Colors.blue),
+                      onPressed: () =>
+                          UrlLauncherUtils.launchMap(context, customer.address),
+                      tooltip: 'Abrir no mapa',
+                    )
                   : null,
             ),
-            _infoRow('Observações', customer.notes ?? 'Sem observações', Icons.note),
+            _infoRow(
+              'Endereço',
+              customer.address.isEmpty ? 'Não informado' : customer.address1,
+              Icons.location_on,
+              color: Colors.blue,
+              trailing: customer.address.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.map, color: Colors.blue),
+                      onPressed: () => UrlLauncherUtils.launchMap(
+                          context, customer.address1),
+                      tooltip: 'Abrir no mapa',
+                    )
+                  : null,
+            ),
+            _infoRow(
+              'Endereço',
+              customer.address.isEmpty ? 'Não informado' : customer.address2,
+              Icons.location_on,
+              color: Colors.blue,
+              trailing: customer.address.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.map, color: Colors.blue),
+                      onPressed: () => UrlLauncherUtils.launchMap(
+                          context, customer.address2),
+                      tooltip: 'Abrir no mapa',
+                    )
+                  : null,
+            ),
+            _infoRow(
+                'Observações', customer.notes ?? 'Sem observações', Icons.note),
             const SizedBox(height: 20),
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () => Navigator.pop(context),
-                child: const Text('FECHAR', style: TextStyle(fontWeight: FontWeight.bold)),
+                child: const Text('FECHAR',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
               ),
             ),
           ],
@@ -486,7 +515,8 @@ class _CustomerDetailsDialog extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(String label, String value, IconData icon, {Color? color, Widget? trailing}) {
+  Widget _infoRow(String label, String value, IconData icon,
+      {Color? color, Widget? trailing}) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
@@ -496,15 +526,17 @@ class _CustomerDetailsDialog extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             flex: 2,
-            child: Text('$label:', style: const TextStyle(fontWeight: FontWeight.bold)),
+            child: Text('$label:',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
           ),
           Expanded(
             flex: 3,
             child: Row(
               children: [
-                Expanded(child: Text(value, style: const TextStyle(color: Colors.black87))),
-                if (trailing != null)
-                  SizedBox(height: 36, child: trailing),
+                Expanded(
+                    child: Text(value,
+                        style: const TextStyle(color: Colors.black87))),
+                if (trailing != null) SizedBox(height: 36, child: trailing),
               ],
             ),
           ),

@@ -39,7 +39,8 @@ class CustomerListViewModel {
   }
 
 Future<void> _fetchCustomers() async {
-  _stateController.add(CustomerListLoadingState());
+//  _stateController.add(CustomerListLoadingState());
+  await Future.delayed(const Duration(seconds: 1));
   try {
     final customers = await _getCustomers();
     // No início, a lista filtrada é a mesma que a lista completa

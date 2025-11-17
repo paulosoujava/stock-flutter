@@ -26,6 +26,7 @@ class SaleAdapter extends TypeAdapter<Sale> {
       sellerId: fields[6] as String,
       sellerName: fields[7] as String,
       globalDiscount: fields[8] as int?,
+      delivery: fields[12] as DeliveryInfo?,
       globalDescription: fields[9] as String?,
       isCanceled: fields[10] as bool?,
       cancelReason: fields[11] as String?,
@@ -35,7 +36,7 @@ class SaleAdapter extends TypeAdapter<Sale> {
   @override
   void write(BinaryWriter writer, Sale obj) {
     writer
-      ..writeByte(12)
+      ..writeByte(13)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -59,7 +60,9 @@ class SaleAdapter extends TypeAdapter<Sale> {
       ..writeByte(10)
       ..write(obj.isCanceled)
       ..writeByte(11)
-      ..write(obj.cancelReason);
+      ..write(obj.cancelReason)
+      ..writeByte(12)
+      ..write(obj.delivery);
   }
 
   @override

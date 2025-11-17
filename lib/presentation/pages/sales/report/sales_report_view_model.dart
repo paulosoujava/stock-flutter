@@ -3,30 +3,44 @@ import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:injectable/injectable.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:stock/data/model/params_delivery.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
 import 'package:stock/domain/entities/sale/month_sales.dart';
 import 'package:stock/domain/usecases/customers/get_customers.dart';
+import 'package:stock/domain/usecases/delivery/get_delivery_usecase.dart';
+import 'package:stock/domain/usecases/delivery/register_delivery_usecase.dart';
+import 'package:stock/presentation/pages/sales/delivery/delivery_dialog.dart';
+import '../../../../core/events/event_bus.dart';
+import '../../../../data/model/delivery.dart';
 import '../../../../domain/usecases/sales/update_sale_use_case.dart';
 import '../../../../domain/usecases/sales/get_all_sales_use_case.dart';
+import '../../products/list/categories/product_category_list_intent.dart';
 import 'sales_report_intent.dart';
 import 'sales_report_state.dart';
 
-@lazySingleton
+@injectable
 class SalesReportViewModel {
   final GetAllSalesUseCase _getAllSalesUseCase;
   final UpdateSaleUseCase _updateSaleUseCase;
   final GetCustomers _getCustomersUseCase;
-
+  final RegisterDeliveryUseCase _registerDeliveryUseCase;
+  final GetDeliveryUseCase _getDeliveryUseCase;
+  final EventBus _eventBus;
   final _stateController = BehaviorSubject<SalesReportState>();
+
   Stream<SalesReportState> get state => _stateController.stream;
 
   SalesReportViewModel(
-      this._getAllSalesUseCase,
-      this._updateSaleUseCase,
-      this._getCustomersUseCase,
-      ) {
+    this._getAllSalesUseCase,
+    this._updateSaleUseCase,
+    this._getCustomersUseCase,
+    this._registerDeliveryUseCase,
+    this._getDeliveryUseCase,
+    this._eventBus,
+  ) {
     _init();
+    _listenToEvents();
   }
 
   void _init() {
@@ -41,9 +55,33 @@ class SalesReportViewModel {
     }
   }
 
-  Future<Customer> getCustomerById(String id) async {
+  Future<Customer?> getCustomerById(String id) async {
     final allCustomers = await _getCustomersUseCase();
-    return allCustomers.firstWhere((customer) => customer.id == id);
+    return allCustomers.firstWhereOrNull((customer) => customer.id == id);
+  }
+
+  Future<void> _listenToEvents() async {
+    _eventBus.stream.listen((event) async {
+      if (event is SalesEvent) {
+        print("Evento recebido: $event");
+        _stateController  .add(SalesReportLoading());
+        await Future.delayed(const Duration(seconds: 1));
+        _loadReport();
+        print("Evento recebido DEI LOAD NA PAGINA: $event");
+      }
+    });
+  }
+
+  Future<void> onRegisterDelivery(String saleId, DeliveryData data) async {
+    print("saleId $saleId data $data");
+    await _registerDeliveryUseCase(
+      DeliveryParams(saleId: saleId, data: data),
+    );
+    _eventBus.fire(SalesEvent());
+  }
+
+  Future<DeliveryData?> fetchDeliveryData(String saleId) async {
+    return await _getDeliveryUseCase(saleId);
   }
 
   // ===============================================================
@@ -87,10 +125,12 @@ class SalesReportViewModel {
         print("--- [3] PROCESSANDO ANO: $year ---");
         print(" - Total de vendas neste ano: ${yearSales.length}");
 
-        final yearTotal = yearSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+        final yearTotal =
+            yearSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
         print(" - Valor total para o ano $year: $yearTotal");
 
-        final salesByMonth = groupBy(yearSales, (Sale sale) => sale.saleDate.month);
+        final salesByMonth =
+            groupBy(yearSales, (Sale sale) => sale.saleDate.month);
         final List<MonthlySales> monthlySalesList = [];
 
         print(" - Meses encontrados: ${salesByMonth.keys.toList()}");
@@ -100,14 +140,15 @@ class SalesReportViewModel {
           print(" --- [4] PROCESSANDO MÊS: $month/$year ---");
           print(" - Total de vendas neste mês: ${monthSales.length}");
 
-          final monthTotal = monthSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+          final monthTotal =
+              monthSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
           print(" - Valor total para o mês $month: $monthTotal");
 
           final Map<String, double> sellerSalesMap = {};
           for (var sale in monthSales) {
             sellerSalesMap.update(
               sale.sellerName,
-                  (value) => value + sale.totalAmount,
+              (value) => value + sale.totalAmount,
               ifAbsent: () => sale.totalAmount,
             );
           }
@@ -159,13 +200,16 @@ class SalesReportViewModel {
       for (var yearData in yearlySalesList) {
         print(" • Ano ${yearData.year}: R\$${yearData.totalAmount}");
         for (var monthData in yearData.monthlySales) {
-          print("   ├─ Mês ${monthData.month}: R\$${monthData.totalAmount} (${monthData.sales.length} vendas)");
+          print(
+              "   ├─ Mês ${monthData.month}: R\$${monthData.totalAmount} (${monthData.sales.length} vendas)");
           if (monthData.sellerPerformances.isNotEmpty) {
-            print("   └─ Top vendedor: ${monthData.sellerPerformances.first.sellerName}");
+            print(
+                "   └─ Top vendedor: ${monthData.sellerPerformances.first.sellerName}");
           }
         }
       }
-      print("---------------------------------------------------------------------\n");
+      print(
+          "---------------------------------------------------------------------\n");
 
       _stateController.add(SalesReportLoaded(yearlySales: yearlySalesList));
     } catch (e, stackTrace) {
@@ -173,7 +217,8 @@ class SalesReportViewModel {
       print("Erro: $e");
       print("Stack: $stackTrace");
       print("----------------------------------------------------------\n");
-      _stateController.add(SalesReportError("Erro ao gerar relatório: ${e.toString()}"));
+      _stateController
+          .add(SalesReportError("Erro ao gerar relatório: ${e.toString()}"));
     }
   }
 
@@ -194,13 +239,14 @@ class SalesReportViewModel {
       );
 
       await _updateSaleUseCase(updatedSale);
-      _loadReport(); // Recarrega com dados atualizados
+      _loadReport();
     } catch (e) {
-      _stateController.add(SalesReportError("Erro ao cancelar venda: ${e.toString()}"));
+      _stateController
+          .add(SalesReportError("Erro ao cancelar venda: ${e.toString()}"));
     }
   }
 
-  @disposeMethod
+
   void dispose() {
     _stateController.close();
   }

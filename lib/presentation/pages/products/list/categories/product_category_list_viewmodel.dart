@@ -44,7 +44,7 @@ class ProductCategoryListViewModel {
   }
 
   Future<void> _loadData() async {
-    _stateController.add(ProductCategoryListLoading());
+   // _stateController.add(ProductCategoryListLoading());
     try {
       final categories = await _getCategories();
       if (categories.isEmpty) {

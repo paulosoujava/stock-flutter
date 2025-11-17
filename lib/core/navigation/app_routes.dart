@@ -27,4 +27,6 @@ class AppRoutes {
   static const String liveList = '/live';
   static const String liveForm = '/live-form';
   static const String liveSession = '/live-session';
+
+  static const String reportPage = '/report-page';
 }

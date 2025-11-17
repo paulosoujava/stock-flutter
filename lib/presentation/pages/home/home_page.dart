@@ -7,6 +7,7 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/presentation/pages/home/home_intent.dart';
 import 'package:stock/presentation/pages/home/home_state.dart';
 import 'package:stock/presentation/pages/home/home_view_model.dart';
+import 'package:stock/presentation/pages/sales/lives/list/live_list_page.dart';
 import 'package:stock/presentation/pages/sales/report/sales_report_page.dart';
 
 import 'package:stock/presentation/widgets/action_card.dart';
@@ -123,7 +124,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Dashboard'),
@@ -156,7 +157,8 @@ class _HomePageState extends State<HomePage> {
             ),
             tabs: const [
               Tab(icon: Icon(Icons.touch_app), text: 'Ações'),
-              Tab(icon: Icon(Icons.bar_chart), text: 'Relatórios')
+              Tab(icon: Icon(Icons.bar_chart), text: 'Relatórios'),
+              Tab(icon: Icon(Icons.live_tv), text: 'Lives')
             ],
           ),
         ),
@@ -172,6 +174,7 @@ class _HomePageState extends State<HomePage> {
             ),
             // 2 Aba de Relatórios agora mostra a página de relatório
             const SalesReportPage(),
+             LiveListPage(),
 
           ],
         ),
