@@ -47,12 +47,12 @@ class _DeliveryDialogState extends State<DeliveryDialog> {
       if (widget.customer!.address.isNotEmpty) {
         _addresses.add(widget.customer!.address);
       }
-      if (widget.customer!.address1.isNotEmpty) {
+      /*if (widget.customer!.address1.isNotEmpty) {
         _addresses.add(widget.customer!.address1);
       }
       if (widget.customer!.address2.isNotEmpty) {
         _addresses.add(widget.customer!.address2);
-      }
+      }*/
     }
     if (_addresses.isNotEmpty) _selectedAddress = _addresses.first;
     final deliveryToEdit = widget.deliveryToEdit;
@@ -102,7 +102,7 @@ class _DeliveryDialogState extends State<DeliveryDialog> {
             children: [
               // Método de entrega
               DropdownButtonFormField<String>(
-                value: _selectedMethod,
+                initialValue: _selectedMethod,
                 items: ['Uber', 'Moto', 'Loja', 'Outro']
                     .map((m) => DropdownMenuItem(value: m, child: Text(m)))
                     .toList(),
@@ -117,7 +117,7 @@ class _DeliveryDialogState extends State<DeliveryDialog> {
                 ),
 
               DropdownButtonFormField<String>(
-                value: _selectedPayment,
+                initialValue: _selectedPayment,
                 items: ['Dinheiro', 'Cartão', 'Outro']
                     .map((p) => DropdownMenuItem(value: p, child: Text(p)))
                     .toList(),
@@ -135,7 +135,7 @@ class _DeliveryDialogState extends State<DeliveryDialog> {
               // Endereços (dynamic)
               if (!isStore && _addresses.isNotEmpty)
                 DropdownButtonFormField<String>(
-                  value: _selectedAddress,
+                  initialValue: _selectedAddress,
                   items: _addresses
                       .map((a) => DropdownMenuItem(value: a, child: Text(a)))
                       .toList(),
@@ -148,7 +148,7 @@ class _DeliveryDialogState extends State<DeliveryDialog> {
 
               // Status
               DropdownButtonFormField<String>(
-                value: _selectedStatus,
+                initialValue: _selectedStatus,
                 items: ['Pendente', 'Saiu para entrega', 'Entregue', 'Retornou']
                     .map((s) => DropdownMenuItem(value: s, child: Text(s)))
                     .toList(),

@@ -212,10 +212,10 @@ class _SalesReportPageState extends State<SalesReportPage>{
                   _infoTile("Telefone", customer.phone),
                   _infoTile("WhatsApp", customer.whatsapp),
                   _infoTile("Endereço", customer.address),
-                  if (customer.address1.isNotEmpty)
-                    _infoTile("Endereço 2", customer.address1),
-                  if (customer.address2.isNotEmpty)
-                    _infoTile("Endereço 3", customer.address2),
+                  if (customer.address1!.isNotEmpty)
+                    _infoTile("Endereço 2", customer.address1!),
+                  if (customer.address2!.isNotEmpty)
+                    _infoTile("Endereço 3", customer.address2!),
                   if (customer.instagram != null &&
                       customer.instagram!.isNotEmpty)
                     _infoTile("Instagram", customer.instagram!),

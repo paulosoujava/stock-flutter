@@ -7,7 +7,8 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/presentation/pages/home/home_intent.dart';
 import 'package:stock/presentation/pages/home/home_state.dart';
 import 'package:stock/presentation/pages/home/home_view_model.dart';
-import 'package:stock/presentation/pages/sales/lives/list/live_list_page.dart';
+import 'package:stock/presentation/pages/live/list/live_list_screen.dart.dart';
+
 import 'package:stock/presentation/pages/sales/report/sales_report_page.dart';
 
 import 'package:stock/presentation/widgets/action_card.dart';
@@ -164,7 +165,9 @@ class _HomePageState extends State<HomePage> {
         ),
         body: TabBarView(
           children: [
-            // Aba de Ações
+            /**********************************************************************
+            //HOME
+            **********************************************************************/
             StreamBuilder<HomeState>(
               stream: _viewModel.state,
               builder: (context, snapshot) {
@@ -172,10 +175,14 @@ class _HomePageState extends State<HomePage> {
                 return _buildActionsTab(context, state);
               },
             ),
-            // 2 Aba de Relatórios agora mostra a página de relatório
+            /**********************************************************************
+            //REPORT
+            **********************************************************************/
             const SalesReportPage(),
-             LiveListPage(),
-
+            /**********************************************************************
+            //LIVE
+            **********************************************************************/
+            LiveListScreen()
           ],
         ),
       ),

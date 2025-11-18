@@ -13,6 +13,7 @@ import 'package:stock/presentation/pages/customer/form/customer_form_page.dart';
 
 import 'package:stock/presentation/pages/customer/list/customer_list_page.dart';
 import 'package:stock/presentation/pages/home/home_page.dart';
+import 'package:stock/presentation/pages/live/sale/live_sale_screen.dart';
 import 'package:stock/presentation/pages/login/login_page.dart';
 import 'package:stock/presentation/pages/products/form/product_form_page.dart';
 import 'package:stock/presentation/pages/products/list/categories/product_category_list_page.dart';
@@ -172,7 +173,17 @@ final appRouter = GoRouter(
     GoRoute(
       path: AppRoutes.reportPage,
       builder: (context, state) => const SalesReportPage(),
-    )
+    ),
+
+    //LIVE
+    GoRoute(
+      path: '/live-sale/:liveId',   // <-- IMPORTANTE: parâmetro na URL
+      name: AppRoutes.liveSale,     // opcional, mas recomendado
+      builder: (context, state) {
+        final liveId = state.pathParameters['liveId']!;
+        return LiveSaleScreen(liveId: liveId); // vamos mudar a tela pra receber o ID
+      },
+    ),
   ],
 );
 

@@ -20,6 +20,9 @@ import 'package:stock/domain/repositories/isale_repository.dart';
 import 'package:stock/domain/repositories/isupplier_repository.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../data/repositories/live_repository_impl.dart';
+import '../../domain/repositories/ilive_repository.dart';
+
 
 @module
 abstract class AppModule {
@@ -53,5 +56,7 @@ abstract class AppModule {
   @lazySingleton
   IDeliveryRepository get deliveryRepository => DeliveryRepositoryImpl();
 
+  @lazySingleton
+  ILiveRepository get liveRepository => LiveRepositoryImpl();
 }
 

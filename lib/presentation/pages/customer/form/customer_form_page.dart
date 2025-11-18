@@ -89,8 +89,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     _nameController.text = customer.name;
     _emailController.text = customer.email;
     _addressController.text = customer.address;
-    _addressController1.text = customer.address1;
-    _addressController2.text = customer.address2;
+    _addressController1.text = customer.address1?? "";
+    _addressController2.text = customer.address2?? "";
     _notesController.text = customer.notes ?? "";
     _instagramController.text = customer.instagram ?? "";
 

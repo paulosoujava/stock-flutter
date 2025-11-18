@@ -32,10 +32,10 @@ class Customer extends HiveObject{
   final String? instagram;
 
   @HiveField(9)
-  final String address1;
+  final String? address1;
 
   @HiveField(10)
-  final String address2;
+  final String? address2;
 
   Customer({
     required this.id,

@@ -16,6 +16,20 @@ class CustomerRepositoryImpl implements ICustomerRepository {
   }
 
   @override
+  Future<Customer?> getCustomerByInstagram(String instagram) async {
+    final box = await _openBox();
+    final clean = instagram.trim().toLowerCase();
+
+    try {
+      return box.values.firstWhere(
+            (c) => c.instagram?.trim().toLowerCase() == clean,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
   Future<List<Customer>> getCustomers() async {
     final box = await _openBox();
     final customers = box.values.toList()

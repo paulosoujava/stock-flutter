@@ -24,8 +24,8 @@ class CustomerAdapter extends TypeAdapter<Customer> {
       phone: fields[4] as String,
       whatsapp: fields[5] as String,
       address: fields[6] as String,
-      address1: fields[9] as String,
-      address2: fields[10] as String,
+      address1: fields[9] as String?,
+      address2: fields[10] as String?,
       notes: fields[7] as String?,
       instagram: fields[8] as String?,
     );

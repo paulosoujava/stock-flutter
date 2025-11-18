@@ -472,28 +472,28 @@ class _CustomerDetailsDialog extends StatelessWidget {
             ),
             _infoRow(
               'Endereço',
-              customer.address.isEmpty ? 'Não informado' : customer.address1,
+              customer.address1!.isEmpty ? 'Não informado' : customer.address1 ??  "",
               Icons.location_on,
               color: Colors.blue,
               trailing: customer.address.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.map, color: Colors.blue),
                       onPressed: () => UrlLauncherUtils.launchMap(
-                          context, customer.address1),
+                          context, customer.address1?? ""),
                       tooltip: 'Abrir no mapa',
                     )
                   : null,
             ),
             _infoRow(
               'Endereço',
-              customer.address.isEmpty ? 'Não informado' : customer.address2,
+              customer.address.isEmpty ? 'Não informado' : customer.address2 ?? "",
               Icons.location_on,
               color: Colors.blue,
               trailing: customer.address.isNotEmpty
                   ? IconButton(
                       icon: const Icon(Icons.map, color: Colors.blue),
                       onPressed: () => UrlLauncherUtils.launchMap(
-                          context, customer.address2),
+                          context, customer.address2 ?? ""),
                       tooltip: 'Abrir no mapa',
                     )
                   : null,

@@ -66,4 +66,6 @@ class Product  extends HiveObject{
       categoryId: categoryId ?? this.categoryId,
     );
   }
+
+  static Future<dynamic> get(String productId) async {}
 }

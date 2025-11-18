@@ -6,6 +6,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/category/category.dart';
+import 'package:stock/domain/entities/live/live.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/domain/entities/reminder/reminder.dart';
 import 'package:stock/domain/entities/sale/delivery_info.dart';
@@ -19,6 +20,7 @@ import 'package:uuid/uuid.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'core/navigation/app_router.dart';
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,7 +37,7 @@ Future<void> main() async {
 
   // ❗ REMOVER EM PRODUÇÃO
   //await Hive.deleteBoxFromDisk('customerBox');
-  //await Hive.deleteBoxFromDisk('saleBox');
+  //await Hive.deleteBoxFromDisk('liveBox');
   //await fakeClients();
 
   //Injeção de dependências
@@ -69,6 +71,7 @@ void _registerHiveAdapters() {
   Hive.registerAdapter(SupplierAdapter());
   Hive.registerAdapter(ReminderAdapter());
   Hive.registerAdapter(DeliveryInfoAdapter());
+  Hive.registerAdapter(LiveAdapter());
 }
 
 class MyApp extends StatelessWidget {
