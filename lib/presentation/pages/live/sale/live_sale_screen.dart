@@ -27,6 +27,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
   late final LiveSaleViewModel _vm;
   late final ConfettiController _confetti;
   late final FocusNode _instagramFocusNode;
+  late final TextEditingController _discountController;
 
   @override
   void initState() {
@@ -34,12 +35,14 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
     _instagramFocusNode = FocusNode();
     _vm = getIt<LiveSaleViewModel>()..add(LoadLiveIntent(widget.liveId));
     _confetti = ConfettiController(duration: const Duration(seconds: 6));
+    _discountController = TextEditingController();
   }
 
   @override
   void dispose() {
     _confetti.dispose();
     _instagramFocusNode.dispose();
+    _discountController.dispose();
     super.dispose();
   }
 
@@ -73,7 +76,13 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
             appBar: AppBar(
               leading: IconButton(
                   icon: const Icon(Icons.arrow_back),
-                  onPressed: () => context.pop()),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.go('/home');
+                    }
+                  }),
               title: Text(state.live.title,
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               backgroundColor: Colors.amberAccent,
@@ -87,32 +96,95 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                         final controller = TextEditingController(
                             text: state.globalDiscount.toString());
                         final result = await showDialog<int>(
-                          context: context,
-                          builder: (_) => AlertDialog(
-                            title: const Text('Desconto Global (%)'),
-                            content: TextField(
-                                controller: controller,
-                                keyboardType: TextInputType.number),
-                            actions: [
-                              TextButton(
-                                  onPressed: () => Navigator.pop(_, null),
-                                  child: const Text('Cancelar')),
-                              ElevatedButton(
-                                onPressed: () {
-                                  final val =
-                                      int.tryParse(controller.text) ?? 0;
-                                  Navigator.pop(_, val.clamp(0, 100));
-                                },
-                                child: const Text('Aplicar'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (result != null)
+                            context: context,
+                            builder: (_) => AlertDialog(
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(16)),
+                                  title: Row(
+                                    children: [
+                                      const Icon(Icons.discount_outlined,
+                                          color: Colors.deepPurple, size: 28),
+                                      const SizedBox(width: 12),
+                                      const Text('Desconto Global'),
+                                    ],
+                                  ),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    // Faz a coluna ter o tamanho mínimo necessário
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Este desconto será aplicado a TODOS os produtos durante a live.',
+                                        style:
+                                            TextStyle(color: Colors.grey[600]),
+                                      ),
+                                      const SizedBox(height: 24),
+                                      TextField(
+                                        controller: controller,
+                                        keyboardType: TextInputType.number,
+                                        // Garante que só números sejam digitados
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly
+                                        ],
+                                        autofocus: true,
+                                        // Abre o teclado automaticamente
+                                        textAlign: TextAlign.center,
+                                        style: GoogleFonts.poppins(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold),
+                                        decoration: InputDecoration(
+                                          prefixIcon: const Icon(Icons.percent,
+                                              color: Colors.grey),
+                                          hintText: '0',
+                                          filled: true,
+                                          fillColor: Colors.grey[200],
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide
+                                                .none, // Sem borda visível
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  actionsAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  // Alinha os botões
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      // Apenas fecha o diálogo
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    ElevatedButton.icon(
+                                      icon: const Icon(
+                                          Icons.check_circle_outline,
+                                          color: Colors.white),
+                                      label: const Text('Aplicar Desconto',
+                                          style:
+                                              TextStyle(color: Colors.white)),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: Colors
+                                            .green, // Cor primária consistente
+                                      ),
+                                      onPressed: () {
+                                        // Valida o valor antes de fechar
+                                        final val =
+                                            int.tryParse(controller.text) ?? 0;
+                                        Navigator.pop(
+                                            context, val.clamp(0, 100));
+                                      },
+                                    ),
+                                  ],
+                                ));
+                        if (result != null) {
                           _vm.add(SetGlobalDiscountIntent(result));
+                        }
                       },
                     ),
-                    if (state.globalDiscount > 0)
+                    /*if (state.globalDiscount > 0)
                       Positioned(
                         right: 6,
                         top: 6,
@@ -129,7 +201,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold)),
                         ),
-                      ),
+                      ),*/
                   ],
                 ),
                 TextButton.icon(
@@ -147,6 +219,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
               children: [
                 // LADO ESQUERDO
                 Expanded(
+                  flex: 2,
                   child: Column(
                     children: [
                       // META
@@ -202,10 +275,11 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                     const Icon(Icons.info, color: Colors.red),
                                     const SizedBox(width: 8),
                                     Text(
-                                        'Desconto global de ${state.globalDiscount}% aplicado',
+                                        'Desconto global de ${state.globalDiscount}% aplicado em todas as vendas',
                                         style: TextStyle(
                                             color: Colors.red[800],
                                             fontWeight: FontWeight.w500)),
+                                    const SizedBox(width: 8),
                                   ],
                                 ),
                               ),
@@ -285,7 +359,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                               ),
                               const SizedBox(width: 12),
                               FloatingActionButton(
-                                onPressed: () => _vm.add(SearchInstagramIntent()),
+                                onPressed: () =>
+                                    _vm.add(SearchInstagramIntent()),
                                 backgroundColor: Colors.green,
                                 tooltip: 'Adicionar ',
                                 elevation: 2,
@@ -337,10 +412,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                       if (state.selectedProduct != null)
                         Stack(
                           clipBehavior: Clip.none,
-                          // Permite que o botão seja desenhado fora dos limites do Stack
                           children: [
-                            // 1. O FOOTER ORIGINAL (AGORA DENTRO DO STACK)
-                            // Note que o botão "X" foi removido daqui
                             Container(
                               padding: const EdgeInsets.all(26),
                               decoration: const BoxDecoration(
@@ -387,6 +459,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                       width: 120,
                                       child: TextField(
                                         keyboardType: TextInputType.number,
+                                        controller: _discountController,
                                         inputFormatters: [
                                           FilteringTextInputFormatter.digitsOnly
                                         ],
@@ -411,13 +484,6 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                             borderSide: BorderSide.none,
                                           ),
                                         ),
-                                        onSubmitted: (v) {
-                                          final val = int.tryParse(v) ?? 0;
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(SnackBar(
-                                                  content: Text(
-                                                      'Desconto individual $val% aplicado')));
-                                        },
                                       ),
                                     ),
                                   // REMOVEMOS O BOTÃO "X" DAQUI E DO SIZEDBOX ANTERIOR
@@ -426,7 +492,19 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                   FloatingActionButton(
                                     onPressed: state.currentCustomers.isEmpty
                                         ? null
-                                        : () => _vm.add(AddOrderIntent()),
+                                        : () {
+                                            // 1. Lê o valor do desconto do controller
+                                            final discountValue = int.tryParse(
+                                                    _discountController.text) ??
+                                                0;
+
+                                            // 2. Envia a intent para definir o desconto
+                                            _vm.add(SetIndividualDiscountIntent(
+                                                discountValue));
+
+                                            _vm.add(AddOrderIntent());
+                                            _discountController.clear();
+                                          },
                                     backgroundColor:
                                         state.currentCustomers.isEmpty
                                             ? Colors.grey
@@ -452,11 +530,12 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                   radius: 22, // Um pouco maior para se destacar
                                   backgroundColor: Colors.red[400],
                                   child: IconButton(
-                                    icon: const Icon(Icons.close,
-                                        color: Colors.white),
-                                    onPressed: () =>
-                                        _vm.add(SelectProductIntent(null)),
-                                  ),
+                                      icon: const Icon(Icons.close,
+                                          color: Colors.white),
+                                      onPressed: () {
+                                        _discountController.clear();
+                                        _vm.add(SelectProductIntent(null));
+                                      }),
                                 ),
                               ),
                             ),
@@ -471,6 +550,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
 
                 // LADO DIREITO - PEDIDOS
                 Expanded(
+                  flex: 1,
                   child: Column(
                     children: [
                       Container(
@@ -479,84 +559,148 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
+                            Icon(
+                              Icons.production_quantity_limits_sharp,
+                              color: Colors.grey[600],
+                              size: 32,
+                            ),
                             Text(
                                 '${state.orders.length} pedido${state.orders.length == 1 ? '' : 's'}',
                                 style: GoogleFonts.poppins(
                                     fontSize: 18, fontWeight: FontWeight.w600)),
-                            Text(
+                            /* Text(
                                 'Total sessão: ${state.currency.format(sessionTotal)}',
                                 style: GoogleFonts.poppins(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.green[700])),
+                                    color: Colors.green[700])),*/
                           ],
                         ),
                       ),
+                      Divider(),
                       Expanded(
                         child: ListView.builder(
                           itemCount: state.orders.length,
                           itemBuilder: (_, i) {
                             final order = state.orders[i];
-                            final totalDiscount = order.discountPercent + state.globalDiscount;
+                            final totalDiscount =
+                                order.discountPercent + state.globalDiscount;
 
                             return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              margin: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
                               elevation: 2,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12)),
                               child: Padding(
-                                padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 4.0),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 8.0, horizontal: 4.0),
                                 child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Colors.deepPurple,
-                                    child: Text(
-                                      order.customers.length.toString(),
-                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                                    ),
-                                  ),
-                                  title: Text(
-                                    order.product.name,
-                                    style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 16),
+                                  title: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: Colors.deepPurple,
+                                        child: Text(
+                                          order.customers.length.toString(),
+                                          style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      Text(
+                                        order.product.name,
+                                        style: GoogleFonts.poppins(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.delete_outline,
+                                            color: Colors.red),
+                                        tooltip: 'Remover Pedido',
+                                        onPressed: () =>
+                                            _vm.add(RemoveOrderIntent(i)),
+                                      ),
+                                    ],
                                   ),
                                   subtitle: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const SizedBox(height: 8),
-                                      // --- MELHORIA 1: Chips dos clientes com avatar ---
+                                      const SizedBox(height: 12),
+                                      Divider(
+                                        color: Colors.grey[300],
+                                        height: 1,
+                                      ),
+                                      const SizedBox(height: 12),
                                       Wrap(
                                         spacing: 6.0,
                                         runSpacing: 4.0,
-                                        children: order.customers.map((customer) => Chip(
-                                          avatar: CircleAvatar(
-                                            backgroundColor: Colors.deepPurple.shade300,
-                                            child: Text(
-                                              customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
-                                              style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
-                                            ),
-                                          ),
-                                          label: Text(customer.name, style: const TextStyle(fontSize: 12)),
-                                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                          visualDensity: VisualDensity.compact,
-                                        )).toList(),
+                                        children: order.customers
+                                            .map((customer) => Chip(
+                                                  avatar: CircleAvatar(
+                                                    backgroundColor: Colors
+                                                        .deepPurple.shade300,
+                                                    child: Text(
+                                                      customer.name.isNotEmpty
+                                                          ? customer.name[0]
+                                                              .toUpperCase()
+                                                          : '?',
+                                                      style: const TextStyle(
+                                                          color: Colors.white,
+                                                          fontSize: 10,
+                                                          fontWeight:
+                                                              FontWeight.bold),
+                                                    ),
+                                                  ),
+                                                  label: Text(customer.name,
+                                                      style: const TextStyle(
+                                                          fontSize: 12)),
+                                                  materialTapTargetSize:
+                                                      MaterialTapTargetSize
+                                                          .shrinkWrap,
+                                                  visualDensity:
+                                                      VisualDensity.compact,
+                                                ))
+                                            .toList(),
                                       ),
                                       const SizedBox(height: 8),
-                                      // --- MELHORIA 2: Informação de desconto mais clara com RichText ---
                                       if (totalDiscount > 0)
                                         Padding(
-                                          padding: const EdgeInsets.only(left: 4.0, top: 4.0),
+                                          padding: const EdgeInsets.only(
+                                              left: 4.0, top: 4.0),
                                           child: RichText(
                                             text: TextSpan(
-                                              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                                              style: TextStyle(
+                                                  fontSize: 12,
+                                                  color: Colors.grey[700]),
                                               children: [
-                                                const WidgetSpan(child: Icon(Icons.sell_outlined, size: 14, color: Colors.red)),
-                                                const WidgetSpan(child: SizedBox(width: 4)),
+                                                const WidgetSpan(
+                                                    child: Icon(
+                                                        Icons.sell_outlined,
+                                                        size: 14,
+                                                        color: Colors.red)),
+                                                const WidgetSpan(
+                                                    child: SizedBox(width: 4)),
                                                 TextSpan(
-                                                  text: 'Desconto: $totalDiscount%  ',
-                                                  style: TextStyle(color: Colors.red[700], fontWeight: FontWeight.bold),
+                                                  text:
+                                                      'Desconto: $totalDiscount%  ',
+                                                  style: TextStyle(
+                                                      color: Colors.red[700],
+                                                      fontWeight:
+                                                          FontWeight.bold),
                                                 ),
-                                                const TextSpan(text: '• Total: '),
+                                                const TextSpan(
+                                                    text: '• Total: '),
                                                 TextSpan(
-                                                  text: state.currency.format(order.totalWithGlobalDiscount(state.globalDiscount)),
-                                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                                  text: state.currency.format(order
+                                                      .totalWithGlobalDiscount(
+                                                          state
+                                                              .globalDiscount)),
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.bold),
                                                 ),
                                               ],
                                             ),
@@ -564,18 +708,12 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         ),
                                     ],
                                   ),
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                                    tooltip: 'Remover Pedido',
-                                    onPressed: () => _vm.add(RemoveOrderIntent(i)),
-                                  ),
                                 ),
                               ),
                             );
                           },
                         ),
                       ),
-
                     ],
                   ),
                 ),
@@ -589,9 +727,6 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
       },
     );
   }
-
-
-
 
   void _finalizeWithSummary(
       LiveSaleLoaded state, double sessionTotal, double totalFaturado) async {

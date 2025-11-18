@@ -36,9 +36,11 @@ class OpenGlobalDiscountDialogIntent extends LiveSaleIntent {}
 
 class FinalizeLiveIntent extends LiveSaleIntent {}
 
-
 class SetGlobalDiscountIntent extends LiveSaleIntent {
   final int value;
   SetGlobalDiscountIntent(this.value);
 }
-
+class SetIndividualDiscountIntent extends LiveSaleIntent {
+  final int value;
+  SetIndividualDiscountIntent(this.value);
+}

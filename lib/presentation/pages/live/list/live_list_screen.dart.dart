@@ -385,11 +385,11 @@ class _LiveCardClean extends StatelessWidget {
       case LiveStatus.scheduled:
         return [
           IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => CustomDialog.show(context: context, title: 'Excluir?', content: 'Não pode ser desfeito', onConfirm: () => viewModel.handleIntent(DeleteLiveIntent(live.id)))),
-          FilledButton.tonal(onPressed: () { viewModel.handleIntent(StartLiveIntent(live.id)); context.go('/live-sale/${live.id}'); }, child: const Text('Iniciar')),
+          FilledButton.tonal(onPressed: () { viewModel.handleIntent(StartLiveIntent(live.id)); context.push('/live-sale/${live.id}'); }, child: const Text('Iniciar')),
         ];
       case LiveStatus.inProgress:
         return [
-          FilledButton(onPressed: () => context.go('/live-sale/${live.id}'), child: const Text('Entrar na Live')),
+          FilledButton(onPressed: () => context.push('/live-sale/${live.id}'), child: const Text('Entrar na Live')),
           const SizedBox(width: 8),
           OutlinedButton(onPressed: () => CustomDialog.show(context: context, title: 'Finalizar?', content: 'Não poderá mais vender', onConfirm: () => viewModel.handleIntent(FinishLiveIntent(live.id))), child: const Text('Finalizar', style: TextStyle(color: Colors.red))),
         ];

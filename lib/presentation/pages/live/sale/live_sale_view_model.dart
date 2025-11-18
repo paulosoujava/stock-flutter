@@ -49,6 +49,7 @@ class LiveSaleViewModel {
     if (current is! LiveSaleLoaded) return;
 
     switch (intent) {
+
       case SearchInstagramIntent():
         final text = current.instagramController.text.trim().toLowerCase();
         if (text.isEmpty) return;
@@ -75,13 +76,40 @@ class LiveSaleViewModel {
         _state.add(current.copyWith(currentCustomers: newList));
 
       case SelectProductIntent():
-        _state.add(current.copyWith(selectedProduct: intent.product));
+        if (intent.product == null) {
+
+          current.instagramController.clear();
+          _state.add(current.copyWith(
+            selectedProduct: null,
+            clearSelectedProduct: true,
+            currentCustomers: [],
+          ));
+    print('selectedProduct: ${current.selectedProduct?.name}');
+    print('currentCustomers: ${current.currentCustomers}');
+
+        } else {
+          // Quando seleciona um novo produto
+          _state.add(current.copyWith(selectedProduct: intent.product));
+        }
 
       case AddOrderIntent():
+
         if (current.selectedProduct == null || current.currentCustomers.isEmpty) return;
         final newOrders = List<LiveOrder>.from(current.orders);
-        newOrders.add(LiveOrder(product: current.selectedProduct!, customers: List.from(current.currentCustomers)));
-        _state.add(current.copyWith(selectedProduct: null, currentCustomers: [], orders: newOrders));
+        newOrders.add(LiveOrder(
+            product: current.selectedProduct!,
+            individualDiscount: current.individualDiscount,
+            customers: List.from(current.currentCustomers),
+        ));
+
+        current.instagramController.clear();
+
+        _state.add(current.copyWith(
+          selectedProduct: null,
+          currentCustomers: [],
+          clearSelectedProduct: true,
+          orders: newOrders,
+        ));
 
       case RemoveOrderIntent():
         final newOrders = List<LiveOrder>.from(current.orders)..removeAt(intent.index);
@@ -91,6 +119,10 @@ class LiveSaleViewModel {
         final newValue = intent.value;
         _state.add(current.copyWith(globalDiscount: newValue.clamp(0, 100)));
 
+      case SetIndividualDiscountIntent():
+        print('SetIndividualDiscountIntent: ${intent.value}');
+        _state.add(current.copyWith(individualDiscount: intent.value.clamp(0, 100)));
+        break;
       case FinalizeLiveIntent():
         try {
           final user = await _getUser();

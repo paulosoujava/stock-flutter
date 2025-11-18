@@ -22,6 +22,7 @@ class LiveSaleLoaded extends LiveSaleState {
   final List<Customer> currentCustomers;
   final List<LiveOrder> orders;
   final int globalDiscount;
+  final int individualDiscount;
   final TextEditingController instagramController = TextEditingController();
   final NumberFormat currency =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
@@ -45,23 +46,28 @@ class LiveSaleLoaded extends LiveSaleState {
     this.currentCustomers = const [],
     this.orders = const [],
     this.globalDiscount = 0,
+    this.individualDiscount = 0,
   });
+
 
   LiveSaleLoaded copyWith({
     Live? live,
     List<Product>? products,
     Product? selectedProduct,
+    bool clearSelectedProduct = false,
     List<Customer>? currentCustomers,
     List<LiveOrder>? orders,
+    int? individualDiscount,
     int? globalDiscount,
   }) {
     return LiveSaleLoaded(
       live: live ?? this.live,
       products: products ?? this.products,
-      selectedProduct: selectedProduct ?? this.selectedProduct,
+      selectedProduct: clearSelectedProduct ? null : (selectedProduct ?? this.selectedProduct),
       currentCustomers: currentCustomers ?? this.currentCustomers,
       orders: orders ?? this.orders,
       globalDiscount: globalDiscount ?? this.globalDiscount,
+      individualDiscount: individualDiscount  ?? this.individualDiscount,
     );
   }
 }
@@ -79,7 +85,7 @@ class LiveOrder {
   int get discountPercent => individualDiscount;
 
   double get total {
-    final disc = (individualDiscount + 0) / 100; // será usado com global depois
+    final disc = (individualDiscount + 0) / 100;
     return product.salePrice * customers.length * (1 - disc);
   }
 
