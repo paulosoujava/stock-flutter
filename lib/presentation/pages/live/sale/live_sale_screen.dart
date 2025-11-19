@@ -634,6 +634,10 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         height: 1,
                                       ),
                                       const SizedBox(height: 12),
+                                      Text("Clientes:", style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,)),
+                                      const SizedBox(height: 12),
                                       Wrap(
                                         spacing: 6.0,
                                         runSpacing: 4.0,
@@ -665,6 +669,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                                 ))
                                             .toList(),
                                       ),
+                                      const SizedBox(height: 8),
+                                      Divider(),
                                       const SizedBox(height: 8),
                                       if (totalDiscount > 0)
                                         Padding(
@@ -701,6 +707,15 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                                   style: const TextStyle(
                                                       fontWeight:
                                                           FontWeight.bold),
+                                                ),
+                                                TextSpan(
+                                                  text: " •Valor unit.: "
+                                                ),
+                                                TextSpan(
+                                                  text: "R\$${order.product.salePrice}",
+                                                  style: const TextStyle(
+                                                      fontWeight:
+                                                      FontWeight.bold),
                                                 ),
                                               ],
                                             ),

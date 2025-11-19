@@ -142,9 +142,35 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
 
   void _saveForm() {
     if (_formKey.currentState?.validate() ?? false) {
+      // 1. Coleta os valores dos endereços
+      final address = _addressController.text.trim();
+      final address1 = _addressController1.text.trim();
+      final address2 = _addressController2.text.trim();
+
+      // 2. Cria uma lista apenas com os endereços que foram preenchidos
+      final filledAddresses = [address, address1, address2]
+          .where((addr) => addr.isNotEmpty)
+          .toList();
+
+      // 3. Verifica se há duplicatas na lista de endereços preenchidos
+      //    Convertendo para um Set, os duplicados são removidos.
+      //    Se o tamanho do Set for menor que o da lista, significa que havia duplicatas.
+      if (filledAddresses.toSet().length < filledAddresses.length) {
+        // 4. Se houver duplicatas, mostra um erro e interrompe a função
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Os campos de endereço não podem ter valores repetidos.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return; // Interrompe a execução do método _saveForm
+      }
+
+      // Se passou na validação de endereços, o código continua normalmente...
       final cleanCpf = _cpfFormatter.getUnmaskedText();
       final cleanPhone = _phoneFormatter.getUnmaskedText();
       final cleanWhatsApp = _whatsappFormatter.getUnmaskedText();
+
       final customerData = Customer(
         id: isEditing ? widget.customerToEdit!.id : '',
         name: _nameController.text.trim(),
@@ -152,9 +178,9 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
         email: _emailController.text.trim(),
         phone: cleanPhone,
         whatsapp: _isWhatsAppSameAsPhone ? cleanPhone : cleanWhatsApp,
-        address: _addressController.text.trim(),
-        address1: _addressController1.text.trim(),
-        address2: _addressController2.text.trim(),
+        address: address, // Usa a variável que já foi tratada com .trim()
+        address1: address1,
+        address2: address2,
         notes: _notesController.text.trim(),
         instagram: _instagramController.text.trim(),
       );

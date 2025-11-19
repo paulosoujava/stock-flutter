@@ -125,7 +125,7 @@ class _LiveListScreenState extends State<LiveListScreen> {
                 keyboardType: TextInputType.number,
                 decoration: InputDecoration(
                   labelText: 'Meta',
-                  prefixText: 'R\$ ',
+                  //prefixText: 'R\$ ',
                   border: const OutlineInputBorder(),
                   hintText: 'Ex: 5000,00',
                 ),

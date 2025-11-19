@@ -188,30 +188,64 @@ class _CustomerListPageState extends State<CustomerListPage>
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.people_alt_outlined, size: 90, color: Colors.grey[400]),
-          const SizedBox(height: 24),
-          const Text(
-            'Nenhum cliente cadastrado',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black54),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            _searchController.text.isEmpty
-                ? 'Toque no botão para adicionar'
-                : 'Nenhum cliente encontrado para "${_searchController.text}"',
-            style: TextStyle(color: Colors.grey[600]),
-            textAlign: TextAlign.center,
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Ícone mais sutil com opacidade
+            Opacity(
+              opacity: 0.5,
+              child: Icon(
+                Icons.people_alt_outlined,
+                size: 90,
+                color: Colors.grey[400],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Título principal
+            const Text(
+              'Nenhum cliente',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.black54,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Subtítulo contextual
+            Text(
+              _searchController.text.isEmpty
+                  ? 'Cadastre seu primeiro cliente para começar.'
+                  : 'Nenhum cliente encontrado para "${_searchController.text}".',
+              style: TextStyle(color: Colors.grey[600], fontSize: 15),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+
+            // --- Botão de Ação ---
+            ElevatedButton.icon(
+              onPressed: _navigateToCreateCustomer,
+              icon: const Icon(Icons.add),
+              label: const Text('Cadastrar Novo Cliente'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).primaryColor,
+                foregroundColor: Colors.white,
+                padding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 }
 
 // === CARD COM TODOS OS BOTÕES + CLIQUE PARA DETALHES ===
