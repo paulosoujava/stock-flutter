@@ -30,7 +30,11 @@ class LiveSaleLoaded extends LiveSaleState {
   double get progress =>
       live.achievedAmount / live.goalAmount.clamp(1, double.infinity);
 
-  bool get goalAchieved => live.goalAchieved;
+  bool get goalAchieved {
+    final currentTotalCents = live.achievedAmount +
+        (orders.fold<int>(0, (sum, o) => sum + (o.totalWithGlobalDiscount(globalDiscount) * 100).toInt()));
+    return currentTotalCents >= live.goalAmount;
+  }
 
   String get formattedAchieved => currency.format(live.achievedAmount / 100);
 

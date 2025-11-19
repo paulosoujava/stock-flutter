@@ -68,4 +68,43 @@ class CustomerRepositoryImpl implements ICustomerRepository {
     await box.close();
     _cachedBox = null;
   }
+
+
+  @override
+  Future<Customer?> getCustomersByIdOrInstagram(String id, String instagram) async {
+    final box = await _openBox();
+
+    //  Prioridade máxima: Tenta buscar pelo ID se ele não estiver vazio.
+    //    Esta é a operação mais rápida.
+    if (id.isNotEmpty) {
+      final customerById = box.get(id);
+      if (customerById != null) {
+        // Se encontrou, retorna imediatamente.
+        return customerById;
+      }
+    }
+
+    //  Se não encontrou pelo ID ou se o ID estava vazio, tenta buscar pelo Instagram.
+    //    Esta operação é mais lenta, pois varre todos os clientes.
+    if (instagram.isNotEmpty) {
+      final cleanInstagram = instagram
+          .trim()
+          .toLowerCase()
+          .replaceFirst(RegExp(r'^@'), ''); // Remove o @ do início
+      print("id: $id instagram: $instagram");
+      try {
+        return box.values.firstWhere(
+              (customer) => customer.instagram?.trim().toLowerCase() == cleanInstagram,
+        );
+      } catch (_) {
+        // Ocorre se firstWhere não encontrar nenhum cliente.
+        // A execução continua e retorna null no final.
+      }
+    }
+
+    //  Se nenhuma das buscas teve sucesso, retorna null.
+    return null;
+  }
+
+
 }

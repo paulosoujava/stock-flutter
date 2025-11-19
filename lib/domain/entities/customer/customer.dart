@@ -78,5 +78,10 @@ class Customer extends HiveObject{
       instagram: instagram ?? this.instagram,
     );
   }
+
+  @override
+  String toString() {
+    return 'Customer(id: $id, name: $name, cpf: $cpf, email: $email, phone: $phone, whatsapp: $whatsapp, address: $address, address1: $address1, address2: $address2, notes: $notes, instagram: $instagram)';
+  }
 }
     

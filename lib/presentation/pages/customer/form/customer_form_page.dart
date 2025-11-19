@@ -1,10 +1,12 @@
 // lib/app/presentation/pages/customer_form/customer_form_page.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/presentation/widgets/custom_text_form_field.dart';
 import '../../../../core/di/app_module.dart';
+import '../../live/list/live_list_view_model.dart';
 import 'customer_form_intent.dart';
 import 'customer_form_state.dart';
 import 'customer_form_viewmodel.dart'; // Para gerar um ID aleatório
@@ -62,24 +64,26 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
 
     _phoneController.addListener(_updateWhatsAppField);
 
-    _viewModel.state.listen((state) {
+  /*  _viewModel.state.listen((state) {
       if (!mounted) return;
 
       if (state is CustomerFormSuccessState) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-              content: Text(isEditing
-                  ? 'Cliente atualizado com sucesso!'
-                  : 'Cliente salvo com sucesso!'),
-              backgroundColor: Colors.green),
+            content: Text(isEditing ||
+                    widget.customerToEdit?.id.startsWith('temp_') == true
+                ? 'Cliente salvo com sucesso!'
+                : 'Cliente atualizado com sucesso!'),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.of(context).pop(true); // Retorna 'true' para indicar sucesso
+        context.pop(true);
       } else if (state is CustomerFormErrorState) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(state.message), backgroundColor: Colors.red),
         );
       }
-    });
+    });*/
   }
 
   void _populateFieldsForEditing() {
@@ -89,8 +93,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     _nameController.text = customer.name;
     _emailController.text = customer.email;
     _addressController.text = customer.address;
-    _addressController1.text = customer.address1?? "";
-    _addressController2.text = customer.address2?? "";
+    _addressController1.text = customer.address1 ?? "";
+    _addressController2.text = customer.address2 ?? "";
     _notesController.text = customer.notes ?? "";
     _instagramController.text = customer.instagram ?? "";
 
@@ -159,7 +163,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
         // 4. Se houver duplicatas, mostra um erro e interrompe a função
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Os campos de endereço não podem ter valores repetidos.'),
+            content:
+                Text('Os campos de endereço não podem ter valores repetidos.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -178,7 +183,8 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
         email: _emailController.text.trim(),
         phone: cleanPhone,
         whatsapp: _isWhatsAppSameAsPhone ? cleanPhone : cleanWhatsApp,
-        address: address, // Usa a variável que já foi tratada com .trim()
+        address: address,
+        // Usa a variável que já foi tratada com .trim()
         address1: address1,
         address2: address2,
         notes: _notesController.text.trim(),
@@ -192,7 +198,6 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -208,6 +213,32 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
       body: StreamBuilder<CustomerFormState>(
         stream: _viewModel.state,
         builder: (context, snapshot) {
+
+          if (snapshot.hasData) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final state = snapshot.data;
+
+              if (state is CustomerFormSuccessState) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente salvo com sucesso!'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                // Verifica se ainda pode voltar antes de chamar o pop
+                if (context.canPop()) {
+                  context.pop(true);
+                }
+              } else if (state is CustomerFormErrorState) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+                );
+              }
+            });
+          }
+
+
           if (snapshot.data is CustomerFormLoadingState) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -229,8 +260,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
                         controller: _nameController,
                         labelText: 'Nome Completo',
                         icon: Icons.person,
-                        validator: (value) =>
-                        (value?.isEmpty ?? true)
+                        validator: (value) => (value?.isEmpty ?? true)
                             ? 'O nome é obrigatório'
                             : null,
                       ),
@@ -300,7 +330,7 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
                         icon: Icons.notes,
                       ),
                       const SizedBox(height: 24),
-                    /*  ElevatedButton(
+                      /*  ElevatedButton(
                         onPressed: _saveForm,
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(double.infinity, 50),

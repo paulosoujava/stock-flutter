@@ -10,6 +10,7 @@ import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/live/live.dart';
 import 'package:stock/domain/entities/product/product.dart';
+import '../list/live_list_view_model.dart';
 import 'live_sale_intent.dart';
 import 'live_sale_state.dart';
 import 'live_sale_view_model.dart';
@@ -34,7 +35,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
     super.initState();
     _instagramFocusNode = FocusNode();
     _vm = getIt<LiveSaleViewModel>()..add(LoadLiveIntent(widget.liveId));
-    _confetti = ConfettiController(duration: const Duration(seconds: 6));
+    _confetti = ConfettiController(duration: const Duration(seconds: 3));
     _discountController = TextEditingController();
   }
 
@@ -43,6 +44,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
     _confetti.dispose();
     _instagramFocusNode.dispose();
     _discountController.dispose();
+    _vm.dispose();
     super.dispose();
   }
 
@@ -59,11 +61,13 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
         }
 
         if (state is LiveSaleLoaded) {
-          if (state.goalAchieved &&
-              _confetti.state != ConfettiControllerState.playing) {
-            _confetti.play();
+          if (state.goalAchieved && _confetti.state != ConfettiControllerState.playing) {
+            Future.delayed(const Duration(milliseconds: 300), () {
+              if (mounted) {
+                _confetti.play();
+              }
+            });
           }
-
           final sessionTotal = state.orders.fold<double>(
               0,
               (sum, o) =>
@@ -75,14 +79,44 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
             backgroundColor: Colors.grey[50],
             appBar: AppBar(
               leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () {
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () async {
+                  // === POPUP DE CONFIRMAÇÃO LINDAO ===
+                  final confirmExit = await showDialog<bool>(
+                    context: context,
+                    barrierDismissible: false, // obriga a escolher
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
+                      title: const Text('Sair da Live?', style: TextStyle(fontWeight: FontWeight.bold)),
+                      content: const Text(
+                        'Se você sair agora, todos os pedidos adicionados nesta sessão serão perdidos.\n\nTem certeza que deseja sair?',
+                        textAlign: TextAlign.center,
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false), // não sai
+                          child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight.bold)),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          onPressed: () => Navigator.pop(ctx, true), // sai mesmo
+                          child: const Text('Sair mesmo assim', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  // Só sai se o usuário confirmar
+                  if (confirmExit == true) {
                     if (context.canPop()) {
                       context.pop();
                     } else {
                       context.go('/home');
                     }
-                  }),
+                  }
+                },
+              ),
               title: Text(state.live.title,
                   style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
               backgroundColor: Colors.amberAccent,
@@ -286,7 +320,6 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                           ],
                         ),
                       ),
-
                       ConfettiWidget(
                           confettiController: _confetti,
                           blastDirectionality: BlastDirectionality.explosive),
@@ -881,6 +914,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
 
     if (confirm == true) {
       _vm.add(FinalizeLiveIntent());
+      getIt<LiveListViewModel>().loadLives();
+      if (mounted) context.pop();
     }
   }
 

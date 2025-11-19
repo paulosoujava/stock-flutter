@@ -105,6 +105,7 @@ _i174.GetIt $initGetIt(
     environmentFilter,
   );
   final appModule = _$AppModule();
+  gh.factory<_i201.LiveSaleViewModel>(() => _i201.LiveSaleViewModel());
   gh.lazySingleton<_i706.Uuid>(() => appModule.uuid);
   gh.lazySingleton<_i59.FirebaseAuth>(() => appModule.firebaseAuth);
   gh.lazySingleton<_i141.ICustomerRepository>(
@@ -123,10 +124,6 @@ _i174.GetIt $initGetIt(
   gh.lazySingleton<_i720.ILiveRepository>(() => appModule.liveRepository);
   gh.lazySingleton<_i557.EventBus>(
     () => _i557.EventBus(),
-    dispose: (i) => i.dispose(),
-  );
-  gh.lazySingleton<_i201.LiveSaleViewModel>(
-    () => _i201.LiveSaleViewModel(),
     dispose: (i) => i.dispose(),
   );
   gh.factory<_i237.GetAllProductsUseCase>(
@@ -218,6 +215,11 @@ _i174.GetIt $initGetIt(
         gh<_i159.AddCategory>(),
         gh<_i339.UpdateCategory>(),
       ));
+  gh.factory<_i580.CustomerFormViewModel>(() => _i580.CustomerFormViewModel(
+        gh<_i798.AddCustomer>(),
+        gh<_i531.UpdateCustomer>(),
+        gh<_i557.EventBus>(),
+      ));
   gh.lazySingleton<_i282.CustomerListViewModel>(
     () => _i282.CustomerListViewModel(
       gh<_i286.GetCustomers>(),
@@ -263,10 +265,6 @@ _i174.GetIt $initGetIt(
             gh<_i811.GetProductCountByCategory>(),
             gh<_i557.EventBus>(),
           ));
-  gh.factory<_i580.CustomerFormViewModel>(() => _i580.CustomerFormViewModel(
-        gh<_i798.AddCustomer>(),
-        gh<_i531.UpdateCustomer>(),
-      ));
   gh.factory<_i520.ReminderFormViewModel>(() => _i520.ReminderFormViewModel(
         gh<_i487.AddReminder>(),
         gh<_i244.UpdateReminder>(),

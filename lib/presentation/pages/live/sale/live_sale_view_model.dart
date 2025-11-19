@@ -16,7 +16,7 @@ import '../../../../domain/usecases/sales/save_sale_use_case.dart';
 import 'live_sale_intent.dart';
 import 'live_sale_state.dart';
 
-@lazySingleton
+@injectable
 class LiveSaleViewModel {
   final ILiveRepository _liveRepo = getIt<ILiveRepository>();
   final ICustomerRepository _customerRepo = getIt<ICustomerRepository>();
@@ -170,7 +170,7 @@ class LiveSaleViewModel {
     }
   }
 
-  @disposeMethod
+
   void dispose() {
     _state.close();
   }

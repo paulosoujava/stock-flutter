@@ -7,8 +7,7 @@ abstract class AppEvent {}
 /// Evento específico para avisaar outas paginas para atualizarem
 class ProductEvent extends AppEvent {}
 class SalesEvent extends AppEvent {}
-
-
+class LiveEvent extends AppEvent {}
 class ListChangedEvent extends AppEvent {
   final Object entity;
 
@@ -18,12 +17,6 @@ class ListChangedEvent extends AppEvent {
   String toString() => 'ListChangedEvent: $entity';
 }
 
-
-class ShowAlertDialogEvent extends AppEvent {
-  final String title;
-  final String message;
-  ShowAlertDialogEvent({required this.title, required this.message});
-}
 
 
 @lazySingleton
