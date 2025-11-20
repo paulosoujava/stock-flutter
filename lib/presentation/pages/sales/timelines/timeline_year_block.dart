@@ -17,7 +17,7 @@ class TimelineYearBlock extends StatefulWidget {
   final void Function(Sale) onProfile;
   final void Function(Sale) onHistory;
   final void Function(Sale) onCancel;
-  final Future<void> Function(Sale) onRegisterDelivery;  // ← Mantido: Function(Sale)
+  final Future<void> Function(Sale) onRegisterDelivery;
 
   const TimelineYearBlock({
     required this.year,
@@ -37,134 +37,114 @@ class TimelineYearBlock extends StatefulWidget {
   State<TimelineYearBlock> createState() => _TimelineYearBlockState();
 }
 
-class _TimelineYearBlockState extends State<TimelineYearBlock>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 600),
-    );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic);
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _TimelineYearBlockState extends State<TimelineYearBlock> {
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _animation,
-      child: ScaleTransition(
-        scale: _animation,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 32),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 32),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Timeline Line + Year Dot
+          Column(
             children: [
-              // Timeline Line + Year Dot
-              Column(
-                children: [
-                  Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [Colors.deepPurple.shade600, Colors.deepPurple.shade800],
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.deepPurple.withOpacity(0.3),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Text(
-                        widget.year.toString(),
-                        style: GoogleFonts.poppins(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.deepPurple.shade600,
+                      Colors.deepPurple.shade800
+                    ],
                   ),
-                  Container(
-                    width: 3,
-                    height: 80 + (widget.months.length * 140),
-                    color: Colors.deepPurple.shade200,
-                  ),
-                ],
-              ),
-
-              const SizedBox(width: 16),
-
-              // Content
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Total do Ano
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: Colors.deepPurple.shade50,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.deepPurple.shade200),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.trending_up, color: Colors.deepPurple, size: 20),
-                          const SizedBox(width: 8),
-                          Text(
-                            "Total do Ano",
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 14),
-                          ),
-                          const Spacer(),
-                          Text(
-                            widget.currency.format(widget.total),
-                            style: GoogleFonts.poppins(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple.shade700,
-                              fontSize: 15,
-                            ),
-                          ),
-                        ],
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.deepPurple.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-
-                    const SizedBox(height: 16),
-
-                    // Meses
-                    ...widget.months.map((m) {
-                      return TimelineMonthBlock(
-                        month: widget.monthName(m.month),
-                        data: m,
-                        currency: widget.currency,
-                        date: widget.date,
-                        onProfile: widget.onProfile,
-                        onHistory: widget.onHistory,
-                        onCancel: widget.onCancel,
-                        onRegisterDelivery: widget.onRegisterDelivery,  // ← Passa diretamente (tipo alinhado)
-                      );
-                    }),
                   ],
                 ),
+                child: Center(
+                  child: Text(
+                    widget.year.toString(),
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                width: 3,
+                height: 80 + (widget.months.length * 140),
+                color: Colors.deepPurple.shade200,
               ),
             ],
           ),
-        ),
+
+          const SizedBox(width: 16),
+
+          // Content
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Total do Ano
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.deepPurple.shade50,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.deepPurple.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.trending_up,
+                          color: Colors.deepPurple, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Total do Ano",
+                        style: GoogleFonts.poppins(
+                            fontWeight: FontWeight.w600, fontSize: 14),
+                      ),
+                      const Spacer(),
+                      Text(
+                        widget.currency.format(widget.total),
+                        style: GoogleFonts.poppins(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.deepPurple.shade700,
+                          fontSize: 15,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Meses
+                ...widget.months.map((m) {
+                  return TimelineMonthBlock(
+                    month: widget.monthName(m.month),
+                    data: m,
+                    currency: widget.currency,
+                    date: widget.date,
+                    onProfile: widget.onProfile,
+                    onHistory: widget.onHistory,
+                    onCancel: widget.onCancel,
+                    onRegisterDelivery: widget
+                        .onRegisterDelivery, // ← Passa diretamente (tipo alinhado)
+                  );
+                }),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

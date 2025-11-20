@@ -96,6 +96,15 @@ class _ProductListPageState extends State<ProductListPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.category.name),
+          actions: [
+            IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'Cadastrar produto em categoria',
+                onPressed:_navigateToCreateProduct),
+            SizedBox(
+              width: 20,
+            )
+          ]
       ),
       body: StreamBuilder<ProductListState>(
         stream: _viewModel.state,
@@ -129,11 +138,7 @@ class _ProductListPageState extends State<ProductListPage> {
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToCreateProduct,
-        tooltip: 'Adicionar produto',
-        child: const Icon(Icons.add),
-      ),
+
     );
   }
 

@@ -87,7 +87,7 @@ class _HomePageState extends State<HomePage> {
       description: 'Gerencie e conduza suas vendas ao vivo.',
       icon: Icons.live_tv,
       iconColor: Colors.redAccent,
-      route: AppRoutes.liveList, // Use a rota que definimos
+      route: AppRoutes.liveSaleList,
     ),*/
   ];
 

@@ -39,7 +39,10 @@ class CustomerFormViewModel {
   Future<void> _saveCustomer(Customer customer) async {
     _stateController.add(CustomerFormLoadingState());
     try {
-      await _addCustomer(customer);
+      final newCustomer = customer.copyWith(
+        instagram: customer.instagram?.replaceFirst(RegExp(r'^@'), ''),
+      );
+      await _addCustomer(newCustomer);
       _stateController.add(CustomerFormSuccessState());
     } catch (e) {
       _stateController.add(
@@ -66,10 +69,11 @@ class CustomerFormViewModel {
         // É um cliente temporário da live → SEMPRE cria um novo
         final newCustomer = customer.copyWith(
           id: '', // deixa vazio → o repositório vai gerar um ID real
+          instagram: customer.instagram?.replaceFirst(RegExp(r'^@'), ''),
         );
         // O método _saveCustomer já tem seus próprios prints, então não precisa aqui.
         await _saveCustomer(newCustomer); // use o use case de criação
-        _eventBus.fire(LiveEvent());
+        _eventBus.fire(RegisterEvent());
       } else {
         print(
             'DECISÃO: Cliente já existe. Atualizando o registro com ID: ${customer.id}');

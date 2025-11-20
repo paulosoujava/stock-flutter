@@ -32,7 +32,7 @@ class DeliveryRepositoryImpl implements IDeliveryRepository {
         "status": isStore ? "Retirada na Loja" : data.status,
         "dispatchDate": isStore
             ? null
-            : (data.status == "Saiu para entrega"
+            : (data.status == "Em trânsito"
             ? data.dispatchDate?.toIso8601String()
             : null),
         "returnReason": isStore ? null : data.returnReason,

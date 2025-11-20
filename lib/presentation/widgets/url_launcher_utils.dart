@@ -18,12 +18,6 @@ class UrlLauncherUtils {
     _launch(context, phoneLaunchUri);
   }
 
-  static Future<void> launchWhatsApp(BuildContext context, String phoneNumber) async {
-    final String cleanedNumber = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-    final Uri whatsappLaunchUri = Uri.parse('https://wa.me/55$cleanedNumber');
-    _launch(context, whatsappLaunchUri, mode: LaunchMode.externalApplication);
-  }
-
   static Future<void> _launch(BuildContext context, Uri url, {LaunchMode mode = LaunchMode.platformDefault}) async {
     try {
       if (await canLaunchUrl(url)) {
@@ -74,6 +68,38 @@ class UrlLauncherUtils {
     );
   }
 
+  static Future<void> launchInstagram(BuildContext context, String? username) async {
+    if (username == null || username.isEmpty) return;
 
+    // Remove o '@' se ele existir, para garantir que a URL funcione
+    final cleanUsername = username.replaceAll('@', '');
+    final url = Uri.parse("https://www.instagram.com/$cleanUsername");
+
+    if (await canLaunchUrl(url)) {
+      // Abre o link no navegador ou no app do Instagram, se estiver instalado
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Não foi possível abrir o perfil do Instagram para @$cleanUsername')),
+        );
+      }
+    }
+  }
+
+
+  static Future<void> launchWhatsApp(BuildContext context, String phone) async {
+    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    final url = Uri.parse("https://wa.me/55$cleanPhone");
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
+        );
+      }
+    }
+  }
 
 }

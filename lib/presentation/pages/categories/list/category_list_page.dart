@@ -71,6 +71,15 @@ class _CategoryListPageState extends State<CategoryListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Gerenciar Categorias'),
+          actions: [
+            IconButton(
+                icon: const Icon(Icons.add),
+                tooltip: 'Cadastrar categoria',
+                onPressed:_navigateAndRefresh),
+            SizedBox(
+              width: 20,
+            )
+          ]
       ),
       body: StreamBuilder<CategoryListState>(
         stream: _viewModel.state,
@@ -132,11 +141,7 @@ class _CategoryListPageState extends State<CategoryListPage> {
           return _buildEmptyState();
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateAndRefresh,
-        tooltip: 'Adicionar categoria',
-        child: const Icon(Icons.add),
-      ),
+
     );
   }
 

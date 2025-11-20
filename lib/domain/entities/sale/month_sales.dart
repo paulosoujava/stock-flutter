@@ -21,6 +21,19 @@ class MonthlySales {
     required this.sales,
     required this.sellerPerformances,
   });
+
+  MonthlySales copyWith({
+    int? month,
+    double? totalAmount,
+    List<Sale>? sales,
+  }) {
+    return MonthlySales(
+      month: month ?? this.month,
+      totalAmount: totalAmount ?? this.totalAmount,
+      sales: sales ?? this.sales,
+      sellerPerformances: sellerPerformances
+    );
+  }
 }
 
 // Classe para agrupar os meses e o total de um ano
@@ -34,6 +47,18 @@ class YearlySales {
     required this.totalAmount,
     required this.monthlySales,
   });
+
+  YearlySales copyWith({
+    int? year,
+    double? totalAmount,
+    List<MonthlySales>? monthlySales,
+  }) {
+    return YearlySales(
+      year: year ?? this.year,
+      totalAmount: totalAmount ?? this.totalAmount,
+      monthlySales: monthlySales ?? this.monthlySales,
+    );
+  }
 }
 
 

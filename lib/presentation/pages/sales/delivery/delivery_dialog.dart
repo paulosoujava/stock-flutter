@@ -47,12 +47,12 @@ class _DeliveryDialogState extends State<DeliveryDialog> {
       if (widget.customer!.address.isNotEmpty) {
         _addresses.add(widget.customer!.address);
       }
-      /*if (widget.customer!.address1.isNotEmpty) {
-        _addresses.add(widget.customer!.address1);
+      if (widget.customer!.address1 != null) {
+        _addresses.add(widget.customer!.address1!);
       }
-      if (widget.customer!.address2.isNotEmpty) {
-        _addresses.add(widget.customer!.address2);
-      }*/
+      if (widget.customer!.address2 != null) {
+        _addresses.add(widget.customer!.address2!);
+      }
     }
     if (_addresses.isNotEmpty) _selectedAddress = _addresses.first;
     final deliveryToEdit = widget.deliveryToEdit;

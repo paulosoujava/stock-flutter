@@ -38,6 +38,7 @@ Future<void> main() async {
   // ❗ REMOVER EM PRODUÇÃO
   //await Hive.deleteBoxFromDisk('customerBox');
   //await Hive.deleteBoxFromDisk('liveBox');
+  //await Hive.deleteBoxFromDisk('saleBox');
   //await fakeClients();
 
   //Injeção de dependências

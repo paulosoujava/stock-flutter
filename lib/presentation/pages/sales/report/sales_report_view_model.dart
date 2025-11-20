@@ -1,6 +1,7 @@
 // sales_report_view_model.dart
 import 'dart:async';
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:injectable/injectable.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:stock/data/model/params_delivery.dart';
@@ -11,8 +12,10 @@ import 'package:stock/domain/usecases/customers/get_customers.dart';
 import 'package:stock/domain/usecases/delivery/get_delivery_usecase.dart';
 import 'package:stock/domain/usecases/delivery/register_delivery_usecase.dart';
 import 'package:stock/presentation/pages/sales/delivery/delivery_dialog.dart';
+import '../../../../core/di/injection.dart';
 import '../../../../core/events/event_bus.dart';
 import '../../../../data/model/delivery.dart';
+import '../../../../domain/repositories/icustomer_repository.dart';
 import '../../../../domain/usecases/sales/update_sale_use_case.dart';
 import '../../../../domain/usecases/sales/get_all_sales_use_case.dart';
 import '../../products/list/categories/product_category_list_intent.dart';
@@ -39,13 +42,9 @@ class SalesReportViewModel {
     this._getDeliveryUseCase,
     this._eventBus,
   ) {
-    _init();
     _listenToEvents();
   }
 
-  void _init() {
-    handleIntent(LoadSalesReportIntent());
-  }
 
   void handleIntent(SalesReportIntent intent) {
     if (intent is LoadSalesReportIntent) {
@@ -58,6 +57,11 @@ class SalesReportViewModel {
   Future<Customer?> getCustomerById(String id) async {
     final allCustomers = await _getCustomersUseCase();
     return allCustomers.firstWhereOrNull((customer) => customer.id == id);
+  }
+
+  Future<Customer?> getCustomerByIdOrInstagram(String id, String instagram) async {
+    final customerRepo = getIt<ICustomerRepository>();
+    return customerRepo.getCustomersByIdOrInstagram(id, instagram);
   }
 
   Future<void> _listenToEvents() async {
@@ -100,126 +104,77 @@ class SalesReportViewModel {
   // 2. CARREGA RELATÓRIO COM TODOS OS AJUSTES
   // ===============================================================
   Future<void> _loadReport() async {
+    // 1. Emite Loading imediatamente (UI mostra spinner na hora)
     _stateController.add(SalesReportLoading());
 
     try {
-      // --- PRINT 1: BUSCANDO TODAS AS VENDAS ---
-      print("--- [1] BUSCANDO TODAS AS VENDAS ---");
+      // 2. Busca as vendas e sanitiza
       final rawSales = await _getAllSalesUseCase();
-      final allSales = _sanitizeSales(rawSales); // ← SANITIZA AQUI
-      print("Total de vendas encontradas: ${allSales.length}");
-      allSales.forEach((sale) => print(
-          " - Venda ID: ${sale.id}, Data: ${sale.saleDate}, Valor: ${sale.totalAmount}, Vendedor: ${sale.sellerName}, Desconto: ${sale.globalDiscount}%"));
+      final allSales = _sanitizeSales(rawSales);  // ← Agora pode acessar porque não é static
 
-      print("--------------------------------------\n");
+      // 3. Processamento pesado em isolate (não trava a UI)
+      final yearlySalesList = await compute(_processSalesDataIsolated, allSales);
 
-      final salesByYear = groupBy(allSales, (Sale sale) => sale.saleDate.year);
-      final List<YearlySales> yearlySalesList = [];
-
-      // --- PRINT 2: AGRUPANDO POR ANO ---
-      print("--- [2] AGRUPANDO VENDAS POR ANO ---");
-      print("Anos encontrados: ${salesByYear.keys.toList()}");
-      print("------------------------------------\n");
-
-      salesByYear.forEach((year, yearSales) {
-        print("--- [3] PROCESSANDO ANO: $year ---");
-        print(" - Total de vendas neste ano: ${yearSales.length}");
-
-        final yearTotal =
-            yearSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
-        print(" - Valor total para o ano $year: $yearTotal");
-
-        final salesByMonth =
-            groupBy(yearSales, (Sale sale) => sale.saleDate.month);
-        final List<MonthlySales> monthlySalesList = [];
-
-        print(" - Meses encontrados: ${salesByMonth.keys.toList()}");
-        print("-------------------------------------\n");
-
-        salesByMonth.forEach((month, monthSales) {
-          print(" --- [4] PROCESSANDO MÊS: $month/$year ---");
-          print(" - Total de vendas neste mês: ${monthSales.length}");
-
-          final monthTotal =
-              monthSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
-          print(" - Valor total para o mês $month: $monthTotal");
-
-          final Map<String, double> sellerSalesMap = {};
-          for (var sale in monthSales) {
-            sellerSalesMap.update(
-              sale.sellerName,
-              (value) => value + sale.totalAmount,
-              ifAbsent: () => sale.totalAmount,
-            );
-          }
-
-          print(" - Desempenho dos vendedores no mês $month:");
-          sellerSalesMap.forEach((seller, total) {
-            print("   • $seller: R\$$total");
-          });
-
-          final sellerPerformances = sellerSalesMap.entries.map((entry) {
-            return SellerMonthlyPerformance(
-              sellerName: entry.key,
-              totalSold: entry.value,
-            );
-          }).toList()
-            ..sort((a, b) => b.totalSold.compareTo(a.totalSold));
-
-          print(" - Performance ORDENADA:");
-          sellerPerformances.forEach((perf) {
-            print("   • ${perf.sellerName}: R\$${perf.totalSold}");
-          });
-
-          monthlySalesList.add(MonthlySales(
-            month: month,
-            totalAmount: monthTotal,
-            sales: monthSales,
-            sellerPerformances: sellerPerformances,
-          ));
-
-          print(" ------------------------------------------\n");
-        });
-
-        // Ordena meses do mais recente para o mais antigo
-        monthlySalesList.sort((a, b) => b.month.compareTo(a.month));
-
-        yearlySalesList.add(YearlySales(
-          year: year,
-          totalAmount: yearTotal,
-          monthlySales: monthlySalesList,
-        ));
-      });
-
-      // Ordena anos do mais recente para o mais antigo
-      yearlySalesList.sort((a, b) => b.year.compareTo(a.year));
-
-      // --- PRINT FINAL: DADOS PRONTOS ---
-      print("\n--- [FINAL] DADOS PROCESSADOS PRONTOS PARA UI ---");
-      print("Total de anos: ${yearlySalesList.length}");
-      for (var yearData in yearlySalesList) {
-        print(" • Ano ${yearData.year}: R\$${yearData.totalAmount}");
-        for (var monthData in yearData.monthlySales) {
-          print(
-              "   ├─ Mês ${monthData.month}: R\$${monthData.totalAmount} (${monthData.sales.length} vendas)");
-          if (monthData.sellerPerformances.isNotEmpty) {
-            print(
-                "   └─ Top vendedor: ${monthData.sellerPerformances.first.sellerName}");
-          }
-        }
-      }
-      print(
-          "---------------------------------------------------------------------\n");
-
+      // 4. Emite os dados prontos
       _stateController.add(SalesReportLoaded(yearlySales: yearlySalesList));
     } catch (e, stackTrace) {
       print("--- [ERRO] FALHA AO CARREGAR RELATÓRIO ---");
       print("Erro: $e");
       print("Stack: $stackTrace");
-      print("----------------------------------------------------------\n");
-      _stateController
-          .add(SalesReportError("Erro ao gerar relatório: ${e.toString()}"));
+      _stateController.add(SalesReportError("Erro ao gerar relatório: ${e.toString()}"));
     }
+  }
+
+// ==============================================================
+// FUNÇÃO ISOLADA PARA O COMPUTE (NÃO PODE SER STATIC NEM USAR INSTÂNCIA)
+// ==============================================================
+  static List<YearlySales> _processSalesDataIsolated(List<Sale> allSales) {
+    final salesByYear = groupBy(allSales, (Sale sale) => sale.saleDate.year);
+    final List<YearlySales> yearlySalesList = [];
+
+    salesByYear.forEach((year, yearSales) {
+      final yearTotal = yearSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+
+      final salesByMonth = groupBy(yearSales, (Sale sale) => sale.saleDate.month);
+      final List<MonthlySales> monthlySalesList = [];
+
+      salesByMonth.forEach((month, monthSales) {
+        final monthTotal = monthSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+
+        final Map<String, double> sellerSalesMap = {};
+        for (var sale in monthSales) {
+          sellerSalesMap.update(
+            sale.sellerName,
+                (value) => value + sale.totalAmount,
+            ifAbsent: () => sale.totalAmount,
+          );
+        }
+
+        final sellerPerformances = sellerSalesMap.entries
+            .map((e) => SellerMonthlyPerformance(sellerName: e.key, totalSold: e.value))
+            .toList()
+          ..sort((a, b) => b.totalSold.compareTo(a.totalSold));
+
+        monthlySalesList.add(MonthlySales(
+          month: month,
+          totalAmount: monthTotal,
+          sales: monthSales,
+          sellerPerformances: sellerPerformances,
+        ));
+      });
+
+      monthlySalesList.sort((a, b) => b.month.compareTo(a.month));
+
+      yearlySalesList.add(YearlySales(
+        year: year,
+        totalAmount: yearTotal,
+        monthlySales: monthlySalesList,
+      ));
+    });
+
+    yearlySalesList.sort((a, b) => b.year.compareTo(a.year));
+
+    return yearlySalesList;
   }
 
   // ===============================================================

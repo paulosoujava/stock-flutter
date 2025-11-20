@@ -48,7 +48,8 @@ class _SupplierListPageState extends State<SupplierListPage> {
     final bool? confirmed = await showConfirmationDialog(
       context: context,
       title: 'Confirmar Exclusão',
-      content: 'Tem certeza que deseja excluir o fornecedor "${supplier.name}"?',
+      content:
+          'Tem certeza que deseja excluir o fornecedor "${supplier.name}"?',
       confirmText: 'Excluir',
     );
     if (confirmed == true) {
@@ -61,6 +62,15 @@ class _SupplierListPageState extends State<SupplierListPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Fornecedores'),
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Adicionar Fornecedor',
+              onPressed: _navigateToCreateForm),
+          SizedBox(
+            width: 20,
+          )
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(70),
           child: Padding(
@@ -111,16 +121,10 @@ class _SupplierListPageState extends State<SupplierListPage> {
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToCreateForm,
-        tooltip: 'Adicionar Fornecedor',
-        child: const Icon(Icons.add),
-      ),
     );
   }
 }
 
-// >>>>> WIDGET DO CARD ATUALIZADO PARA MOSTRAR TODOS OS DADOS <<<<<
 class _SupplierCard extends StatelessWidget {
   final Supplier supplier;
   final VoidCallback onEdit;
@@ -139,7 +143,8 @@ class _SupplierCard extends StatelessWidget {
       elevation: 2,
       child: ExpansionTile(
         leading: const Icon(Icons.business, size: 40, color: Colors.grey),
-        title: Text(supplier.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+        title: Text(supplier.name,
+            style: const TextStyle(fontWeight: FontWeight.bold)),
         subtitle: Text(supplier.phone),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
@@ -168,13 +173,16 @@ class _SupplierCard extends StatelessWidget {
                 _buildDetailRow(
                   icon: Icons.email_outlined,
                   label: 'E-mail:',
-                  value: supplier.email.isEmpty ? 'Não informado' : supplier.email,
+                  value:
+                      supplier.email.isEmpty ? 'Não informado' : supplier.email,
                 ),
                 const SizedBox(height: 8),
                 _buildDetailRow(
                   icon: Icons.notes,
                   label: 'Observação:',
-                  value: supplier.observation.isEmpty ? 'Nenhuma' : supplier.observation,
+                  value: supplier.observation.isEmpty
+                      ? 'Nenhuma'
+                      : supplier.observation,
                 ),
               ],
             ),
@@ -185,7 +193,8 @@ class _SupplierCard extends StatelessWidget {
   }
 
   // Widget auxiliar para criar as linhas de detalhe
-  Widget _buildDetailRow({required IconData icon, required String label, required String value}) {
+  Widget _buildDetailRow(
+      {required IconData icon, required String label, required String value}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -204,4 +213,3 @@ class _SupplierCard extends StatelessWidget {
     );
   }
 }
-

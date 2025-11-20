@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:hive/hive.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/repositories/icustomer_repository.dart';
@@ -22,7 +23,7 @@ class CustomerRepositoryImpl implements ICustomerRepository {
 
     try {
       return box.values.firstWhere(
-            (c) => c.instagram?.trim().toLowerCase() == clean,
+        (c) => c.instagram?.trim().toLowerCase() == clean,
       );
     } catch (_) {
       return null;
@@ -69,9 +70,9 @@ class CustomerRepositoryImpl implements ICustomerRepository {
     _cachedBox = null;
   }
 
-
   @override
-  Future<Customer?> getCustomersByIdOrInstagram(String id, String instagram) async {
+  Future<Customer?> getCustomersByIdOrInstagram(
+      String id, String instagram) async {
     final box = await _openBox();
 
     //  Prioridade máxima: Tenta buscar pelo ID se ele não estiver vazio.
@@ -91,20 +92,14 @@ class CustomerRepositoryImpl implements ICustomerRepository {
           .trim()
           .toLowerCase()
           .replaceFirst(RegExp(r'^@'), ''); // Remove o @ do início
-      print("id: $id instagram: $instagram");
-      try {
-        return box.values.firstWhere(
-              (customer) => customer.instagram?.trim().toLowerCase() == cleanInstagram,
-        );
-      } catch (_) {
-        // Ocorre se firstWhere não encontrar nenhum cliente.
-        // A execução continua e retorna null no final.
-      }
-    }
+      print("id: $id instagram: $instagram cleanInstagram: $cleanInstagram");
+      final customer = box.values.firstWhereOrNull(
+            (customer) => customer.instagram?.trim().toLowerCase() == cleanInstagram,
+      );
 
-    //  Se nenhuma das buscas teve sucesso, retorna null.
+      print("PEGO DO BANCO: $customer");
+      return customer;
+    }
     return null;
   }
-
-
 }

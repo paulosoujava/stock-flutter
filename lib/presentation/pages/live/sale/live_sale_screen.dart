@@ -7,9 +7,7 @@ import 'package:confetti/confetti.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:stock/core/di/injection.dart';
-import 'package:stock/domain/entities/customer/customer.dart';
-import 'package:stock/domain/entities/live/live.dart';
-import 'package:stock/domain/entities/product/product.dart';
+import '../list/live_list_screen.dart.dart';
 import '../list/live_list_view_model.dart';
 import 'live_sale_intent.dart';
 import 'live_sale_state.dart';
@@ -367,7 +365,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                           ),
                         ),
 
-                      // CAMPO DE INSTAGRAM E LISTA DE CLIENTES - só aparece quando tem produto selecionado
+                      // CAMPO DE INSTAGRAM E LISTA DE CLIENTES
                       if (state.selectedProduct != null) ...[
                         // Campo de Instagram
                         Padding(
@@ -421,14 +419,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                       margin: const EdgeInsets.symmetric(
                                           horizontal: 16, vertical: 4),
                                       child: ListTile(
-                                        leading: Icon(
-                                            isTemp
-                                                ? Icons.warning_amber
-                                                : Icons.person,
-                                            color: isTemp
-                                                ? Colors.orange
-                                                : Colors.green),
-                                        title: Text(c.name),
+                                        leading:  CustomerChip(buyer: {'id': c.id, 'name': c.name}, live: state.live),
                                         trailing: IconButton(
                                             icon: const Icon(Icons.close),
                                             onPressed: () => _vm.add(
@@ -628,7 +619,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8.0, horizontal: 4.0),
-                                child: ListTile(
+                                child:
+                                ListTile(
                                   title: Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -675,31 +667,17 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         spacing: 6.0,
                                         runSpacing: 4.0,
                                         children: order.customers
-                                            .map((customer) => Chip(
-                                                  avatar: CircleAvatar(
-                                                    backgroundColor: Colors
-                                                        .deepPurple.shade300,
-                                                    child: Text(
-                                                      customer.name.isNotEmpty
-                                                          ? customer.name[0]
-                                                              .toUpperCase()
-                                                          : '?',
-                                                      style: const TextStyle(
-                                                          color: Colors.white,
-                                                          fontSize: 10,
-                                                          fontWeight:
-                                                              FontWeight.bold),
-                                                    ),
-                                                  ),
-                                                  label: Text(customer.name,
-                                                      style: const TextStyle(
-                                                          fontSize: 12)),
-                                                  materialTapTargetSize:
-                                                      MaterialTapTargetSize
-                                                          .shrinkWrap,
-                                                  visualDensity:
-                                                      VisualDensity.compact,
-                                                ))
+                                            .map((customer) {
+                                          // --- INÍCIO DA CORREÇÃO ---
+                                          // Agora usamos o nosso widget reutilizável CustomerChip.
+                                          // Ele precisa de um mapa com 'id' e 'name'.
+                                          final buyerMap = {
+                                            'id': customer.id,
+                                            'name': customer.name,
+                                          };
+                                          return CustomerChip(buyer: buyerMap, live: state.live,);
+                                          // --- FIM DA CORREÇÃO ---
+                                        })
                                             .toList(),
                                       ),
                                       const SizedBox(height: 8),

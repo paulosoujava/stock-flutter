@@ -18,7 +18,8 @@ class ReminderListPage extends StatefulWidget {
   State<ReminderListPage> createState() => _ReminderListPageState();
 }
 
-class _ReminderListPageState extends State<ReminderListPage> with TickerProviderStateMixin {
+class _ReminderListPageState extends State<ReminderListPage>
+    with TickerProviderStateMixin {
   late final ReminderListViewModel _viewModel;
   final TextEditingController _searchController = TextEditingController();
 
@@ -82,7 +83,17 @@ class _ReminderListPageState extends State<ReminderListPage> with TickerProvider
           'Lembretes',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
         ),
-        backgroundColor: theme.primaryColor, // Usa a cor primária do seu app
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.add_alarm),
+              tooltip: 'Cadastrar produto em categoria',
+              onPressed: _navigateToCreateForm),
+          SizedBox(
+            width: 20,
+          )
+        ],
+        backgroundColor: theme.primaryColor,
+        // Usa a cor primária do seu app
         foregroundColor: Colors.white,
         elevation: 2,
         bottom: PreferredSize(
@@ -103,15 +114,16 @@ class _ReminderListPageState extends State<ReminderListPage> with TickerProvider
                 contentPadding: const EdgeInsets.symmetric(vertical: 14),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _viewModel.handleIntent(SearchRemindersIntent(''));
-                  },
-                )
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _viewModel.handleIntent(SearchRemindersIntent(''));
+                        },
+                      )
                     : null,
               ),
-              onChanged: (query) => _viewModel.handleIntent(SearchRemindersIntent(query)),
+              onChanged: (query) =>
+                  _viewModel.handleIntent(SearchRemindersIntent(query)),
             ),
           ),
         ),
@@ -131,7 +143,8 @@ class _ReminderListPageState extends State<ReminderListPage> with TickerProvider
                 children: [
                   Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
                   const SizedBox(height: 16),
-                  Text(state.message, style: const TextStyle(color: Colors.black54)),
+                  Text(state.message,
+                      style: const TextStyle(color: Colors.black54)),
                 ],
               ),
             );
@@ -149,20 +162,14 @@ class _ReminderListPageState extends State<ReminderListPage> with TickerProvider
                   reminder: reminder,
                   onEdit: () => _navigateToEditForm(reminder),
                   onDelete: () => _showDeleteConfirmation(reminder),
-                  onToggle: () => _viewModel.handleIntent(ToggleReminderStatusIntent(reminder)),
+                  onToggle: () => _viewModel
+                      .handleIntent(ToggleReminderStatusIntent(reminder)),
                 );
               },
             );
           }
           return const SizedBox.shrink();
         },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToCreateForm,
-        backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 6,
-        child: const Icon(Icons.add_alarm, size: 28),
       ),
     );
   }
@@ -176,7 +183,10 @@ class _ReminderListPageState extends State<ReminderListPage> with TickerProvider
           const SizedBox(height: 24),
           const Text(
             'Nenhum lembrete cadastrado',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.black54),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.black54),
           ),
           const SizedBox(height: 8),
           Text(
@@ -207,14 +217,16 @@ class _ReminderCard extends StatefulWidget {
   State<_ReminderCard> createState() => __ReminderCardState();
 }
 
-class __ReminderCardState extends State<_ReminderCard> with SingleTickerProviderStateMixin {
+class __ReminderCardState extends State<_ReminderCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 150));
+    _controller = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 150));
     _scale = Tween<double>(begin: 1.0, end: 0.97).animate(_controller);
   }
 
@@ -255,7 +267,8 @@ class __ReminderCardState extends State<_ReminderCard> with SingleTickerProvider
                     height: 26,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: isCompleted ? theme.primaryColor : Colors.transparent,
+                      color:
+                          isCompleted ? theme.primaryColor : Colors.transparent,
                       border: Border.all(
                         color: isCompleted ? theme.primaryColor : Colors.grey,
                         width: 2,
@@ -276,16 +289,20 @@ class __ReminderCardState extends State<_ReminderCard> with SingleTickerProvider
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: isCompleted ? Colors.grey[600] : Colors.black87,
-                          decoration: isCompleted ? TextDecoration.lineThrough : null,
+                          color:
+                              isCompleted ? Colors.grey[600] : Colors.black87,
+                          decoration:
+                              isCompleted ? TextDecoration.lineThrough : null,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         widget.reminder.content,
                         style: TextStyle(
-                          color: isCompleted ? Colors.grey[500] : Colors.black54,
-                          decoration: isCompleted ? TextDecoration.lineThrough : null,
+                          color:
+                              isCompleted ? Colors.grey[500] : Colors.black54,
+                          decoration:
+                              isCompleted ? TextDecoration.lineThrough : null,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
@@ -293,18 +310,23 @@ class __ReminderCardState extends State<_ReminderCard> with SingleTickerProvider
                       const SizedBox(height: 12),
                       Row(
                         children: [
-                          Icon(Icons.person_outline, size: 14, color: theme.primaryColor),
+                          Icon(Icons.person_outline,
+                              size: 14, color: theme.primaryColor),
                           const SizedBox(width: 4),
                           Text(
                             widget.reminder.createdBy,
-                            style: TextStyle(fontSize: 12, color: theme.primaryColor),
+                            style: TextStyle(
+                                fontSize: 12, color: theme.primaryColor),
                           ),
                           const SizedBox(width: 16),
-                          const Icon(Icons.schedule, size: 14, color: Colors.grey),
+                          const Icon(Icons.schedule,
+                              size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
                           Text(
-                            DateFormat('dd/MM/yyyy', 'pt_BR').format(widget.reminder.createdAt),
-                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            DateFormat('dd/MM/yyyy', 'pt_BR')
+                                .format(widget.reminder.createdAt),
+                            style: const TextStyle(
+                                fontSize: 12, color: Colors.black54),
                           ),
                         ],
                       ),

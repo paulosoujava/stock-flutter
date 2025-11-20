@@ -7,17 +7,15 @@ abstract class AppEvent {}
 /// Evento específico para avisaar outas paginas para atualizarem
 class ProductEvent extends AppEvent {}
 class SalesEvent extends AppEvent {}
-class LiveEvent extends AppEvent {}
+class RegisterEvent extends AppEvent {}
+
+
 class ListChangedEvent extends AppEvent {
   final Object entity;
-
   ListChangedEvent(this.entity);
-
   @override
   String toString() => 'ListChangedEvent: $entity';
 }
-
-
 
 @lazySingleton
 class EventBus {

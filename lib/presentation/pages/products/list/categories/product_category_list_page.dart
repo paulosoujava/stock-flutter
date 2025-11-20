@@ -15,7 +15,8 @@ class ProductCategoryListPage extends StatefulWidget {
   const ProductCategoryListPage({super.key});
 
   @override
-  State<ProductCategoryListPage> createState() => _ProductCategoryListPageState();
+  State<ProductCategoryListPage> createState() =>
+      _ProductCategoryListPageState();
 }
 
 class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
@@ -45,15 +46,16 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
       _viewModel.handleIntent(LoadCategoriesWithProductCount());
     }
   }
+
   void _navigateToProductList(Category category) {
     context.push(AppRoutes.productList, extra: category);
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Produtos por Categoria'),
-      ),
+      appBar: AppBar(title: const Text('Produtos por Categoria'),
+          ),
       body: StreamBuilder<ProductCategoryListState>(
         stream: _viewModel.state,
         builder: (context, snapshot) {
@@ -99,13 +101,6 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
           return const SizedBox.shrink();
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed:(){
-          context.push(AppRoutes.productByCategory);
-        },
-        tooltip: 'Adicionar categoria',
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
@@ -136,7 +131,8 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               // 4. O onPressed agora chama a função correta.
               onPressed: _createCategoryAndRefresh,

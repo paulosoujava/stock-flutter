@@ -5,8 +5,7 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../core/di/app_module.dart';
-import '../../../widgets/url_launcher_utils.dart';
+import '../../../widgets/dialog_customer_details.dart';
 import 'customer_list_intent.dart';
 import 'customer_list_state.dart';
 import 'customer_list_viewmodel.dart';
@@ -50,7 +49,7 @@ class _CustomerListPageState extends State<CustomerListPage>
 
   Future<void> _navigateToEditCustomer(Customer customer) async {
     final result =
-        await context.push<bool>(AppRoutes.customerEdit, extra: customer);
+    await context.push<bool>(AppRoutes.customerEdit, extra: customer);
     if (result == true) {
       _viewModel.handleIntent(FetchCustomersIntent());
     }
@@ -117,12 +116,12 @@ class _CustomerListPageState extends State<CustomerListPage>
                   contentPadding: const EdgeInsets.symmetric(vertical: 16),
                   suffixIcon: _searchController.text.isNotEmpty
                       ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                            _viewModel.handleIntent(SearchCustomerIntent(''));
-                          },
-                        )
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      _viewModel.handleIntent(SearchCustomerIntent(''));
+                    },
+                  )
                       : null,
                 ),
               ),
@@ -172,7 +171,7 @@ class _CustomerListPageState extends State<CustomerListPage>
               itemCount: customers.length,
               itemBuilder: (context, index) {
                 final customer = customers[index];
-                return _AnimatedCustomerCard(
+                return _CustomerCard(
                   customer: customer,
                   onEdit: () => _navigateToEditCustomer(customer),
                   onDelete: () => _showDeleteConfirmation(customer),
@@ -245,42 +244,33 @@ class _CustomerListPageState extends State<CustomerListPage>
       ),
     );
   }
-
 }
 
-// === CARD COM TODOS OS BOTÕES + CLIQUE PARA DETALHES ===
-class _AnimatedCustomerCard extends StatefulWidget {
+// ===================================================================
+// CUSTOMER CARD MODIFICADO
+// ===================================================================
+
+enum CustomerTier { none, bronze, silver, gold }
+
+class _CustomerCard extends StatefulWidget {
   final Customer customer;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  const _AnimatedCustomerCard({
+  const _CustomerCard({
     required this.customer,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
-  State<_AnimatedCustomerCard> createState() => __AnimatedCustomerCardState();
+  State<_CustomerCard> createState() => _CustomerCardState();
 }
 
-class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 150));
-    _scale = Tween<double>(begin: 1.0, end: 0.97)
-        .animate(CurvedAnimation(parent: _controller, curve: Curves.ease));
-  }
+class _CustomerCardState extends State<_CustomerCard>{
 
   @override
   void dispose() {
-    _controller.dispose();
     super.dispose();
   }
 
@@ -288,7 +278,7 @@ class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard>
     showDialog(
       context: context,
       builder: (dialogContext) =>
-          _CustomerDetailsDialog(customer: widget.customer),
+          CustomerDetailsDialog(customer: widget.customer),
     );
   }
 
@@ -306,275 +296,156 @@ class __AnimatedCustomerCardState extends State<_AnimatedCustomerCard>
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return ScaleTransition(
-      scale: _scale,
-      child: Card(
-        elevation: 4,
-        shadowColor: Colors.black12,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            _controller.forward().then((_) => _controller.reverse());
-            _showCustomerDetails(); // CLIQUE ABRE DETALHES
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              children: [
-                // Avatar
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: theme.primaryColor.withOpacity(0.1),
-                  child: Text(
-                    widget.customer.name.isNotEmpty
-                        ? widget.customer.name[0].toUpperCase()
-                        : '?',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: theme.primaryColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.customer.name,
-                        style: const TextStyle(
-                            fontSize: 17, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 4),
-                      if (widget.customer.phone.isNotEmpty)
-                        Row(
-                          children: [
-                            const Icon(Icons.phone,
-                                size: 14, color: Colors.green),
-                            const SizedBox(width: 4),
-                            Text(widget.customer.phone,
-                                style: const TextStyle(fontSize: 13)),
-                          ],
-                        ),
-                      if (widget.customer.cpf.isNotEmpty)
-                        Text('CPF: ${widget.customer.cpf}',
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.black54)),
-                    ],
-                  ),
-                ),
-                // === TODOS OS BOTÕES VISÍVEIS NO CARD ===
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // WhatsApp
-                    if (widget.customer.whatsapp.isNotEmpty)
-                      IconButton(
-                        icon: const Icon(Icons.message, color: Colors.green),
-                        tooltip: 'WhatsApp',
-                        onPressed: () =>
-                            _launchWhatsApp(widget.customer.whatsapp),
-                      ),
-
-                    // Editar
-                    IconButton(
-                      icon:
-                          const Icon(Icons.edit_outlined, color: Colors.orange),
-                      tooltip: 'Editar',
-                      onPressed: widget.onEdit,
-                    ),
-                    // Excluir
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      tooltip: 'Excluir',
-                      onPressed: widget.onDelete,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  // --- FUNÇÕES DE ESTILO ---
+  CustomerTier _getTier(String? notes) {
+    final lowerCaseNotes = notes?.toLowerCase() ?? '';
+    if (lowerCaseNotes.contains('ouro')) return CustomerTier.gold;
+    if (lowerCaseNotes.contains('prata')) return CustomerTier.silver;
+    if (lowerCaseNotes.contains('bronze')) return CustomerTier.bronze;
+    return CustomerTier.none;
   }
-}
 
-// === DIÁLOGO DE DETALHES (COMPLETO) ===
-class _CustomerDetailsDialog extends StatelessWidget {
-  final Customer customer;
+  Color _getBorderColor(CustomerTier tier) {
+    switch (tier) {
+      case CustomerTier.gold:
+        return Colors.amber.shade600;
+      case CustomerTier.silver:
+        return Colors.blueGrey.shade400;
+      case CustomerTier.bronze:
+        return Colors.brown.shade400;
+      default:
+        return Colors.transparent; // Sem borda para o padrão
+    }
+  }
 
-  const _CustomerDetailsDialog({required this.customer});
+  Color _getBackgroundColor(CustomerTier tier) {
+    switch (tier) {
+      case CustomerTier.gold:
+        return Colors.amber.shade50;
+      case CustomerTier.silver:
+        return Colors.blueGrey.shade50;
+      case CustomerTier.bronze:
+        return const Color(0xFFEFEBE9); // Um tom de marrom claro
+      default:
+        return Colors.white; // Fundo padrão do Card
+    }
+  }
 
-  Future<void> _launchWhatsApp(BuildContext context, String phone) async {
-    final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
-    final url = Uri.parse("https://wa.me/55$cleanPhone");
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
-        );
-      }
+
+  IconData _getTierIcon(CustomerTier tier) {
+    switch (tier) {
+      case CustomerTier.gold:
+        return Icons.emoji_events;
+      case CustomerTier.silver:
+        return Icons.military_tech;
+      case CustomerTier.bronze:
+        return Icons.workspace_premium;
+      default:
+        return Icons.person;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final tier = _getTier(widget.customer.notes);
+    final borderColor = _getBorderColor(tier);
+    final backgroundColor = _getBackgroundColor(tier);
+    final tierIcon = _getTierIcon(tier);
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: theme.primaryColor.withOpacity(0.1),
-                  child: Text(
-                    customer.name.isNotEmpty
-                        ? customer.name[0].toUpperCase()
-                        : '?',
-                    style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: theme.primaryColor),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        customer.name,
-                        style: const TextStyle(
-                            fontSize: 20, fontWeight: FontWeight.bold),
-                      ),
-                      if (customer.cpf.isNotEmpty)
-                        Text('CPF: ${customer.cpf}',
-                            style: const TextStyle(
-                                fontSize: 13, color: Colors.black54)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 32),
-            _infoRow('Telefone', customer.phone, Icons.phone,
-                color: Colors.green),
-            _infoRow(
-              'WhatsApp',
-              customer.whatsapp.isEmpty ? 'Não informado' : customer.whatsapp,
-              Icons.message,
-              color: Colors.green,
-              trailing: customer.whatsapp.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.open_in_new, color: Colors.green),
-                      onPressed: () =>
-                          _launchWhatsApp(context, customer.whatsapp),
-                      tooltip: 'Abrir WhatsApp',
-                    )
-                  : null,
-            ),
-            _infoRow(
-              'Endereço',
-              customer.address.isEmpty ? 'Não informado' : customer.address,
-              Icons.location_on,
-              color: Colors.blue,
-              trailing: customer.address.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.map, color: Colors.blue),
-                      onPressed: () =>
-                          UrlLauncherUtils.launchMap(context, customer.address),
-                      tooltip: 'Abrir no mapa',
-                    )
-                  : null,
-            ),
-            _infoRow(
-              'Endereço',
-              customer.address1!.isEmpty ? 'Não informado' : customer.address1 ??  "",
-              Icons.location_on,
-              color: Colors.blue,
-              trailing: customer.address.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.map, color: Colors.blue),
-                      onPressed: () => UrlLauncherUtils.launchMap(
-                          context, customer.address1?? ""),
-                      tooltip: 'Abrir no mapa',
-                    )
-                  : null,
-            ),
-            _infoRow(
-              'Endereço',
-              customer.address.isEmpty ? 'Não informado' : customer.address2 ?? "",
-              Icons.location_on,
-              color: Colors.blue,
-              trailing: customer.address.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.map, color: Colors.blue),
-                      onPressed: () => UrlLauncherUtils.launchMap(
-                          context, customer.address2 ?? ""),
-                      tooltip: 'Abrir no mapa',
-                    )
-                  : null,
-            ),
-            _infoRow(
-                'Observações', customer.notes ?? 'Sem observações', Icons.note),
-            const SizedBox(height: 20),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('FECHAR',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
-        ),
+    return Card(
+      elevation: 4,
+      shadowColor: Colors.black12,
+      color: backgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        // Adiciona a borda colorida
+        side: BorderSide(color: borderColor, width: tier == CustomerTier.none ? 0 : 2),
       ),
-    );
-  }
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: _showCustomerDetails,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 28,
+                backgroundColor: borderColor != Colors.transparent ? borderColor.withOpacity(0.2) : theme.primaryColor.withOpacity(0.1),
+                child: tier != CustomerTier.none
+                    ? Icon(tierIcon, color: borderColor, size: 28)
+                    : Text(
+                  widget.customer.name.isNotEmpty
+                      ? widget.customer.name[0].toUpperCase()
+                      : '?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.primaryColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.customer.name,
+                      style: const TextStyle(
+                          fontSize: 17, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    if (widget.customer.phone.isNotEmpty)
+                      Row(
+                        children: [
+                          const Icon(Icons.phone,
+                              size: 14, color: Colors.green),
+                          const SizedBox(width: 4),
+                          Text(widget.customer.phone,
+                              style: const TextStyle(fontSize: 13)),
+                        ],
+                      ),
+                    if (widget.customer.instagram?.isNotEmpty == true)
+                      Text('@${widget.customer.instagram}',
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black54)),
+                  ],
+                ),
+              ),
+              // === TODOS OS BOTÕES VISÍVEIS NO CARD ===
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // WhatsApp
+                  if (widget.customer.whatsapp.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.message, color: Colors.green),
+                      tooltip: 'WhatsApp',
+                      onPressed: () =>
+                          _launchWhatsApp(widget.customer.whatsapp),
+                    ),
 
-  Widget _infoRow(String label, String value, IconData icon,
-      {Color? color, Widget? trailing}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 22, color: color ?? Colors.grey[700]),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: Text('$label:',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+                  // Editar
+                  IconButton(
+                    icon:
+                    const Icon(Icons.edit_outlined, color: Colors.orange),
+                    tooltip: 'Editar',
+                    onPressed: widget.onEdit,
+                  ),
+                  // Excluir
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    tooltip: 'Excluir',
+                    onPressed: widget.onDelete,
+                  ),
+                ],
+              ),
+            ],
           ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              children: [
-                Expanded(
-                    child: Text(value,
-                        style: const TextStyle(color: Colors.black87))),
-                if (trailing != null) SizedBox(height: 36, child: trailing),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

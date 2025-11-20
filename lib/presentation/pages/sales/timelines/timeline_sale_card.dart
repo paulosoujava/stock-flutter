@@ -1,15 +1,16 @@
+// /lib/presentation/pages/sales/timelines/timeline_sale_card.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:stock/data/model/delivery.dart';
 
 import '../../../../core/di/injection.dart';
-import '../../../../domain/entities/sale/month_sales.dart';
 import '../../../../domain/entities/sale/sale.dart';
-import '../delivery/delivery_dialog.dart';
 import '../report/sales_report_view_model.dart';
 import '../widgets/action_cars.dart';
 import '../widgets/delivery_status_chip.dart';
+
 
 class TimelineSaleCard extends StatefulWidget {
   final Sale sale;
@@ -44,63 +45,153 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
   void initState() {
     super.initState();
     _viewModel = getIt<SalesReportViewModel>();
-    _deliveryFuture = _viewModel.fetchDeliveryData(widget.sale.id);
+    // Só busca dados de entrega se não for uma venda na loja
+    if (widget.sale.customerName.contains('@')) {
+      _deliveryFuture = _viewModel.fetchDeliveryData(widget.sale.id);
+    }
   }
+
+  // --- FUNÇÕES HELPER ATUALIZADAS ---
+
+  IconData _getIconForStatus(String? status, bool isStoreSale) {
+    if (isStoreSale) {
+      return Icons.storefront; // Ícone de loja
+    }
+    switch (status) {
+      case 'Saiu para entrega':
+        return Icons.local_shipping;
+      case 'Entregue':
+        return Icons.check_circle;
+      case 'Retornou':
+        return Icons.reply;
+      default:
+        return Icons.hourglass_bottom;
+    }
+  }
+
+  Color _getBorderColorForStatus(String? status, bool isStoreSale) {
+    if (isStoreSale) {
+      return Colors.deepPurple.shade300; // Cor da loja
+    }
+    switch (status) {
+      case 'Saiu para entrega':
+        return Colors.indigo.shade700;
+      case 'Entregue':
+        return Colors.green.shade700;
+      case 'Retornou':
+        return Colors.red.shade700;
+
+      default:
+        return Colors.amber.shade700;
+    }
+  }
+
+  Color _getBackgroundColorForStatus(String? status, bool isStoreSale) {
+    if (isStoreSale) {
+      return Colors.deepPurple.shade50; // Cor da loja
+    }
+    switch (status) {
+      case 'Saiu para entrega':
+        return Colors.orange.shade50;
+      case 'Entregue':
+        return Colors.green.shade50;
+      case 'Retornou':
+        return Colors.red.shade50;
+      case 'Pendente':
+        return Colors.blue.shade50;
+      default:
+        return Colors.blue.shade50.withOpacity(0.7);
+    }
+  }
+  // --- FIM DAS FUNÇÕES HELPER ---
 
   @override
   Widget build(BuildContext context) {
     final bool canceled = widget.sale.isCanceled == true;
+    final bool isStoreSale = !widget.sale.customerName.contains('@');
 
-    print(
-      "TimelineSaleCard: ${widget.sale}\n"
-      "sale.globalDiscount: ${widget.sale.globalDiscount}\n"
-      "onProfile: ${widget.onProfile}\n"
-      "onHistory: ${widget.onHistory}\n",
+    // Se for uma venda na loja, não precisamos do FutureBuilder para o design
+    if (isStoreSale) {
+      return _buildCardContent(
+        status: 'Venda na Loja',
+        isStoreSale: true,
+        canceled: canceled,
+      );
+    }
+
+    // Para vendas online, usamos o FutureBuilder
+    return FutureBuilder<DeliveryData?>(
+      future: _deliveryFuture,
+      builder: (context, snapshot) {
+        final delivery = snapshot.data;
+        final status = delivery?.status;
+        return _buildCardContent(
+          status: status,
+          isStoreSale: false,
+          canceled: canceled,
+          snapshot: snapshot,
+        );
+      },
     );
+  }
+
+  // Widget unificado para construir o conteúdo do card
+  Widget _buildCardContent({
+    required String? status,
+    required bool isStoreSale,
+    required bool canceled,
+    AsyncSnapshot<DeliveryData?>? snapshot,
+  }) {
+    final cardBorderColor = canceled ? Colors.grey.shade400 : _getBorderColorForStatus(status, isStoreSale);
+    final cardBackgroundColor = canceled ? Colors.grey.shade200 : _getBackgroundColorForStatus(status, isStoreSale);
+    final statusIcon = _getIconForStatus(status, isStoreSale);
+
+    final delivery = snapshot?.data;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: canceled
-            ? Colors.grey.shade200
-            : Colors.blue.shade50.withOpacity(0.7),
+        color: cardBackgroundColor,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: canceled ? Colors.grey.shade400 : Colors.blue.shade200,
-          width: 1,
+          color: cardBorderColor,
+          width: 1.2,
         ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Avatar
-          Hero(
-            tag: "avatar_${widget.sale.id}",
-            child: CircleAvatar(
-              radius: 20,
-              backgroundColor: canceled ? Colors.grey : Colors.blue.shade600,
-              child: Text(
-                widget.sale.customerName.substring(0, 1).toUpperCase(),
-                style: GoogleFonts.poppins(
-                    color: Colors.white, fontWeight: FontWeight.bold),
+          // AVATAR
+          Tooltip(
+              message: delivery?.status ?? "Não registrado",
+              child:CircleAvatar(
+                radius: 20,
+                backgroundColor: canceled ? Colors.grey : cardBorderColor,
+                child: Icon(
+                  canceled ? Icons.block : statusIcon,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-            ),
           ),
-
           const SizedBox(width: 12),
-
-          // Info
+          // INFO
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.sale.customerName,
+                  widget.sale.customerName.toUpperCase(),
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,
                     decoration: canceled ? TextDecoration.lineThrough : null,
                     color: canceled ? Colors.grey.shade600 : Colors.black87,
                   ),
+                ),
+                Divider(
+                  color: canceled ? Colors.grey.shade400 : cardBorderColor,
+                  thickness: 1.2,
                 ),
                 if (widget.sale.isCanceled == true)
                   Text(
@@ -116,16 +207,14 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
                   widget.date.format(widget.sale.saleDate),
                   style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color:
-                        canceled ? Colors.grey.shade500 : Colors.grey.shade700,
+                    color: canceled ? Colors.grey.shade500 : Colors.grey.shade700,
                   ),
                 ),
                 if ((widget.sale.globalDiscount ?? 0) > 0)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.green.shade100,
                         borderRadius: BorderRadius.circular(8),
@@ -141,58 +230,44 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
                     ),
                   ),
 
-                //DELIVERY
-                FutureBuilder<DeliveryData?>(
-                  future: _deliveryFuture,
-                  // A Future que definimos no initState
-                  builder: (context, snapshot) {
-                    // Estado 1: Enquanto os dados estão carregando
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return Text(
-                        "Delivery: Carregando...",
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      );
-                    }
+                // DELIVERY STATUS
+                if (isStoreSale)
+                  DeliveryStatusChip(status: 'Venda na Loja', isCanceled: canceled),
 
-                    // Estado 2: Após carregar, verifique se há dados
-                    final delivery = snapshot.data;
-                    final status = delivery?.status ?? "Não registrado";
-                    final returnReason = delivery?.returnReason ?? "";
-
-                    return Column(
+                if (!isStoreSale) ...[
+                  if (snapshot?.connectionState == ConnectionState.waiting)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        "Carregando status...",
+                        style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey),
+                      ),
+                    ),
+                  if (snapshot?.connectionState == ConnectionState.done)
+                    Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         DeliveryStatusChip(
-                          status: status,
+                          status: status ?? "Não registrado",
                           isCanceled: canceled,
                         ),
-                        if(returnReason != "")
-                        Text(
-                          "Motivo da devolução: $returnReason",
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: canceled
-                                ? Colors.grey.shade500
-                                : Colors.grey.shade700,
-                            fontWeight: delivery != null
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        )
+                        if (delivery?.returnReason?.isNotEmpty ?? false)
+                          Text(
+                            "Motivo: ${delivery!.returnReason}",
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              color: Colors.grey.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
                       ],
-                    );
-                  },
-                ),
+                    ),
+                ],
               ],
             ),
           ),
-
-          // Valor + Ações
+          // VALOR + AÇÕES
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
@@ -201,23 +276,28 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
                 style: GoogleFonts.poppins(
                   fontWeight: FontWeight.bold,
                   fontSize: 15,
-                  color: canceled
-                      ? Colors.grey.shade600
-                      : Colors.deepPurple.shade700,
+                  color: canceled ? Colors.grey.shade600 : cardBorderColor,
                   decoration: canceled ? TextDecoration.lineThrough : null,
                 ),
               ),
-              const SizedBox(height: 8),
+              SizedBox(
+                  width: 160,
+                  child: Divider(
+                    color: canceled ? Colors.grey.shade400 : cardBorderColor,
+                    thickness: 1.2,
+                  )
+              ),
               Row(
                 children: [
-                  if (widget.sale.isCanceled == null)
+                  // Oculta o botão de entrega se for venda na loja
+                  if (!isStoreSale && widget.sale.isCanceled == null)
                     ActionButton(
                       icon: Icons.delivery_dining,
                       tooltip: "Entrega",
                       onPressed: () => widget.onRegisterDelivery(widget.sale),
                       color: Colors.deepPurple,
                     ),
-                  const SizedBox(width: 4),
+                  if (!isStoreSale) const SizedBox(width: 4),
                   ActionButton(
                     icon: Icons.person_outline,
                     tooltip: "Perfil",

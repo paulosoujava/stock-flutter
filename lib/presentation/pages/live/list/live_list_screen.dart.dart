@@ -13,6 +13,7 @@ import '../../../../core/di/injection.dart';
 import '../../../../core/events/event_bus.dart';
 import '../../../../core/navigation/app_routes.dart';
 import '../../../../domain/repositories/icustomer_repository.dart';
+import '../../../widgets/dialog_customer_details.dart';
 import 'live_list_intent.dart';
 import 'live_list_state.dart';
 import 'live_list_view_model.dart';
@@ -39,8 +40,9 @@ class _LiveListScreenState extends State<LiveListScreen> {
     _viewModel.loadLives();
     final eventBus = getIt<EventBus>();
     _tempCustomerSavedSubscription = eventBus.stream.listen((event) {
-      print('EVENTO RECEBIDO: Cliente temporário salvo');
-      _viewModel.loading();
+      if (event is RegisterEvent) {
+        _viewModel.loading();
+      }
     });
   }
 
@@ -284,6 +286,13 @@ class _LiveCardCleanState extends State<_LiveCardClean> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                _StatusBadge(status: live.status, isActive: widget.isActive),
+                Row(children: [
+                  ..._buildActions(context, live),
+                ])
+              ]),
+              Divider(),
               Row(
                 children: [
                   Expanded(
@@ -307,10 +316,9 @@ class _LiveCardCleanState extends State<_LiveCardClean> {
                       ],
                     ),
                   ),
-                  _StatusBadge(status: live.status, isActive: widget.isActive),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 36),
               Row(
                 children: [
                   Text('Meta: ${widget.currency.format(live.goalAmount / 100)}',
@@ -357,10 +365,6 @@ class _LiveCardCleanState extends State<_LiveCardClean> {
               if (_expanded) ...[
                 const Divider(height: 32),
                 _buildExpansionContent(live: live, currency: widget.currency),
-                const SizedBox(height: 20),
-                Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: _buildActions(context, live)),
               ],
             ],
           ),
@@ -496,7 +500,10 @@ class _LiveCardCleanState extends State<_LiveCardClean> {
                       spacing: 8,
                       runSpacing: 6,
                       children: buyers.map((buyer) {
-                        return CustomerChip(buyer: buyer);
+                        return CustomerChip(
+                          buyer: buyer,
+                          live: live,
+                        );
                       }).toList(),
                     ),
                   ],
@@ -561,38 +568,21 @@ class _LiveCardCleanState extends State<_LiveCardClean> {
 
 class CustomerChip extends StatefulWidget {
   final Map<String, dynamic> buyer;
+  final Live live;
 
-  const CustomerChip({super.key, required this.buyer});
+  const CustomerChip({super.key, required this.buyer, required this.live});
 
   @override
   State<CustomerChip> createState() => _CustomerChipState();
 }
 
 class _CustomerChipState extends State<CustomerChip> {
-  // Guarda o resultado da busca para não repetir a chamada
   Future<Customer?>? _customerFuture;
 
   @override
   void initState() {
     super.initState();
-    // Inicia a busca pelos dados do cliente assim que o widget é criado
     _customerFuture = _fetchCustomerData();
-  }
-
-  Widget _infoRow(IconData? icon, String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          if (icon != null) ...[
-            Icon(icon, size: 20, color: Colors.grey[600]),
-            const SizedBox(width: 12),
-          ] else
-            const SizedBox(width: 32),
-          Expanded(child: Text(text)),
-        ],
-      ),
-    );
   }
 
   Future<Customer?> _fetchCustomerData() {
@@ -602,13 +592,48 @@ class _CustomerChipState extends State<CustomerChip> {
     return customerRepo.getCustomersByIdOrInstagram(id, name);
   }
 
+  CustomerTier _getTier(String? notes) {
+    final lowerCaseNotes = notes?.toLowerCase() ?? '';
+    if (lowerCaseNotes.contains('ouro')) return CustomerTier.gold;
+    if (lowerCaseNotes.contains('prata')) return CustomerTier.silver;
+    if (lowerCaseNotes.contains('bronze')) return CustomerTier.bronze;
+    return CustomerTier.none;
+  }
+
+  // Retorna o ícone para o tier
+  IconData _getTierIcon(CustomerTier tier) {
+    switch (tier) {
+      case CustomerTier.gold:
+        return Icons.emoji_events;
+      case CustomerTier.silver:
+        return Icons.military_tech;
+      case CustomerTier.bronze:
+        return Icons.workspace_premium;
+      default:
+        return Icons.person; // Não será usado se a lógica for correta
+    }
+  }
+
+  // Retorna a cor principal para o tier
+  Color _getTierColor(CustomerTier tier) {
+    switch (tier) {
+      case CustomerTier.gold:
+        return Colors.amber.shade700;
+      case CustomerTier.silver:
+        return Colors.blueGrey.shade500;
+      case CustomerTier.bronze:
+        return Colors.brown.shade500;
+      default:
+        return Colors.grey; // Cor padrão
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // FutureBuilder espera o resultado da busca e constrói a UI de acordo
+    final live = widget.live;
     return FutureBuilder<Customer?>(
       future: _customerFuture,
       builder: (context, snapshot) {
-        // Enquanto os dados estão sendo carregados, mostra um chip de 'loading'
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Chip(
             label: SizedBox(
@@ -617,113 +642,44 @@ class _CustomerChipState extends State<CustomerChip> {
         }
 
         final fullCustomer = snapshot.data;
+
         final name = widget.buyer['name'] as String;
-        final id = widget.buyer['id'] as String;
         final isRegistered = (fullCustomer != null &&
             fullCustomer.id.isNotEmpty &&
             !fullCustomer.id.startsWith('temp_'));
 
-        // Constrói o Chip final quando os dados chegam
+        String displayName;
+        if (isRegistered && (fullCustomer.instagram?.isNotEmpty ?? false)) {
+          // Se REGISTRADO e tem INSTAGRAM, usa o @instagram
+          displayName = '@${fullCustomer.instagram}';
+        } else {
+          // Senão, usa o nome original que veio do mapa 'buyer'
+          displayName = name;
+        }
+
+        final tier = _getTier(fullCustomer?.notes);
+        final isSpecialTier = tier != CustomerTier.none;
+
+        final IconData mainIcon;
+        final Color iconColor;
+        if (isSpecialTier) {
+          mainIcon = _getTierIcon(tier);
+          iconColor = _getTierColor(tier);
+        } else {
+          mainIcon = isRegistered ? Icons.person : Icons.person_add;
+          iconColor =
+              isRegistered ? Colors.green.shade700 : Colors.orange.shade700;
+        }
+
         return GestureDetector(
           onTap: () {
             if (isRegistered && fullCustomer != null) {
-              // --- Lógica para mostrar o AlertDialog (cliente registrado) ---
-              // (copiado do seu código original)
               showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  title: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.deepPurple.shade100,
-                        child: Text(
-                          fullCustomer.name[0].toUpperCase(),
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          fullCustomer.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18),
-                        ),
-                      ),
-                    ],
-                  ),
-                  content: SizedBox(
-                    width: double.maxFinite,
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (fullCustomer.instagram != null &&
-                              fullCustomer.instagram!.isNotEmpty)
-                            _infoRow(Icons.alternate_email,
-                                '@${fullCustomer.instagram}'),
-                          if (fullCustomer.phone != null &&
-                              fullCustomer.phone!.isNotEmpty)
-                            _infoRow(Icons.phone, fullCustomer.phone!),
-                          if (fullCustomer.whatsapp != null &&
-                              fullCustomer.whatsapp!.isNotEmpty)
-                            _infoRow(Icons.whatshot, fullCustomer.whatsapp!),
-                          if (fullCustomer.email != null &&
-                              fullCustomer.email!.isNotEmpty)
-                            _infoRow(Icons.email, fullCustomer.email!),
-                          if (fullCustomer.cpf != null &&
-                              fullCustomer.cpf!.isNotEmpty)
-                            _infoRow(Icons.badge, fullCustomer.cpf!),
-                          if (fullCustomer.address != null &&
-                              fullCustomer.address!.isNotEmpty) ...[
-                            _infoRow(Icons.home, fullCustomer.address!),
-                            if (fullCustomer.address1 != null)
-                              _infoRow(null, fullCustomer.address1!),
-                            if (fullCustomer.address2 != null)
-                              _infoRow(null, fullCustomer.address2!),
-                          ],
-                          if (fullCustomer.notes != null &&
-                              fullCustomer.notes!.isNotEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 12),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Observações:',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600)),
-                                  const SizedBox(height: 4),
-                                  Text(fullCustomer.notes!,
-                                      style:
-                                          TextStyle(color: Colors.grey[700])),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                        onPressed: () => Navigator.pop(ctx),
-                        child: const Text('Fechar')),
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.edit),
-                      label: const Text('Editar'),
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        context.push(AppRoutes.customerEdit,
-                            extra: fullCustomer);
-                      },
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              // --- Lógica para abrir a tela de edição (cliente não registrado) ---
-              // (copiado do seu código original)
+                  context: context,
+                  builder: (dialogContext) =>
+                      CustomerDetailsDialog(customer: fullCustomer));
+            } else if (live.status == LiveStatus.finished) {
+              // NAO CADASTRADO ABRE TELA DE EDICAO
               String raw = name.replaceAll(' (não cadastrado)', '').trim();
               String instagram = raw.startsWith('@') ? raw.substring(1) : raw;
               instagram = instagram.split(' ').first;
@@ -739,20 +695,28 @@ class _CustomerChipState extends State<CustomerChip> {
                 address: '',
                 address1: null,
                 address2: null,
+                notes: null, // Notes é nulo para cliente temporário
               );
               context.push(AppRoutes.customerEdit, extra: tempCustomer);
             }
           },
           child: Chip(
+            // O avatar agora é o ícone principal
             avatar: Icon(
-              isRegistered ? Icons.person : Icons.person_add,
+              mainIcon,
               size: 16,
-              color:
-                  isRegistered ? Colors.green.shade700 : Colors.orange.shade700,
+              color: iconColor,
             ),
-            label: Text(name, style: const TextStyle(fontSize: 12)),
-            backgroundColor:
-                isRegistered ? Colors.green[50] : Colors.orange[50],
+            // A label é apenas o nome
+            label: Text(
+              displayName,
+              style: const TextStyle(fontSize: 12),
+            ),
+
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            padding: const EdgeInsets.symmetric(
+                horizontal: 4.0), // Padding interno reduzido
           ),
         );
       },

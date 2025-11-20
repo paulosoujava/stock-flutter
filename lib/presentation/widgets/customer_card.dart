@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:stock/presentation/widgets/launch.dart';
 import 'package:stock/presentation/widgets/url_launcher_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 

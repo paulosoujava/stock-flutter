@@ -42,7 +42,7 @@ class DeliveryStatusChip extends StatelessWidget {
     switch (status) {
       case 'Pendente':
         return (Icons.pending_actions_outlined, Colors.orange.shade700);
-      case 'Saiu para entrega':
+      case 'Em trânsito':
         return (Icons.local_shipping_outlined, Colors.blue.shade700);
       case 'Entregue':
         return (Icons.check_circle_outline_rounded, Colors.green.shade700);

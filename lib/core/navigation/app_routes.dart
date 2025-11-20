@@ -26,6 +26,7 @@ class AppRoutes {
 
 
   static const String liveSale = '/live-sale';
+  static const String liveSaleList = '/live-sale-list';
 
   static const String reportPage = '/report-page';
 }
