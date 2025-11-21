@@ -26,22 +26,33 @@ class DeliveryRepositoryImpl implements IDeliveryRepository {
 
       final deliveryMap = {
         "saleId": saleId,
-        "method": data.method, // Uber / Moto / Loja / Outro
-        "customMethod": isStore ? null : data.customMethod,
+        "method": data.method,
+        "customMethod": isStore || data.method != "Outro" ? null : data.customMethod?.trim(),
+
         "addressId": isStore ? null : data.addressId,
-        "status": isStore ? "Retirada na Loja" : data.status,
-        "dispatchDate": isStore
-            ? null
-            : (data.status == "Em trânsito"
-            ? data.dispatchDate?.toIso8601String()
-            : null),
-        "returnReason": isStore ? null : data.returnReason,
-        "courierName": isStore ? null : data.courierName,
-        "courierNotes": isStore ? null : data.courierNotes,
+
+        "status": isStore
+            ? "Retirada na Loja"
+            : data.status,  // ← agora usa o status real (Entregue, Pendente, etc)
+
+        // CORREÇÃO PRINCIPAL: salva a data se o status for "Entregue", independente de qualquer coisa
+        "dispatchDate": (data.status == "Entregue" && data.dispatchDate != null)
+            ? data.dispatchDate!.toIso8601String()
+            : null,
+
+        "returnReason": data.status == "Retornou" ? data.returnReason?.trim() : null,
+        "courierName": isStore ? null : data.courierName?.trim(),
+        "courierNotes": isStore ? null : data.courierNotes?.trim(),
+
+        "paymentMethod": data.paymentMethod,
+        "customPaymentMethod": data.paymentMethod == "Outro" ? data.customPaymentMethod?.trim() : null,
+
         "createdAt": DateTime.now().toIso8601String(),
       };
 
       await box.put(saleId, deliveryMap);
+
+      print("Delivery registrada com sucesso: $deliveryMap");
     } catch (e) {
       throw Exception("Erro ao registrar entrega: $e");
     }
@@ -65,6 +76,8 @@ class DeliveryRepositoryImpl implements IDeliveryRepository {
       return DeliveryData(
         method: deliveryMap['method'],
         customMethod: deliveryMap['customMethod'],
+        paymentMethod: deliveryMap['paymentMethod'],
+        customPaymentMethod: deliveryMap['customPaymentMethod'],
         addressId: deliveryMap['addressId'],
         status: deliveryMap['status'],
         // Converte a data de String de volta para DateTime, se existir.

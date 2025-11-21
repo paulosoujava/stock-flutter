@@ -34,7 +34,6 @@ class _SalesReportPageState extends State<SalesReportPage> {
   final DateFormat _date = DateFormat('dd/MM/yyyy - HH:mm');
   StreamSubscription? _tempCustomerSavedSubscription;
 
-  // FILTRO LOCAL — ÚNICA COISA ADICIONADA
   String? _selectedFilter;
 
   @override
@@ -141,23 +140,33 @@ class _SalesReportPageState extends State<SalesReportPage> {
 
   Future<void> _openDeliveryDialog(Sale sale) async {
     final delivery = await _viewModel.fetchDeliveryData(sale.id);
-    if (!mounted) return;
+    print("DELIVERY HERE: $delivery");
+    final Customer? customer =
+    await _viewModel.getCustomerByIdOrInstagram(sale.customerId, sale.customerName);
+
+
+    if (customer == null) {
+      if (!mounted) return;
+      showCustomerNotRegistered(context, sale);
+      return;
+    }
 
     await showDialog(
       context: context,
       builder: (_) => DeliveryDialog(
-        customer: null,
+        customer: customer,
         deliveryToEdit: delivery,
         onConfirm: (data) async {
-          // NÃO USEI registerDelivery — SÓ RECARREGA O RELATÓRIO
-          _viewModel.handleIntent(LoadSalesReportIntent());
-          if (mounted) Navigator.pop(context);
+          await _viewModel.onRegisterDelivery(sale.id, data);
+        },
+        onCancel: () {
+          if (mounted) Navigator.of(context).pop();
         },
       ),
     );
   }
 
-  // FILTRO — O QUE VOCÊ PEDIU
+
   void _showFilterDialog() {
     showDialog(
       context: context,
@@ -238,11 +247,8 @@ class _SalesReportPageState extends State<SalesReportPage> {
                 ),
               ),
 
-              // --- INÍCIO DA MODIFICAÇÃO ---
-
-              // Parte 2: O Ícone, inserido como um WidgetSpan
               WidgetSpan(
-                alignment: PlaceholderAlignment.middle, // Alinha o ícone verticalmente
+                alignment: PlaceholderAlignment.middle,
                 child: Icon(
                   filterIcon,
                   color: filterColor,

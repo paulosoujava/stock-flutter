@@ -67,17 +67,19 @@ class SalesReportViewModel {
   Future<void> _listenToEvents() async {
     _eventBus.stream.listen((event) async {
       if (event is SalesEvent) {
-        print("Evento recebido: $event");
+
         _stateController  .add(SalesReportLoading());
         await Future.delayed(const Duration(seconds: 1));
         _loadReport();
-        print("Evento recebido DEI LOAD NA PAGINA: $event");
+
       }
     });
   }
 
+
+
   Future<void> onRegisterDelivery(String saleId, DeliveryData data) async {
-    print("saleId $saleId data $data");
+    print("OnRegisterDelivery: , $data");
     await _registerDeliveryUseCase(
       DeliveryParams(saleId: saleId, data: data),
     );
