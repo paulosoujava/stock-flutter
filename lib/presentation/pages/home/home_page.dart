@@ -221,14 +221,14 @@ class _HomePageState extends State<HomePage> {
           Expanded(
             child: SingleChildScrollView(
               child: GridView.builder(
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(26.0),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 16.0,
-                  mainAxisSpacing: 16.0,
-                  mainAxisExtent: 140,
+                  crossAxisSpacing: 36.0,
+                  mainAxisSpacing: 36.0,
+                  mainAxisExtent: 180,
                 ),
                 itemCount: _actionItems.length,
                 itemBuilder: (context, index) {

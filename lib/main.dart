@@ -46,17 +46,28 @@ Future<void> main() async {
 
   if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
     await windowManager.ensureInitialized();
-    const windowOptions = WindowOptions(
+
+    WindowOptions windowOptions = const WindowOptions(
       minimumSize: Size(850, 650),
+      size: Size(1280, 720),        // tamanho inicial decente
       center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
       title: 'Meu App de Estoque',
       titleBarStyle: TitleBarStyle.normal,
-      backgroundColor: Color(0xFF1E1E1E),
     );
+
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
       await windowManager.focus();
-      await windowManager.setBrightness(Brightness.dark);
+
+      // AQUI É O SEGREDO NO MACOS:
+      // Espera um frame antes de maximizar → evita o "Resize timed out"
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await Future.delayed(const Duration(milliseconds: 100));
+        await windowManager.maximize();
+        // ou: await windowManager.setFullScreen(true); // se quiser tela cheia total
+      });
     });
   }
 
