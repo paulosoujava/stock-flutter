@@ -12,26 +12,31 @@ class CustomerListErrorState extends CustomerListState {
 }
 
 class CustomerListSuccessState extends CustomerListState {
-  final List<Customer> allCustomers; // Guarda a lista original, sem filtro
-  final List<Customer> filteredCustomers; // A lista que será exibida, após o filtro
+  final List<Customer> allCustomers;
+  final List<Customer> filteredCustomers;
   final String searchTerm;
+  final String? selectedTierKeyword; // "ouro", "prata", "bronze" ou null
 
   CustomerListSuccessState({
     required this.allCustomers,
     required this.filteredCustomers,
     this.searchTerm = '',
+    this.selectedTierKeyword,
   });
 
-  // Método auxiliar para criar cópias do estado, muito útil no ViewModel
   CustomerListSuccessState copyWith({
     List<Customer>? allCustomers,
     List<Customer>? filteredCustomers,
     String? searchTerm,
+    String? selectedTierKeyword, // ← pode receber null
   }) {
     return CustomerListSuccessState(
       allCustomers: allCustomers ?? this.allCustomers,
       filteredCustomers: filteredCustomers ?? this.filteredCustomers,
       searchTerm: searchTerm ?? this.searchTerm,
+      selectedTierKeyword: selectedTierKeyword ?? this.selectedTierKeyword,
     );
   }
+
+
 }
