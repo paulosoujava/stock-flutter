@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
@@ -8,16 +7,12 @@ import 'package:stock/presentation/pages/home/home_intent.dart';
 import 'package:stock/presentation/pages/home/home_state.dart';
 import 'package:stock/presentation/pages/home/home_view_model.dart';
 import 'package:stock/presentation/pages/live/list/live_list_screen.dart.dart';
-
 import 'package:stock/presentation/pages/sales/report/sales_report_page.dart';
-
 import 'package:stock/presentation/widgets/action_card.dart';
 import 'package:stock/presentation/widgets/action_item.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:stock/presentation/widgets/help_dialog.dart';
 import 'package:stock/presentation/widgets/low_stock_alert_card.dart';
-
-
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,13 +25,11 @@ class _HomePageState extends State<HomePage> {
   late final HomeViewModel _viewModel;
   late final StreamSubscription<HomeState> _stateSubscription;
 
-
-  // A lista de ações da grade é estática e pode ficar aqui.
   static const List<ActionItem> _actionItems = [
     ActionItem(
       title: 'Clientes',
       description:
-      'Cadastre, edite e visualize seus clientes de forma rápida e prática, mantendo sua base sempre organizada e atualizada.',
+      'Gerencie seus clientes com rapidez e praticidade.',
       icon: Icons.people_alt,
       iconColor: Colors.blue,
       route: AppRoutes.customerList,
@@ -44,7 +37,7 @@ class _HomePageState extends State<HomePage> {
     ActionItem(
       title: 'Categorias',
       description:
-      'Gerencie as categorias de seus produtos, organize seu estoque e facilite a navegação e busca de itens no seu sistema.',
+      'Organize seus produtos por categorias.',
       icon: Icons.category,
       iconColor: Colors.teal,
       route: AppRoutes.categoryList,
@@ -52,7 +45,7 @@ class _HomePageState extends State<HomePage> {
     ActionItem(
       title: 'Produtos',
       description:
-      'Controle seu estoque, preços e categorias de produtos, garantindo um gerenciamento eficiente e preciso de suas mercadorias.',
+      'Controle estoque, preços e disponibilidade.',
       icon: Icons.inventory_2,
       iconColor: Colors.orange,
       route: AppRoutes.productByCategory,
@@ -60,7 +53,7 @@ class _HomePageState extends State<HomePage> {
     ActionItem(
       title: 'Vendas',
       description:
-      'Registre novas vendas, consulte o histórico de transações e mantenha o controle total das operações comerciais.',
+      'Registre e acompanhe transações.',
       icon: Icons.point_of_sale,
       iconColor: Colors.green,
       route: AppRoutes.orderCreate,
@@ -68,7 +61,7 @@ class _HomePageState extends State<HomePage> {
     ActionItem(
       title: 'Fornecedores',
       description:
-      'Cadastre e gerencie seus fornecedores, mantendo suas informações sempre organizadas para otimizar o processo de compra.',
+      'Gerencie parceiros e contatos.',
       icon: Icons.recent_actors_outlined,
       iconColor: Colors.deepOrange,
       route: AppRoutes.supplierList,
@@ -76,19 +69,11 @@ class _HomePageState extends State<HomePage> {
     ActionItem(
       title: 'Lembretes',
       description:
-      'Crie lembretes para não esquecer de tarefas importantes, como prazos e compromissos, e se mantenha organizado.',
+      'Crie anotações importantes.',
       icon: Icons.today_outlined,
       iconColor: Colors.purple,
       route: AppRoutes.reminderList,
     ),
-
-    /*ActionItem(
-      title: 'Vendas em Live',
-      description: 'Gerencie e conduza suas vendas ao vivo.',
-      icon: Icons.live_tv,
-      iconColor: Colors.redAccent,
-      route: AppRoutes.liveSaleList,
-    ),*/
   ];
 
   @override
@@ -102,6 +87,7 @@ class _HomePageState extends State<HomePage> {
   void _listenToStateChanges() {
     _stateSubscription = _viewModel.state.listen((state) {
       if (!mounted) return;
+
       if (state is HomeLogoutSuccessState) {
         context.go(AppRoutes.login);
       } else if (state is HomeErrorState) {
@@ -124,50 +110,53 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
+        backgroundColor: Colors.grey[200],
         appBar: AppBar(
-          title: const Text('Dashboard'),
+          elevation: 0,
+          backgroundColor: theme.colorScheme.primary,
+          title: const Text(
+            'Dashboard',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           actions: [
             IconButton(
               icon: const Icon(Icons.help_outline),
-              tooltip: 'Ajuda',
               onPressed: () => HelpDialog.show(context),
             ),
-            SizedBox(width: 8),
             IconButton(
               icon: const Icon(Icons.logout),
-              tooltip: 'Sair',
               onPressed: () => _onLogoffPressed(context),
             ),
-            SizedBox(width: 8),
+            const SizedBox(width: 8),
           ],
-          bottom: TabBar(
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white.withAlpha(130),
-            indicatorColor: Colors.green,
-            indicatorWeight: 3.0,
-            overlayColor: WidgetStateProperty.resolveWith<Color?>(
-                  (Set<WidgetState> states) {
-                if (states.contains(WidgetState.pressed)) {
-                  return Colors.white.withOpacity(0.2);
-                }
-                return null;
-              },
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(55),
+            child: Container(
+              color: theme.colorScheme.primary,
+              child: TabBar(
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                indicatorColor: Colors.white,
+                tabs: const [
+                  Tab(text: "Ações", icon: Icon(Icons.dashboard_customize)),
+                  Tab(text: "Relatórios", icon: Icon(Icons.bar_chart)),
+                  Tab(text: "Lives", icon: Icon(Icons.live_tv)),
+                ],
+              ),
             ),
-            tabs: const [
-              Tab(icon: Icon(Icons.touch_app), text: 'Ações'),
-              Tab(icon: Icon(Icons.bar_chart), text: 'Relatórios'),
-              Tab(icon: Icon(Icons.live_tv), text: 'Lives')
-            ],
           ),
         ),
+
         body: TabBarView(
           children: [
-            /**********************************************************************
-            //HOME
-            **********************************************************************/
             StreamBuilder<HomeState>(
               stream: _viewModel.state,
               builder: (context, snapshot) {
@@ -175,14 +164,8 @@ class _HomePageState extends State<HomePage> {
                 return _buildActionsTab(context, state);
               },
             ),
-            /**********************************************************************
-            //REPORT
-            **********************************************************************/
             const SalesReportPage(),
-            /**********************************************************************
-            //LIVE
-            **********************************************************************/
-            LiveListScreen()
+            LiveListScreen(),
           ],
         ),
       ),
@@ -191,11 +174,32 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildActionsTab(BuildContext context, HomeState? state) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 🔔 Header: alertas e erros fora do scroll
+        Container(
+          padding: const EdgeInsets.fromLTRB(22, 24, 22, 6),
+          child: const Text(
+            "Olá, seja bem-vindo 👋",
+            style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        const Padding(
+          padding: EdgeInsets.fromLTRB(22, 0, 22, 16),
+          child: Text(
+            "O que você deseja fazer hoje?",
+            style: TextStyle(
+              fontSize: 15,
+              color: Colors.black54,
+            ),
+          ),
+        ),
+
         if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: LowStockAlertCard(
               lowStockInfoList: state.lowStockInfo,
             ),
@@ -203,7 +207,7 @@ class _HomePageState extends State<HomePage> {
 
         if (state is HomeErrorState)
           Padding(
-            padding: const EdgeInsets.all(6.0),
+            padding: const EdgeInsets.all(6),
             child: Text(
               state.errorMessage,
               style: const TextStyle(color: Colors.red, fontSize: 16),
@@ -211,23 +215,19 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
 
-        // 🔄 Carregando (ocupa tudo exceto o footer)
-        if (state is HomeLoadingState)
-          const Expanded(
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else
-        // 🟦 Conteúdo principal scrollável
-          Expanded(
-            child: SingleChildScrollView(
+        const SizedBox(height: 10),
+
+        Expanded(
+          child: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 22),
               child: GridView.builder(
-                padding: const EdgeInsets.all(26.0),
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  crossAxisSpacing: 36.0,
-                  mainAxisSpacing: 36.0,
+                  crossAxisSpacing: 22,
+                  mainAxisSpacing: 22,
                   mainAxisExtent: 180,
                 ),
                 itemCount: _actionItems.length,
@@ -258,30 +258,32 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+        ),
 
-        // 📌 FOOTER FIXO
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12.0),
-          child: Text(
-            "Versão 1.0.0",
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                "Versão 1.0.0",
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
+                ),
+              ),
             ),
-          ),
+          ],
         ),
       ],
     );
-
   }
-
 
   void _onLogoffPressed(BuildContext context) async {
     final shouldLogoff = await showConfirmationDialog(
       context: context,
       title: 'Confirmar Logoff',
-      content: 'Tem certeza de que deseja sair da sua conta?',
+      content: 'Deseja realmente sair?',
       confirmText: 'Sair',
     );
     if (shouldLogoff == true) {

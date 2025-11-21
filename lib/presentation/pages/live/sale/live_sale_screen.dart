@@ -296,22 +296,45 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                             if (state.globalDiscount > 0)
                               Container(
                                 margin: const EdgeInsets.only(top: 12),
-                                padding: const EdgeInsets.all(12),
+                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                                 decoration: BoxDecoration(
-                                    color: Colors.red[50],
-                                    borderRadius: BorderRadius.circular(8),
-                                    border:
-                                        Border.all(color: Colors.red[300]!)),
+                                  color: Colors.red[50],
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.red[300]!),
+                                ),
                                 child: Row(
                                   children: [
                                     const Icon(Icons.info, color: Colors.red),
                                     const SizedBox(width: 8),
-                                    Text(
+
+                                    Expanded(
+                                      child: Text(
                                         'Desconto global de ${state.globalDiscount}% aplicado em todas as vendas',
                                         style: TextStyle(
-                                            color: Colors.red[800],
-                                            fontWeight: FontWeight.w500)),
-                                    const SizedBox(width: 8),
+                                          color: Colors.red[800],
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+
+                                    // 🔥 Botão sutil de remover desconto
+                                    TextButton(
+                                      style: TextButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      onPressed: () {
+                                        _vm.add(SetGlobalDiscountIntent(0));
+                                      },
+                                      child: Text(
+                                        "Remover",
+                                        style: TextStyle(
+                                          color: Colors.red[700],
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    )
                                   ],
                                 ),
                               ),
@@ -414,19 +437,51 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                   itemCount: state.currentCustomers.length,
                                   itemBuilder: (_, i) {
                                     final c = state.currentCustomers[i];
-                                    final isTemp = c.id.startsWith('temp_');
-                                    return Card(
-                                      margin: const EdgeInsets.symmetric(
-                                          horizontal: 16, vertical: 4),
-                                      child: ListTile(
-                                        leading:  CustomerChip(buyer: {'id': c.id, 'name': c.name}, live: state.live),
-                                        trailing: IconButton(
-                                            icon: const Icon(Icons.close),
-                                            onPressed: () => _vm.add(
-                                                RemoveCurrentCustomerIntent(
-                                                    i))),
+                                    return  Card(
+                                      elevation: 1.5,
+                                      shadowColor: Colors.black12,
+                                      color: Colors.white,
+                                      surfaceTintColor: Colors.white,
+                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(
+                                          color: Colors.grey.shade200,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        child: Row(
+                                          children: [
+                                            CustomerChip(
+                                              buyer: {'id': c.id, 'name': c.name},
+                                              live: state.live,
+                                            ),
+                                            const Spacer(),
+
+                                            // Botão de remover
+                                            InkWell(
+                                              borderRadius: BorderRadius.circular(50),
+                                              onTap: () => _vm.add(RemoveCurrentCustomerIntent(i)),
+                                              child: Container(
+                                                padding: const EdgeInsets.all(6),
+                                                decoration: BoxDecoration(
+                                                  shape: BoxShape.circle,
+                                                  color: Colors.grey.shade100,
+                                                ),
+                                                child: const Icon(
+                                                  Icons.close,
+                                                  size: 18,
+                                                  color: Colors.redAccent,
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     );
+
                                   },
                                 ),
                         ),

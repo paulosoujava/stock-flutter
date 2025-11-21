@@ -3,6 +3,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/live/live.dart';
@@ -360,8 +361,6 @@ class _LiveCardCleanState extends State<_LiveCardClean> {
                       : Icons.keyboard_arrow_down),
                 ],
               ),
-
-              // CONTEÚDO EXPANDIDO - AQUI ESTÁ A CORREÇÃO PRINCIPAL
               if (_expanded) ...[
                 const Divider(height: 32),
                 _buildExpansionContent(live: live, currency: widget.currency),
@@ -642,6 +641,15 @@ class _CustomerChipState extends State<CustomerChip> {
         }
 
         final fullCustomer = snapshot.data;
+        final notes = fullCustomer?.notes?.toLowerCase();
+        var type;
+        if (notes?.contains("ouro") == true) {
+          type = "cliente ouro";
+        } else if (notes?.contains("prata") == true) {
+          type = "cliente prata";
+        } else if (notes?.contains("bronze") == true) {
+          type = "cliente bronze";
+        }
 
         final name = widget.buyer['name'] as String;
         final isRegistered = (fullCustomer != null &&
@@ -670,55 +678,96 @@ class _CustomerChipState extends State<CustomerChip> {
           iconColor =
               isRegistered ? Colors.green.shade700 : Colors.orange.shade700;
         }
-
+          if(!isRegistered){
+            type= "cliente não cadastrado";
+          }
         return GestureDetector(
-          onTap: () {
-            if (isRegistered && fullCustomer != null) {
-              showDialog(
-                  context: context,
-                  builder: (dialogContext) =>
-                      CustomerDetailsDialog(customer: fullCustomer));
-            } else if (live.status == LiveStatus.finished) {
-              // NAO CADASTRADO ABRE TELA DE EDICAO
-              String raw = name.replaceAll(' (não cadastrado)', '').trim();
-              String instagram = raw.startsWith('@') ? raw.substring(1) : raw;
-              instagram = instagram.split(' ').first;
+            onTap: () {
+              if (isRegistered && fullCustomer != null) {
+                showDialog(
+                    context: context,
+                    builder: (dialogContext) =>
+                        CustomerDetailsDialog(customer: fullCustomer));
+              } else if (live.status == LiveStatus.finished) {
+                // NAO CADASTRADO ABRE TELA DE EDICAO
+                String raw = name.replaceAll(' (não cadastrado)', '').trim();
+                String instagram = raw.startsWith('@') ? raw.substring(1) : raw;
+                instagram = instagram.split(' ').first;
 
-              final tempCustomer = Customer(
-                id: '',
-                name: raw.replaceAll('@', '').split(' ').first,
-                instagram: instagram,
-                cpf: '',
-                email: '',
-                phone: '',
-                whatsapp: '',
-                address: '',
-                address1: null,
-                address2: null,
-                notes: null, // Notes é nulo para cliente temporário
-              );
-              context.push(AppRoutes.customerEdit, extra: tempCustomer);
-            }
-          },
-          child: Chip(
-            // O avatar agora é o ícone principal
-            avatar: Icon(
-              mainIcon,
-              size: 16,
-              color: iconColor,
-            ),
-            // A label é apenas o nome
-            label: Text(
-              displayName,
-              style: const TextStyle(fontSize: 12),
-            ),
-
-            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            visualDensity: VisualDensity.compact,
-            padding: const EdgeInsets.symmetric(
-                horizontal: 4.0), // Padding interno reduzido
-          ),
-        );
+                final tempCustomer = Customer(
+                  id: '',
+                  name: raw.replaceAll('@', '').split(' ').first,
+                  instagram: instagram,
+                  cpf: '',
+                  email: '',
+                  phone: '',
+                  whatsapp: '',
+                  address: '',
+                  address1: null,
+                  address2: null,
+                  notes: null, // Notes é nulo para cliente temporário
+                );
+                context.push(AppRoutes.customerEdit, extra: tempCustomer);
+              }
+            },
+            child: SizedBox(
+              width: 150,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.grey.shade200, // borda bem leve
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: iconColor.withOpacity(0.08),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        mainIcon,
+                        size: 14,
+                        color: iconColor,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          displayName,
+                          textAlign: TextAlign.start,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                        if (type != null)
+                          Text(
+                            type,
+                            style: GoogleFonts.inter(
+                              fontSize: 7,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ));
       },
     );
   }

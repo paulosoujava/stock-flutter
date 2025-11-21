@@ -62,7 +62,7 @@ class LiveSaleViewModel {
         } else {
           newList.add(Customer(
             id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
-            name: '@$text (não cadastrado)',
+            name: '@$text',
             instagram: text,
             cpf: '', email: '', phone: '', whatsapp: '', address: '', address1: null, address2: null,
           ));
@@ -84,8 +84,7 @@ class LiveSaleViewModel {
             clearSelectedProduct: true,
             currentCustomers: [],
           ));
-    print('selectedProduct: ${current.selectedProduct?.name}');
-    print('currentCustomers: ${current.currentCustomers}');
+
 
         } else {
           // Quando seleciona um novo produto

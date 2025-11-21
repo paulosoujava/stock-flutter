@@ -393,12 +393,12 @@ class _CustomerCardState extends State<_CustomerCard>{
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.customer.name,
+                      widget.customer.name.toUpperCase(),
                       style: const TextStyle(
                           fontSize: 17, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 4),
-                    if (widget.customer.phone.isNotEmpty)
+                    /*if (widget.customer.phone.isNotEmpty)
                       Row(
                         children: [
                           const Icon(Icons.phone,
@@ -407,7 +407,7 @@ class _CustomerCardState extends State<_CustomerCard>{
                           Text(widget.customer.phone,
                               style: const TextStyle(fontSize: 13)),
                         ],
-                      ),
+                      ),*/
                     if (widget.customer.instagram?.isNotEmpty == true)
                       Text('@${widget.customer.instagram}',
                           style: const TextStyle(
