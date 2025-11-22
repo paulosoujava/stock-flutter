@@ -27,6 +27,10 @@ class RemoveOrderIntent extends LiveSaleIntent {
   RemoveOrderIntent(this.index);
 }
 
+class SearchProductIntent extends LiveSaleIntent {
+  final String query;
+  SearchProductIntent(this.query);
+}
 class ShowOrderDetailsIntent extends LiveSaleIntent {
   final int index;
   ShowOrderDetailsIntent(this.index);

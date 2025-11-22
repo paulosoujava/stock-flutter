@@ -27,6 +27,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
   late final ConfettiController _confetti;
   late final FocusNode _instagramFocusNode;
   late final TextEditingController _discountController;
+  final _searchProductController = TextEditingController();
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
     _confetti.dispose();
     _instagramFocusNode.dispose();
     _discountController.dispose();
+    _searchProductController.dispose();
     _vm.dispose();
     super.dispose();
   }
@@ -73,13 +75,13 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
           final totalFaturado =
               (state.live.achievedAmount / 100) + sessionTotal;
 
+
           return Scaffold(
             backgroundColor: Colors.grey[50],
             appBar: AppBar(
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back),
+                icon: const Icon(Icons.arrow_back, color: Colors.black),
                 onPressed: () async {
-                  // === POPUP DE CONFIRMAÇÃO LINDAO ===
                   final confirmExit = await showDialog<bool>(
                     context: context,
                     barrierDismissible: false, // obriga a escolher
@@ -115,15 +117,15 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                   }
                 },
               ),
-              title: Text(state.live.title,
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+              title: Text(state.live.title.toUpperCase(),
+                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18, color: Colors.black)),
               backgroundColor: Colors.amberAccent,
               elevation: 1,
               actions: [
                 Stack(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.discount_outlined),
+                      icon: const Icon(Icons.discount_outlined, color: Colors.deepPurple),
                       onPressed: () async {
                         final controller = TextEditingController(
                             text: state.globalDiscount.toString());
@@ -317,7 +319,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                       ),
                                     ),
 
-                                    // 🔥 Botão sutil de remover desconto
+
                                     TextButton(
                                       style: TextButton.styleFrom(
                                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -346,47 +348,179 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                           blastDirectionality: BlastDirectionality.explosive),
 
                       // GRID DE PRODUTOS - só aparece se NÃO tiver produto selecionado
+
                       if (state.selectedProduct == null)
                         Expanded(
-                          child: GridView.builder(
-                            padding: const EdgeInsets.all(16),
-                            gridDelegate:
-                                const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 4,
-                              childAspectRatio: 1,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                            ),
-                            itemCount: state.products.length,
-                            itemBuilder: (_, i) {
-                              final p = state.products[i];
-                              return InkWell(
-                                onTap: () => _vm.add(SelectProductIntent(p)),
-                                child: Card(
-                                  elevation: 4,
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(16)),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(p.name,
-                                          style: GoogleFonts.poppins(
-                                              fontWeight: FontWeight.w600),
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis),
-                                      const SizedBox(height: 8),
-                                      Text(state.currency.format(p.salePrice),
-                                          style: GoogleFonts.poppins(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.bold)),
-                                    ],
+                          // A Column permite colocar o campo de busca e a grade juntos
+                          child: Column(
+                            children: [
+                              // --- CAMPO DE BUSCA ---
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                                child: TextField(
+                                  controller: _searchProductController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Buscar por nome ou código...',
+                                    prefixIcon: const Icon(Icons.search),
+                                    // Estilo mais limpo e moderno para o campo
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(30),
+                                      borderSide: BorderSide.none,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.grey[200],
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                    // Ícone para limpar a busca
+                                    suffixIcon: IconButton(
+                                      icon: const Icon(Icons.clear, size: 20),
+                                      onPressed: () {
+                                        _searchProductController.clear();
+                                        // Envia o intent com a query vazia para resetar o filtro
+                                        _vm.add(SearchProductIntent(''));
+                                      },
+                                    ),
                                   ),
+                                  onChanged: (query) {
+                                    // Dispara o intent de busca a cada alteração no texto
+                                    _vm.add(SearchProductIntent(query));
+                                  },
                                 ),
-                              );
-                            },
+                              ),
+
+                              // --- GRID DE PRODUTOS ---
+                              Expanded(
+                                child: GridView.builder(
+                                  padding: const EdgeInsets.all(16),
+                                  gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 4,
+                                    childAspectRatio: 1.1, // Ajuste de proporção para o novo card
+                                    mainAxisSpacing: 16,
+                                    crossAxisSpacing: 16,
+                                  ),
+                                  // Use a lista de produtos do estado, que agora é a lista filtrada
+                                  itemCount: state.products.length,
+                                  itemBuilder: (_, i) {
+                                    final p = state.products[i];
+                                    final bool isLowStock = p.stockQuantity <= p.lowStockThreshold;
+
+                                   return  InkWell(
+                                      onTap: () => _vm.add(SelectProductIntent(p)),
+                                      borderRadius: BorderRadius.circular(16),
+                                      // O Builder foi removido. O Card agora é o filho direto do InkWell.
+                                      child: Card(
+                                        elevation: 2,
+                                        shadowColor: isLowStock
+                                            ? Colors.orange.withOpacity(0.3)
+                                            : Colors.black.withOpacity(0.1),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(16),
+                                          side: BorderSide(
+                                            color: isLowStock ? Colors.orange.shade600 : Colors.transparent,
+                                            width: 1.5,
+                                          ),
+                                        ),
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(12.0),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              // --- SEÇÃO SUPERIOR: Título e Código ---
+                                              Text(
+                                                p.name,
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                "CÓD: ${p.codeOfProduct ?? 'N/A'}",
+                                                style: GoogleFonts.robotoMono(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black.withOpacity(0.8),
+                                                ),
+                                              ),
+                                              Divider(),
+                                              const SizedBox(height: 14),
+                                              Text(
+                                                p.description,
+                                                maxLines: 3,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: GoogleFonts.robotoMono(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black.withOpacity(0.8),
+                                                ),
+                                              ),
+                                              const Spacer(),
+                                              // --- SEÇÃO INFERIOR: Estoque e Preço ---
+                                              // Indicador de Estoque
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: isLowStock
+                                                      ? Colors.orange.withOpacity(0.15)
+                                                      : Colors.blueGrey.withOpacity(0.1),
+                                                  borderRadius: BorderRadius.circular(20),
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(
+                                                      isLowStock ? Icons.warning_amber_rounded : Icons.inventory_2_outlined,
+                                                      size: 14,
+                                                      color: isLowStock ? Colors.orange.shade800 : Colors.blueGrey,
+                                                    ),
+                                                    const SizedBox(width: 6),
+                                                    Text(
+                                                      '${p.stockQuantity} em estoque',
+                                                      style: GoogleFonts.poppins(
+                                                        fontWeight: FontWeight.w600,
+                                                        fontSize: 11,
+                                                        color: isLowStock ? Colors.orange.shade900 : Colors.blueGrey.shade700,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+
+                                              // Preço de Venda (com grande destaque)
+                                              Container(
+                                                width: double.infinity,
+                                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                                decoration: BoxDecoration(
+                                                  color: Colors.green.shade700,
+                                                  borderRadius: BorderRadius.circular(10),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    state.currency.format(p.salePrice),
+                                                    style: GoogleFonts.poppins(
+                                                      fontSize: 18,
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                    );
+
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
                         ),
+
 
                       // CAMPO DE INSTAGRAM E LISTA DE CLIENTES
                       if (state.selectedProduct != null) ...[
@@ -396,20 +530,33 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                           child: Row(
                             children: [
                               Expanded(
-                                child: TextField(
-                                    controller: state.instagramController,
-                                    focusNode: _instagramFocusNode,
-                                    decoration: InputDecoration(
-                                      labelText: '@instagram',
-                                      border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(12)),
-                                      prefixText: '@',
+                                child:  TextField(controller: state.instagramController,
+                                  focusNode: _instagramFocusNode,
+                                  // 1. Bloqueia a digitação de espaços
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                                  ],
+                                  decoration: InputDecoration(
+                                    // 2. A dica volta a ser específica para Instagram
+                                    labelText: 'Adicionar @instagram',
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
-                                    onSubmitted: (_) {
-                                      _vm.add(SearchInstagramIntent());
-                                      _instagramFocusNode.requestFocus();
-                                    }),
+                                    // 3. O prefixo '@' volta para guiar o usuário
+                                    prefixText: '@',
+                                    prefixStyle: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                        color: Colors.grey.shade600
+                                    ),
+                                  ),
+                                  onSubmitted: (_) {
+                                    // A lógica de submissão permanece a mesma
+                                    _vm.add(SearchInstagramIntent());
+                                    _instagramFocusNode.requestFocus();
+                                  },
+                                )
+
                               ),
                               const SizedBox(width: 12),
                               FloatingActionButton(

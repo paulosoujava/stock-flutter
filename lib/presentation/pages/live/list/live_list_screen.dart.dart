@@ -711,20 +711,14 @@ class _CustomerChipState extends State<CustomerChip> {
               }
             },
             child: SizedBox(
-              width: 150,
+              width: 410,
+              height: 80,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.grey.shade200, // borda bem leve
-                    width: 1,
-                  ),
-                ),
+
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Container(
                       padding: const EdgeInsets.all(4),
@@ -734,20 +728,21 @@ class _CustomerChipState extends State<CustomerChip> {
                       ),
                       child: Icon(
                         mainIcon,
-                        size: 14,
+                        size: 34,
                         color: iconColor,
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 18),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
                           displayName,
                           textAlign: TextAlign.start,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0.2,
                             color: Colors.grey.shade800,
@@ -757,7 +752,7 @@ class _CustomerChipState extends State<CustomerChip> {
                           Text(
                             type,
                             style: GoogleFonts.inter(
-                              fontSize: 7,
+                              fontSize: 12,
                               color: Colors.grey.shade500,
                               fontWeight: FontWeight.w500,
                             ),

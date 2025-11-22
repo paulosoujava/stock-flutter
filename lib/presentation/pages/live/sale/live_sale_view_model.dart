@@ -5,6 +5,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../domain/entities/customer/customer.dart';
+import '../../../../domain/entities/product/product.dart';
 import '../../../../domain/entities/sale/sale.dart';
 import '../../../../domain/entities/sale/sale_item.dart';
 import '../../../../domain/repositories/icustomer_repository.dart';
@@ -27,6 +28,9 @@ class LiveSaleViewModel {
   final _state = BehaviorSubject<LiveSaleState>.seeded(LiveSaleLoading());
   Stream<LiveSaleState> get state => _state.stream;
 
+  // CORREÇÃO: Estas listas agora são controladas pelo ViewModel
+  List<Product> _allProducts = [];
+
   void add(LiveSaleIntent intent) async {
     final current = _state.value;
 
@@ -36,9 +40,12 @@ class LiveSaleViewModel {
         final live = lives.firstWhere((l) => l.id == intent.liveId);
         final products = await getIt<GetAllProductsUseCase>()();
 
+        // CORREÇÃO: Armazena a lista completa de produtos
+        _allProducts = products;
+
         _state.add(LiveSaleLoaded(
           live: live,
-          products: products,
+          products: products, // A lista inicial exibida é a lista completa
         ));
       } catch (e) {
         _state.add(LiveSaleError(e.toString()));
@@ -48,9 +55,14 @@ class LiveSaleViewModel {
 
     if (current is! LiveSaleLoaded) return;
 
-    switch (intent) {
+    // A estrutura do switch/case é mais limpa para lidar com múltiplos intents
+    switch (intent.runtimeType) {
+    // CORREÇÃO: Adiciona o caso para o SearchProductIntent
+      case SearchProductIntent:
+        _handleSearchProduct(intent as SearchProductIntent, current);
+        break;
 
-      case SearchInstagramIntent():
+      case SearchInstagramIntent:
         final text = current.instagramController.text.trim().toLowerCase();
         if (text.isEmpty) return;
 
@@ -70,35 +82,35 @@ class LiveSaleViewModel {
 
         current.instagramController.clear();
         _state.add(current.copyWith(currentCustomers: newList));
+        break;
 
-      case RemoveCurrentCustomerIntent():
-        final newList = List<Customer>.from(current.currentCustomers)..removeAt(intent.index);
+      case RemoveCurrentCustomerIntent:
+        final newList = List<Customer>.from(current.currentCustomers)..removeAt((intent as RemoveCurrentCustomerIntent).index);
         _state.add(current.copyWith(currentCustomers: newList));
+        break;
 
-      case SelectProductIntent():
-        if (intent.product == null) {
-
+      case SelectProductIntent:
+        final productIntent = intent as SelectProductIntent;
+        if (productIntent.product == null) {
           current.instagramController.clear();
           _state.add(current.copyWith(
             selectedProduct: null,
             clearSelectedProduct: true,
             currentCustomers: [],
           ));
-
-
         } else {
           // Quando seleciona um novo produto
-          _state.add(current.copyWith(selectedProduct: intent.product));
+          _state.add(current.copyWith(selectedProduct: productIntent.product));
         }
+        break;
 
-      case AddOrderIntent():
-
+      case AddOrderIntent:
         if (current.selectedProduct == null || current.currentCustomers.isEmpty) return;
         final newOrders = List<LiveOrder>.from(current.orders);
         newOrders.add(LiveOrder(
-            product: current.selectedProduct!,
-            individualDiscount: current.individualDiscount,
-            customers: List.from(current.currentCustomers),
+          product: current.selectedProduct!,
+          individualDiscount: current.individualDiscount,
+          customers: List.from(current.currentCustomers),
         ));
 
         current.instagramController.clear();
@@ -109,20 +121,24 @@ class LiveSaleViewModel {
           clearSelectedProduct: true,
           orders: newOrders,
         ));
-
-      case RemoveOrderIntent():
-        final newOrders = List<LiveOrder>.from(current.orders)..removeAt(intent.index);
-        _state.add(current.copyWith(orders: newOrders));
-
-      case SetGlobalDiscountIntent():
-        final newValue = intent.value;
-        _state.add(current.copyWith(globalDiscount: newValue.clamp(0, 100)));
-
-      case SetIndividualDiscountIntent():
-        print('SetIndividualDiscountIntent: ${intent.value}');
-        _state.add(current.copyWith(individualDiscount: intent.value.clamp(0, 100)));
         break;
-      case FinalizeLiveIntent():
+
+      case RemoveOrderIntent:
+        final newOrders = List<LiveOrder>.from(current.orders)..removeAt((intent as RemoveOrderIntent).index);
+        _state.add(current.copyWith(orders: newOrders));
+        break;
+
+      case SetGlobalDiscountIntent:
+        final newValue = (intent as SetGlobalDiscountIntent).value;
+        _state.add(current.copyWith(globalDiscount: newValue.clamp(0, 100)));
+        break;
+
+      case SetIndividualDiscountIntent:
+        final newValue = (intent as SetIndividualDiscountIntent).value;
+        _state.add(current.copyWith(individualDiscount: newValue.clamp(0, 100)));
+        break;
+
+      case FinalizeLiveIntent:
         try {
           final user = await _getUser();
           if (user == null) throw 'Vendedor não autenticado';
@@ -166,9 +182,31 @@ class LiveSaleViewModel {
         } catch (e) {
           _state.add(LiveSaleError(e.toString()));
         }
+        break;
     }
   }
 
+
+  void _handleSearchProduct(SearchProductIntent intent, LiveSaleLoaded current) {
+    final query = intent.query.toLowerCase();
+    List<Product> filteredProducts;
+
+    if (query.isEmpty) {
+      filteredProducts = _allProducts;
+    } else {
+      filteredProducts = _allProducts.where((product) {
+        final nameMatches = product.name.toLowerCase().contains(query);
+        final codeMatches = product.codeOfProduct?.toLowerCase().contains(query);
+        if(codeMatches != null) {
+          return nameMatches || codeMatches;
+        } else {
+          return nameMatches;
+        }
+      }).toList();
+    }
+
+    _state.add(current.copyWith(products: filteredProducts));
+  }
 
   void dispose() {
     _state.close();
