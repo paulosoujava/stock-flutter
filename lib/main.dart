@@ -36,10 +36,7 @@ Future<void> main() async {
   _registerHiveAdapters();
 
   // ❗ REMOVER EM PRODUÇÃO
-  //await Hive.deleteBoxFromDisk('customerBox');
-  //await Hive.deleteBoxFromDisk('liveBox');
-  //await Hive.deleteBoxFromDisk('saleBox');
-  //await fakeClients();
+  //clearBD();
 
   //Injeção de dependências
   await configureDependencies();
@@ -109,6 +106,13 @@ class MyApp extends StatelessWidget {
   }
 }
 
+Future<void> clearBD()async {
+  await Hive.deleteBoxFromDisk('customerBox');
+  await Hive.deleteBoxFromDisk('liveBox');
+  await Hive.deleteBoxFromDisk('saleBox');
+  await Hive.deleteBoxFromDisk('productBox');
+  //await fakeClients();
+}
 Future<void> fakeClients() async {
   final box = await Hive.openBox<Customer>('customerBox');
 
