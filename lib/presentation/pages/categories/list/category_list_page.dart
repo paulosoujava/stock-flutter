@@ -8,6 +8,7 @@ import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:badges/badges.dart' as badges;
 
 import '../../../../core/di/app_module.dart';
+import '../form/category_form_page.dart';
 import 'category_list_intent.dart';
 import 'category_list_state.dart';
 import 'category_list_viewmodel.dart';
@@ -48,17 +49,24 @@ class _CategoryListPageState extends State<CategoryListPage> {
   }
 
   Future<void> _navigateAndRefresh() async {
-    // CORREÇÃO DA ROTA: Usa a rota de formulário padronizada.
-    final result = await context.push<bool>(AppRoutes.categoryCreate);
+
+    //final result = await context.push<bool>(AppRoutes.categoryCreate);
+
+    final result = await CategoryFormPage.showAsModal(context);
+
     if (result == true && mounted) {
       _viewModel.handleIntent(FetchCategoriesAndCountIntent());
     }
   }
 
   Future<void> _navigateToEditCategory(Category category) async {
-    final result = await context.push<bool>(
+    /*final result = await context.push<bool>(
       AppRoutes.categoryEdit,
       extra: category,
+    );*/
+    final result = await CategoryFormPage.showAsModal(
+      context,
+      category: category, // Passa o objeto 'category' a ser editado.
     );
     if (result == true) {
       _viewModel.handleIntent(FetchCategoriesAndCountIntent());
@@ -97,46 +105,67 @@ class _CategoryListPageState extends State<CategoryListPage> {
               return _buildEmptyState();
             }
             final categories = categoriesMap.keys.toList();
-            return ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                final count = categoriesMap[category]!;
 
-                return CategoryCard(
-                  category: category,
-                  productCount: count,
-                  onTap: () => _navigateToEditCategory(category),
-                  trailing: PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert, color: Colors.grey.shade600),
-                    onSelected: (value) {
-                      if (value == 'edit') {
-                        _navigateToEditCategory(category);
-                      } else if (value == 'delete') {
-                        _showDeleteConfirmation(category);
-                      }
-                    },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                      const PopupMenuItem<String>(
-                        value: 'edit',
-                        child: ListTile(
-                          leading: Icon(Icons.edit_outlined),
-                          title: Text('Editar'),
-                        ),
-                      ),
-                      const PopupMenuItem<String>(
-                        value: 'delete',
-                        child: ListTile(
-                          leading: Icon(Icons.delete_outline, color: Colors.red),
-                          title: Text('Excluir', style: TextStyle(color: Colors.red)),
-                        ),
-                      ),
-                    ],
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                // Definimos a largura ideal/máxima para cada card.
+                const double maxCardWidth = 400.0;
+
+                // Calculamos quantas colunas de cards cabem na largura atual da tela.
+                // .clamp(1, 4) garante que teremos no mínimo 1 e no máximo 4 colunas.
+                final crossAxisCount = (constraints.maxWidth / maxCardWidth).floor().clamp(1, 4);
+
+                return GridView.builder(
+                  // Adicionamos um padding generoso para a grade não colar nas bordas.
+                  padding: const EdgeInsets.all(24.0),
+
+                  // Configuração da grade.
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount, // O número de colunas que calculamos.
+                    crossAxisSpacing: 20,           // Espaçamento horizontal entre os cards.
+                    mainAxisSpacing: 20,            // Espaçamento vertical entre os cards.
+                    childAspectRatio: 3.5,          // Proporção (largura/altura). Ajuste se necessário.
                   ),
+
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    final count = categoriesMap[category]!;
+
+                    return CategoryCard(
+                      category: category,
+                      productCount: count,
+                      // Ação principal de clique no card continua sendo a edição.
+                      onTap: () => _navigateToEditCategory(category),
+
+                      // As ações de ícone se encaixam perfeitamente no novo layout.
+                      actions: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Tooltip(
+                            message: 'Editar Categoria',
+                            child: IconButton(
+                              icon: Icon(Icons.edit_outlined, color: Theme.of(context).primaryColor),
+                              onPressed: () => _navigateToEditCategory(category),
+                              splashRadius: 20,
+                            ),
+                          ),
+                          Tooltip(
+                            message: 'Excluir Categoria',
+                            child: IconButton(
+                              icon: Icon(Icons.delete_outline, color: Colors.red.shade600),
+                              onPressed: () => _showDeleteConfirmation(category),
+                              splashRadius: 20,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 );
               },
             );
+
           }
           return _buildEmptyState();
         },

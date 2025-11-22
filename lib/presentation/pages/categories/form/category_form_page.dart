@@ -3,23 +3,59 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/category/category.dart';
-import '../../../../core/di/app_module.dart';
-import '../../../widgets/custom_text_form_field.dart';
 import 'category_form_intent.dart';
 import 'category_form_state.dart';
 import 'category_form_viewmodel.dart';
+import '../../../widgets/custom_text_form_field.dart';
 
-class CategoryCreatePage extends StatefulWidget {
+
+class CategoryFormPage extends StatelessWidget {
   final Category? categoryToEdit;
 
-  const CategoryCreatePage({super.key, this.categoryToEdit});
+  const CategoryFormPage({super.key, this.categoryToEdit});
 
+
+  static Future<bool?> showAsModal(BuildContext context, {Category? category}) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: false, // Permite o modal crescer e o teclado não o cobrir.
+      backgroundColor: Colors.transparent, // Deixa o Card arredondado aparecer.
+      builder: (ctx) => _CategoryFormContent(
+        categoryToEdit: category,
+        isModal: true, // Informa ao widget que ele está em um modal.
+      ),
+    );
+  }
+
+  // A construção da página de tela cheia continua funcionando normalmente.
   @override
-  State<CategoryCreatePage> createState() => _CategoryCreatePageState();
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(categoryToEdit != null ? 'Editar Categoria' : 'Nova Categoria'),
+      ),
+      body: _CategoryFormContent(
+        categoryToEdit: categoryToEdit,
+        isModal: false, // Informa que NÃO está em um modal.
+      ),
+    );
+  }
 }
 
-class _CategoryCreatePageState extends State<CategoryCreatePage> {
-  late final CategoryCreateViewModel _viewModel;
+// 3. O CONTEÚDO DO FORMULÁRIO é extraído para este widget.
+class _CategoryFormContent extends StatefulWidget {
+  final Category? categoryToEdit;
+  final bool isModal;
+
+  const _CategoryFormContent({this.categoryToEdit, this.isModal = false});
+
+  @override
+  State<_CategoryFormContent> createState() => _CategoryFormContentState();
+}
+
+class _CategoryFormContentState extends State<_CategoryFormContent> {
+  // 4. TODA A LÓGICA ANTERIOR (controllers, keys, viewmodel) vem para cá.
+  late final CategoryFormViewModel _viewModel; // ViewModel renomeado para ser genérico.
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
 
@@ -28,33 +64,11 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
   @override
   void initState() {
     super.initState();
-    _viewModel = getIt<CategoryCreateViewModel>();
+    _viewModel = getIt<CategoryFormViewModel>(); // ViewModel renomeado
 
     if (isEditing) {
       _nameController.text = widget.categoryToEdit!.name;
     }
-
-    _viewModel.state.listen((state) {
-      if (!mounted) return;
-
-      if (state is CategoryCreateSuccessState) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Categoria salva com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        // Retorna 'true' para a tela anterior saber que precisa atualizar
-        context.pop(true);
-      } else if (state is CategoryCreateErrorState) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(state.message),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    });
   }
 
   @override
@@ -81,11 +95,10 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
 
   @override
   Widget build(BuildContext context) {
+    // 5. A UI do formulário agora é controlada por este widget.
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Editar Categoria' : 'Nova Categoria'),
-      ),
-      // AQUI ESTÁ A CORREÇÃO, SEGUINDO O PADRÃO
+      // Usamos um Scaffold aqui para que o FloatingActionButton e o ScaffoldMessenger funcionem corretamente.
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _saveForm,
         label: Text(isEditing ? 'Atualizar' : 'Salvar'),
@@ -96,49 +109,62 @@ class _CategoryCreatePageState extends State<CategoryCreatePage> {
         builder: (context, snapshot) {
           final state = snapshot.data;
 
-          if (state is CategoryCreateLoadingState) {
+          // Lógica para lidar com os estados (sucesso, erro, loading)
+          if (state is CategoryFormSuccessState) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              // Retorna 'true' para fechar o modal e indicar sucesso.
+              Navigator.of(context).pop(true);
+            });
+          } else if (state is CategoryFormErrorState) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+              );
+            });
+          }
+
+          if (state is CategoryFormLoadingState) {
             return const Center(child: CircularProgressIndicator());
           }
-          return Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Card(
-                elevation: 2,
-                shadowColor: Colors.black.withOpacity(0.1),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                child: Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: Text(
-                            "Digite o nome da categoria para associar com os produtos:",
-                            style: Theme.of(context).textTheme.titleSmall,
-                            textAlign: TextAlign.start,
-                          ),
-                        ),
-                        CustomTextFormField(
-                          controller: _nameController,
-                          labelText: 'Nome da Categoria',
-                          icon: Icons.label_important_outline,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'O nome da categoria é obrigatório.';
-                            }
-                            return null;
-                          },
-                        ),
-                        // O ElevatedButton foi removido daqui
-                      ],
+
+          // O layout do formulário em si.
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Importante para o modal
+                children: [
+                  // Adiciona um título visível apenas no modo modal
+                  if (widget.isModal)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8.0, bottom: 24.0),
+                      child: Text(
+                        isEditing ? 'Editar Categoria' : 'Nova Categoria',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: Text(
+                      "Digite o nome da categoria para associar com os produtos:",
+                      style: Theme.of(context).textTheme.titleSmall,
+                      textAlign: TextAlign.center,
                     ),
                   ),
-                ),
+                  CustomTextFormField(
+                    controller: _nameController,
+                    labelText: 'Nome da Categoria',
+                    icon: Icons.label_important_outline,
+                    validator: (value) {
+                      if (value == null || value.trim().isEmpty) {
+                        return 'O nome da categoria é obrigatório.';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 80), // Espaço para o FAB não cobrir o campo.
+                ],
               ),
             ),
           );

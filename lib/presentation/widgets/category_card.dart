@@ -1,88 +1,78 @@
 import 'package:flutter/material.dart';
-import 'package:badges/badges.dart' as badges;
 import 'package:stock/domain/entities/category/category.dart';
 
-// O widget agora se chama CategoryCard, como sugerido.
 class CategoryCard extends StatelessWidget {
   final Category category;
-  final int productCount;
-  final VoidCallback onTap;
-  final Widget? trailing; // Permite adicionar widgets no final (ex: PopupMenuButton)
+  final int productCount;final VoidCallback? onTap;
+  final Widget? actions;
 
   const CategoryCard({
     super.key,
     required this.category,
     required this.productCount,
-    required this.onTap,
-    this.trailing,
+    this.onTap,
+    this.actions,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      clipBehavior: Clip.antiAlias,
+      // Usando o shadowColor do tema para um sombreamento mais suave
+      shadowColor: Theme.of(context).colorScheme.shadow.withOpacity(0.1),
+      elevation: 3,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+      // InkWell fornece o efeito visual de "splash" ao tocar, que o Card puro não tem.
       child: InkWell(
         onTap: onTap,
-        hoverColor: theme.primaryColor.withOpacity(0.05),
-        splashColor: theme.primaryColor.withOpacity(0.1),
-        child: Row(
-          children: [
-            // --- COLUNA 1: ÍCONE/BADGE COM FUNDO ---
-            Container(
-              width: 100,
-              color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
-              padding: const EdgeInsets.symmetric(vertical: 20.0),
-              child: Center(
-                child: badges.Badge(
-                  badgeContent: Text(
-                    productCount.toString(),
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold),
-                  ),
-                  position: badges.BadgePosition.topEnd(top: -12, end: -12),
-                  badgeStyle: badges.BadgeStyle(
-                    badgeColor: theme.colorScheme.primary,
-                  ),
-                  child: Icon(
-                    Icons.folder_open_outlined,
-                    size: 40,
-                    color: theme.colorScheme.onSecondaryContainer,
-                  ),
+        borderRadius: BorderRadius.circular(12.0),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+          child: Row(
+            children: [
+              // Um ícone para dar mais apelo visual
+              CircleAvatar(
+                backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                child: Icon(
+                  Icons.category_outlined,
+                  color: Theme.of(context).primaryColor,
                 ),
               ),
-            ),
-            // --- COLUNA 2: TÍTULO E AÇÃO TRAILING ---
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 80),
-                padding: const EdgeInsets.only(left: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(width: 16),
+              // Expanded garante que o texto ocupe o espaço disponível
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: Text(
-                        category.name.toUpperCase(),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.1,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                    // Nome da categoria com mais destaque
+                    Text(
+                      category.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    // Contagem de produtos com um estilo mais sutil
+                    Text(
+                      productCount == 1
+                          ? '1 produto'
+                          : '$productCount produtos',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade600,
                       ),
                     ),
-                    if (trailing != null) trailing!,
                   ],
                 ),
               ),
-            ),
-          ],
+              // Ações (seta de navegação) no final
+              if (actions != null) actions!,
+            ],
+          ),
         ),
       ),
     );

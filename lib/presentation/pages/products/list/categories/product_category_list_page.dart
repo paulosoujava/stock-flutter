@@ -7,6 +7,7 @@ import 'package:stock/domain/entities/category/category.dart';
 import 'package:stock/presentation/widgets/category_card.dart';
 
 import '../../../../../core/di/app_module.dart';
+import '../../../categories/form/category_form_page.dart';
 import 'product_category_list_intent.dart';
 import 'product_category_list_state.dart';
 import 'product_category_list_viewmodel.dart';
@@ -34,12 +35,11 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
     super.dispose();
   }
 
-  /// Navega para a tela de criação de categoria e atualiza a lista ao retornar com sucesso.
   Future<void> _createCategoryAndRefresh() async {
-    // Usa 'await' para esperar a tela de formulário fechar e retornar um valor.
-    //    Usa a rota correta 'categoryForm' que definimos em nosso padrão.
-    final result = await context.push<bool>(AppRoutes.categoryCreate);
-
+    //final result = await context.push<bool>(AppRoutes.categoryCreate);
+    final result = await CategoryFormPage.showAsModal(
+      context, // Passa o objeto 'category' a ser editado.
+    );
     // Se o valor retornado for 'true' (o que indica que salvou com sucesso)...
     if (result == true) {
       // ...nós disparamos a intenção para buscar as categorias novamente.
@@ -78,24 +78,48 @@ class _ProductCategoryListPageState extends State<ProductCategoryListPage> {
             if (categoriesMap.isEmpty) return _buildNoCategoriesState();
 
             final categories = categoriesMap.keys.toList();
-            return ListView.builder(
-              padding: const EdgeInsets.all(8),
-              itemCount: categories.length,
-              itemBuilder: (context, index) {
-                final category = categories[index];
-                final count = categoriesMap[category]!;
-                return CategoryCard(
-                  category: category,
-                  productCount: count,
-                  onTap: () => _navigateToProductList(category),
-                  trailing: const Icon(
-                    Icons.arrow_forward_ios_rounded,
-                    color: Colors.grey,
-                    size: 20,
+
+            return LayoutBuilder(
+              builder: (context, constraints) {
+                // Definimos a largura máxima de cada card.
+                const double maxCardWidth = 350.0;
+                // Calculamos quantas colunas cabem na tela.
+                // O mínimo é 1 coluna (em celulares na vertical).
+                final crossAxisCount = (constraints.maxWidth / maxCardWidth).floor().clamp(1, 4);
+
+                return GridView.builder(
+                  // Padding para a grade não ficar colada nas bordas
+                  padding: const EdgeInsets.all(24.0),
+
+                  // Configuração da grade
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount, // Número de colunas calculado
+                    crossAxisSpacing: 20,           // Espaçamento horizontal entre os cards
+                    mainAxisSpacing: 20,            // Espaçamento vertical entre os cards
+                    childAspectRatio: 2.8,          // Proporção (largura/altura) do card
                   ),
+
+                  itemCount: categories.length,
+                  itemBuilder: (context, index) {
+                    final category = categories[index];
+                    final count = categoriesMap[category]!;
+
+                    // Chamando o nosso novo e melhorado CategoryCard
+                    return CategoryCard(
+                      category: category,
+                      productCount: count,
+                      onTap: () => _navigateToProductList(category),
+                      actions: Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: Colors.grey.shade400, // Cor um pouco mais suave
+                        size: 18,
+                      ),
+                    );
+                  },
                 );
               },
             );
+
           }
 
           return const SizedBox.shrink();

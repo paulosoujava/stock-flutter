@@ -13,3 +13,5 @@ class UpdateCustomerIntent extends CustomerFormIntent {
 
   UpdateCustomerIntent(this.customer);
 }
+
+

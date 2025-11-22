@@ -29,6 +29,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
   late final ProductFormViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
 
+  final _codeOfProductController = TextEditingController();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _barcodeController = TextEditingController();
@@ -73,6 +74,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   void _populateFieldsForEditing() {
     final product = widget.productToEdit!;
+    _codeOfProductController.text = product.name;
     _nameController.text = product.name;
     _descriptionController.text = product.description;
     _salePriceController.updateValue(product.salePrice);
@@ -99,6 +101,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
     if (_formKey.currentState?.validate() ?? false) {
       final productData = Product(
         id: isEditing ? widget.productToEdit!.id : '',
+        codeOfProduct: _codeOfProductController.text.trim(),
         name: _nameController.text.trim(),
         description: _descriptionController.text.trim(),
         salePrice: _salePriceController.numberValue,
@@ -118,121 +121,137 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   @override
   Widget build(BuildContext context) {
+    final title = isEditing ? 'Editar Produto' : 'Novo Produto';
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(isEditing ? 'Editar Produto' : 'Novo Produto'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(25),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: Text(
-              'Categoria: ${widget.category.name}',
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-            ),
-          ),
+        title: Text(   '${title} na categoria: ${widget.category.name}'),
         ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _saveForm,
-        label: Text(isEditing ? 'Atualizar' : 'Salvar'),
-        icon: const Icon(Icons.save),
-      ),
+
       body: StreamBuilder<ProductFormState>(
         stream: _viewModel.state,
         builder: (context, snapshot) {
           if (snapshot.data is ProductFormLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Card(
-              elevation: 2,
-              shadowColor: Colors.black.withOpacity(0.1),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      CustomTextFormField(
-                        controller: _nameController,
-                        labelText: 'Título do Produto',
-                        icon: Icons.label_important_outline,
-                        validator: (value) => (value?.isEmpty ?? true)
-                            ? 'O título é obrigatório.'
-                            : null,
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8.0),
-                        child: TextFormField(
-                          controller: _descriptionController,
-                          decoration: InputDecoration(
-                            labelText: 'Descrição',
-                            alignLabelWithHint: true,
-                            border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12)),
-                          ),
-                          maxLines: 4,
-                          textCapitalization: TextCapitalization.sentences,
-                        ),
-                      ),
-                      Row(
+          // O formulário agora é centralizado e com largura máxima.
+          return Center(
+            child: ConstrainedBox(
+              // Define uma largura máxima para o formulário, ideal para desktop.
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  elevation: 2,
+                  shadowColor: Colors.black.withOpacity(0.1),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: CustomTextFormField(
-                              controller: _costPriceController,
-                              labelText: 'Valor de Compra',
-                              icon: Icons.arrow_downward,
-                              keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
+                          CustomTextFormField(
+                            controller: _codeOfProductController,
+                            labelText: 'Código do Produto',
+                            icon: Icons.qr_code_2_outlined, // Ícone melhorado
+                            validator: (value) => (value?.isEmpty ?? true)
+                                ? 'O código é obrigatório.'
+                                : null,
+                          ),
+                          CustomTextFormField(
+                            controller: _nameController,
+                            labelText: 'Título do Produto',
+                            icon: Icons.label_important_outline,
+                            validator: (value) => (value?.isEmpty ?? true)
+                                ? 'O título é obrigatório.'
+                                : null,
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: TextFormField(
+                              controller: _descriptionController,
+                              decoration: InputDecoration(
+                                labelText: 'Descrição',
+                                alignLabelWithHint: true,
+                                border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12)),
+                              ),
+                              maxLines: 4,
+                              textCapitalization: TextCapitalization.sentences,
                             ),
                           ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: CustomTextFormField(
-                              controller: _salePriceController,
-                              labelText: 'Valor de Venda',
-                              icon: Icons.arrow_upward,
-                              keyboardType:
-                              const TextInputType.numberWithOptions(
-                                  decimal: true),
-                              validator: (value) {
-                                if (_salePriceController.numberValue <= 0) {
-                                  return 'Obrigatório e > 0.';
-                                }
-                                return null;
-                              },
-                            ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: CustomTextFormField(
+                                  controller: _costPriceController,
+                                  labelText: 'Valor de Compra',
+                                  icon: Icons.arrow_downward,
+                                  keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: CustomTextFormField(
+                                  controller: _salePriceController,
+                                  labelText: 'Valor de Venda',
+                                  icon: Icons.arrow_upward,
+                                  keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                      decimal: true),
+                                  validator: (value) {
+                                    if (_salePriceController.numberValue <= 0) {
+                                      return 'Obrigatório e > 0.';
+                                    }
+                                    return null;
+                                  },
+                                ),
+                              ),
+                            ],
                           ),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: CustomTextFormField(
+                                  controller: _stockQuantityController,
+                                  labelText: 'Qtd. em Estoque',
+                                  icon: Icons.inventory_2_outlined,
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: CustomTextFormField(
+                                  controller: _lowStockThresholdController,
+                                  labelText: 'Alerta de Estoque',
+                                  icon: Icons.warning_amber_rounded,
+                                  keyboardType: TextInputType.number,
+                                ),
+                              ),
+                            ],
+                          ),
+                          // Espaço extra para o FloatingActionButton não cobrir o último campo.
+                          const SizedBox(height: 22),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              FloatingActionButton.extended(
+                                onPressed: _saveForm,
+                                label: Text(isEditing ? 'Atualizar' : 'Salvar'),
+                                icon: const Icon(Icons.save),
+                              ),
+                            ],
+                          )
                         ],
                       ),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: CustomTextFormField(
-                              controller: _stockQuantityController,
-                              labelText: 'Qtd. em Estoque',
-                              icon: Icons.inventory_2_outlined,
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: CustomTextFormField(
-                              controller: _lowStockThresholdController,
-                              labelText: 'Alerta de Estoque',
-                              icon: Icons.warning_amber_rounded,
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
               ),
@@ -240,6 +259,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
           );
         },
       ),
+
     );
   }
 }

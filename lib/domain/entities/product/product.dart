@@ -4,13 +4,15 @@ part 'product.g.dart';
 
 /// Representa um produto no sistema de estoque.
 @HiveType(typeId: 2) // ID de tipo único para o Hive (Customer=0, Category=1)
-class Product  extends HiveObject{
+class Product extends HiveObject {
   @HiveField(0)
   final String id;
 
+  /// nome do produto
   @HiveField(1)
   final String name;
 
+  /// Descriçao do prduto
   @HiveField(2)
   final String description;
 
@@ -34,8 +36,13 @@ class Product  extends HiveObject{
   @HiveField(7)
   final String categoryId;
 
+  /// codigo unico do produto
+  @HiveField(8)
+  final String? codeOfProduct;
+
   Product({
     required this.id,
+    required this.codeOfProduct,
     required this.name,
     required this.description,
     required this.costPrice,
@@ -47,6 +54,7 @@ class Product  extends HiveObject{
 
   Product copyWith({
     String? id,
+    String? codeOfProduct,
     String? name,
     String? description,
     double? costPrice,
@@ -57,6 +65,7 @@ class Product  extends HiveObject{
   }) {
     return Product(
       id: id ?? this.id,
+      codeOfProduct: codeOfProduct ?? this.codeOfProduct,
       name: name ?? this.name,
       description: description ?? this.description,
       costPrice: costPrice ?? this.costPrice,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:stock/domain/entities/product/product.dart';
 
 /// Um widget de card reutilizável para exibir as informações de um produto.
@@ -23,7 +24,9 @@ class ProductCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: isLowStock ? 4 : 2,
-      shadowColor: isLowStock ? Colors.red.withOpacity(0.3) : Colors.black.withOpacity(0.1),
+      shadowColor: isLowStock
+          ? Colors.red.withOpacity(0.3)
+          : Colors.black.withOpacity(0.1),
       // Muda a cor de fundo do card se o estoque estiver baixo
       color: isLowStock ? Colors.orange.shade50 : theme.cardColor,
       shape: RoundedRectangleBorder(
@@ -50,19 +53,40 @@ class ProductCard extends StatelessWidget {
                   Expanded(
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.inventory_2_outlined,
-                          color: theme.colorScheme.primary,
-                          size: 32,
+                        CircleAvatar(
+                          radius: 24,
+                          backgroundColor: theme.colorScheme.primary.withOpacity(0.1),
+                          child: Icon(
+                            Icons.inventory_2_outlined,
+                            color: theme.colorScheme.primary,
+                            size: 36,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            product.name,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 18,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                product.name,
+                                style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 17,
+                                  color: theme.textTheme.titleLarge?.color,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                "CÓD: ${product.codeOfProduct}",
+                                style: GoogleFonts.robotoMono(
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 12,
+                                  color: theme.primaryColor.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -78,7 +102,8 @@ class ProductCard extends StatelessWidget {
                         onDelete();
                       }
                     },
-                    itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
                       const PopupMenuItem<String>(
                         value: 'edit',
                         child: ListTile(
@@ -89,8 +114,10 @@ class ProductCard extends StatelessWidget {
                       const PopupMenuItem<String>(
                         value: 'delete',
                         child: ListTile(
-                          leading: Icon(Icons.delete_outline, color: Colors.red),
-                          title: Text('Excluir', style: TextStyle(color: Colors.red)),
+                          leading:
+                              Icon(Icons.delete_outline, color: Colors.red),
+                          title: Text('Excluir',
+                              style: TextStyle(color: Colors.red)),
                         ),
                       ),
                     ],
@@ -98,14 +125,16 @@ class ProductCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 8),
-
+              Divider(),
+              const SizedBox(height: 8),
               // --- Descrição ---
               if (product.description.isNotEmpty)
                 Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
+                  padding: const EdgeInsets.only(left : 30.0, bottom: 12.0),
                   child: Text(
                     product.description,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: Colors.grey.shade600),
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: Colors.grey.shade600),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -134,10 +163,13 @@ class ProductCard extends StatelessWidget {
                   ),
                   _buildDetailChip(
                     context,
-                    icon: isLowStock ? Icons.warning_amber_rounded : Icons.inventory_2_outlined,
+                    icon: isLowStock
+                        ? Icons.warning_amber_rounded
+                        : Icons.inventory_2_outlined,
                     label: 'Estoque',
                     value: product.stockQuantity.toString(),
-                    color: isLowStock ? Colors.orange.shade900 : Colors.blueGrey,
+                    color:
+                        isLowStock ? Colors.orange.shade900 : Colors.blueGrey,
                   ),
                 ],
               ),
@@ -149,7 +181,8 @@ class ProductCard extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.orange.shade900, size: 16),
+                      Icon(Icons.warning_amber_rounded,
+                          color: Colors.orange.shade900, size: 16),
                       const SizedBox(width: 8),
                       Text(
                         'Estoque baixo, precisa de atenção!',
@@ -171,12 +204,12 @@ class ProductCard extends StatelessWidget {
 
   /// Widget auxiliar para criar os "chips" de detalhes.
   Widget _buildDetailChip(
-      BuildContext context, {
-        required IconData icon,
-        required String label,
-        required String value,
-        required Color color,
-      }) {
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
@@ -189,14 +222,15 @@ class ProductCard extends StatelessWidget {
           const SizedBox(width: 6),
           Text(
             '$label: ',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
+            style:
+                Theme.of(context).textTheme.bodySmall?.copyWith(color: color),
           ),
           Text(
             value,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
           ),
         ],
       ),

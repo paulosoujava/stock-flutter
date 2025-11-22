@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/presentation/pages/home/home_intent.dart';
@@ -28,48 +29,42 @@ class _HomePageState extends State<HomePage> {
   static const List<ActionItem> _actionItems = [
     ActionItem(
       title: 'Clientes',
-      description:
-      'Gerencie seus clientes com rapidez e praticidade.',
+      description: 'Gerencie seus clientes com rapidez e praticidade.',
       icon: Icons.people_alt,
       iconColor: Colors.blue,
       route: AppRoutes.customerList,
     ),
     ActionItem(
       title: 'Categorias',
-      description:
-      'Organize seus produtos por categorias.',
+      description: 'Organize seus produtos por categorias.',
       icon: Icons.category,
       iconColor: Colors.teal,
       route: AppRoutes.categoryList,
     ),
     ActionItem(
       title: 'Produtos',
-      description:
-      'Controle estoque, preços e disponibilidade.',
+      description: 'Controle estoque, preços e disponibilidade.',
       icon: Icons.inventory_2,
       iconColor: Colors.orange,
       route: AppRoutes.productByCategory,
     ),
     ActionItem(
       title: 'Vendas',
-      description:
-      'Registre e acompanhe transações.',
+      description: 'Registre e acompanhe transações.',
       icon: Icons.point_of_sale,
       iconColor: Colors.green,
       route: AppRoutes.orderCreate,
     ),
     ActionItem(
       title: 'Fornecedores',
-      description:
-      'Gerencie parceiros e contatos.',
+      description: 'Gerencie parceiros e contatos.',
       icon: Icons.recent_actors_outlined,
       iconColor: Colors.deepOrange,
       route: AppRoutes.supplierList,
     ),
     ActionItem(
       title: 'Lembretes',
-      description:
-      'Crie anotações importantes.',
+      description: 'Crie anotações importantes.',
       icon: Icons.today_outlined,
       iconColor: Colors.purple,
       route: AppRoutes.reminderList,
@@ -154,7 +149,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-
         body: TabBarView(
           children: [
             StreamBuilder<HomeState>(
@@ -173,6 +167,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildActionsTab(BuildContext context, HomeState? state) {
+    final String formattedDate =
+        DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(DateTime.now());
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -186,17 +182,16 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(22, 0, 22, 16),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
           child: Text(
-            "O que você deseja fazer hoje?",
-            style: TextStyle(
+            "Hoje é $formattedDate. O que deseja fazer?",
+            style: const TextStyle(
               fontSize: 15,
               color: Colors.black54,
             ),
           ),
         ),
-
         if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -204,7 +199,6 @@ class _HomePageState extends State<HomePage> {
               lowStockInfoList: state.lowStockInfo,
             ),
           ),
-
         if (state is HomeErrorState)
           Padding(
             padding: const EdgeInsets.all(6),
@@ -214,67 +208,71 @@ class _HomePageState extends State<HomePage> {
               textAlign: TextAlign.center,
             ),
           ),
-
+        Divider(),
         const SizedBox(height: 10),
-
+        // Substitua o trecho selecionado por este:
         Expanded(
-          child: SingleChildScrollView(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 22),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 22,
-                  mainAxisSpacing: 22,
-                  mainAxisExtent: 180,
+          child: Column(
+            children: [
+              SingleChildScrollView(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 22),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      crossAxisSpacing: 22,
+                      mainAxisSpacing: 22,
+                      mainAxisExtent: 180,
+                    ),
+                    itemCount: _actionItems.length,
+                    itemBuilder: (context, index) {
+                      final item = _actionItems[index];
+
+                      VoidCallback onTapAction;
+                      if (item.title == 'Produtos' ||
+                          item.title == 'Categorias' ||
+                          item.title == 'Clientes' ||
+                          item.title == 'Vendas') {
+                        onTapAction = () async {
+                          await context.push(item.route);
+                          _viewModel.handleIntent(LoadInitialDataIntent());
+                        };
+                      } else {
+                        onTapAction = () => context.push(item.route);
+                      }
+
+                      return ActionCard(
+                        title: item.title,
+                        description: item.description,
+                        icon: item.icon,
+                        iconColor: item.iconColor,
+                        onTap: onTapAction,
+                      );
+                    },
+                  ),
                 ),
-                itemCount: _actionItems.length,
-                itemBuilder: (context, index) {
-                  final item = _actionItems[index];
-
-                  VoidCallback onTapAction;
-                  if (item.title == 'Produtos' ||
-                      item.title == 'Categorias' ||
-                      item.title == 'Clientes' ||
-                      item.title == 'Vendas') {
-                    onTapAction = () async {
-                      await context.push(item.route);
-                      _viewModel.handleIntent(LoadInitialDataIntent());
-                    };
-                  } else {
-                    onTapAction = () => context.push(item.route);
-                  }
-
-                  return ActionCard(
-                    title: item.title,
-                    description: item.description,
-                    icon: item.icon,
-                    iconColor: item.iconColor,
-                    onTap: onTapAction,
-                  );
-                },
               ),
-            ),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      "Versão 1.0.0",
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
 
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Text(
-                "Versão 1.0.0",
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                ),
-              ),
-            ),
-          ],
-        ),
       ],
     );
   }

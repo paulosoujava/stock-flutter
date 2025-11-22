@@ -9,7 +9,7 @@ import 'category_form_intent.dart';
 import 'category_form_state.dart';
 
 @injectable
-class CategoryCreateViewModel {
+class CategoryFormViewModel {
   final AddCategory _addCategory;
   final UpdateCategory _updateCategory;
 
@@ -17,8 +17,8 @@ class CategoryCreateViewModel {
 
   Stream<CategoryFormState> get state => _stateController.stream;
 
-  CategoryCreateViewModel(this._addCategory, this._updateCategory) {
-    _stateController.add(CategoryCreateInitialState());
+  CategoryFormViewModel(this._addCategory, this._updateCategory) {
+    _stateController.add(CategoryFormInitialState());
   }
 
   void handleIntent(CategoryFormIntent intent) {
@@ -30,24 +30,24 @@ class CategoryCreateViewModel {
   }
 
   Future<void> _save(Category category) async {
-    _stateController.add(CategoryCreateLoadingState());
+    _stateController.add(CategoryFormLoadingState());
     try {
       await _addCategory(category);
-      _stateController.add(CategoryCreateSuccessState());
+      _stateController.add(CategoryFormSuccessState());
     } catch (e) {
       _stateController
-          .add(CategoryCreateErrorState('Erro ao salvar: ${e.toString()}'));
+          .add(CategoryFormErrorState('Erro ao salvar: ${e.toString()}'));
     }
   }
 
   Future<void> _update(Category category) async {
-    _stateController.add(CategoryCreateLoadingState());
+    _stateController.add(CategoryFormLoadingState());
     try {
       await _updateCategory(category);
-      _stateController.add(CategoryCreateSuccessState());
+      _stateController.add(CategoryFormSuccessState());
     } catch (e) {
       _stateController
-          .add(CategoryCreateErrorState('Erro ao atualizar: ${e.toString()}'));
+          .add(CategoryFormErrorState('Erro ao atualizar: ${e.toString()}'));
     }
   }
 

@@ -237,13 +237,13 @@ class _SalesPageState extends State<SalesPage> {
                     icon: Icons.info_outline,
                     tooltip: 'Detalhes',
                     onPressed: () => _showCustomerDetailsDialog(customer),
-                    color: Colors.grey,
+                    color: Colors.white,
                   ),
                   _iconButton(
                     icon: Icons.swap_horiz,
                     tooltip: 'Trocar Cliente',
                     onPressed: () => _openCustomerSelection(context),
-                    color: Colors.orange,
+                    color: Colors.white,
                   ),
                 ],
               );
@@ -252,7 +252,7 @@ class _SalesPageState extends State<SalesPage> {
           centerTitle: true,
           actions: [
             IconButton(
-              icon: const Icon(Icons.settings),
+              icon: const Icon(Icons.settings, color: Colors.white),
               tooltip: 'Configuração',
               onPressed: _openSaleConfigDialog,
             ),
@@ -742,6 +742,7 @@ class _SalesPageState extends State<SalesPage> {
                     (p) => p.id == item.productId,
                     orElse: () => Product(
                       id: '',
+                      codeOfProduct: '',
                       name: 'Produto não encontrado',
                       description: '',
                       costPrice: 0,

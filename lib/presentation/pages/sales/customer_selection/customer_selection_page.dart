@@ -28,9 +28,9 @@ class _CustomerSelectionPageState extends State<CustomerSelectionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Selecionar Cliente'),
+        automaticallyImplyLeading: false,
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
+          preferredSize: const Size.fromHeight(10),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: TextField(
@@ -66,15 +66,7 @@ class _CustomerSelectionPageState extends State<CustomerSelectionPage> {
               itemCount: state.filteredCustomers.length,
               itemBuilder: (context, index) {
                 final customer = state.filteredCustomers[index];
-                return ListTile(
-                  leading: const Icon(Icons.person),
-                  title: Text(customer.name),
-                  subtitle: Text(customer.phone),
-                  onTap: () {
-                    // Ao selecionar, retorna o cliente para a tela anterior
-                    Navigator.of(context).pop(customer);
-                  },
-                );
+                return _buildCustomerTile(context, customer);
               },
             );
           }
@@ -83,4 +75,70 @@ class _CustomerSelectionPageState extends State<CustomerSelectionPage> {
       ),
     );
   }
+
+
+  Widget _buildCustomerTile(BuildContext context, Customer customer) {
+    final theme = Theme.of(context);
+    final hasPhone = customer.phone.isNotEmpty;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      elevation: 2,
+      shadowColor: Colors.black.withOpacity(0.1),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: () {
+          // Ação de selecionar o cliente
+          Navigator.of(context).pop(customer);
+        },
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              // Avatar com a inicial do nome
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: theme.primaryColor.withOpacity(0.1),
+                child: Text(
+                  customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: theme.primaryColor,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Nome e telefone
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      customer.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (hasPhone) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        customer.phone,
+                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              // Ícone indicando que é um item selecionável
+              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 18),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
 }

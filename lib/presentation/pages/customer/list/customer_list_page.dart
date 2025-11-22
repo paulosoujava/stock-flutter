@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
+import 'package:stock/presentation/pages/customer/form/customer_form_intent.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/events/event_bus.dart';
 import '../../../widgets/dialog_customer_details.dart';
 import 'customer_list_intent.dart';
 import 'customer_list_state.dart';
@@ -21,6 +25,7 @@ class _CustomerListPageState extends State<CustomerListPage>
     with TickerProviderStateMixin {
   late final CustomerListViewModel _viewModel;
   final _searchController = TextEditingController();
+  StreamSubscription? _customerSavedSubscription;
 
   @override
   void initState() {
@@ -28,6 +33,12 @@ class _CustomerListPageState extends State<CustomerListPage>
     _viewModel = getIt<CustomerListViewModel>();
     _searchController.addListener(() {
       _viewModel.handleIntent(SearchCustomerIntent(_searchController.text));
+    });
+    final eventBus = getIt<EventBus>();
+    _customerSavedSubscription = eventBus.stream.listen((event) {
+      if (event is RegisterEvent) {
+        _viewModel.handleIntent(FetchCustomersIntent());
+      }
     });
   }
 
@@ -88,73 +99,78 @@ class _CustomerListPageState extends State<CustomerListPage>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Título + linha
-            Row(
+      builder: (_) => StreamBuilder<CustomerListState>(
+        stream: _viewModel.state,
+        builder: (context, snapshot) {
+          final currentFilter = snapshot.data is CustomerListSuccessState
+              ? (snapshot.data as CustomerListSuccessState).selectedTierKeyword
+              : null;
+
+          return Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.filter_list, size: 28, color: Colors.black87),
-                const SizedBox(width: 12),
-                const Text(
-                  'Filtrar por nível',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                Row(
+                  children: const [
+                    Icon(Icons.filter_list, size: 28, color: Colors.black87),
+                    SizedBox(width: 12),
+                    Text(
+                      'Filtrar por nível',
+                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 8),
+                const Divider(),
+                const SizedBox(height: 16),
+
+                _buildFilterOption(
+                  title: 'Todos os clientes',
+                  icon: Icons.people,
+                  color: Colors.grey.shade600,
+                  isSelected: currentFilter == null,
+                  onTap: () {
+                    Navigator.pop(context);
+                    _viewModel.handleIntent( FilterByTierIntent(null));
+                  },
+                ),
+                _buildFilterOption(
+                  title: 'Ouro',
+                  icon: Icons.emoji_events,
+                  color: Colors.amber.shade700,
+                  isSelected: currentFilter == 'ouro',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _viewModel.handleIntent( FilterByTierIntent('ouro'));
+                  },
+                ),
+                _buildFilterOption(
+                  title: 'Prata',
+                  icon: Icons.military_tech,
+                  color: Colors.blueGrey.shade600,
+                  isSelected: currentFilter == 'prata',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _viewModel.handleIntent( FilterByTierIntent('prata'));
+                  },
+                ),
+                _buildFilterOption(
+                  title: 'Bronze',
+                  icon: Icons.workspace_premium,
+                  color: Colors.brown.shade600,
+                  isSelected: currentFilter == 'bronze',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _viewModel.handleIntent( FilterByTierIntent('bronze'));
+                  },
+                ),
+                const SizedBox(height: 24),
               ],
             ),
-            const SizedBox(height: 8),
-            const Divider(),
-
-            const SizedBox(height: 16),
-
-            // Opções de filtro
-            _buildFilterOption(
-              title: 'Todos os clientes',
-              icon: Icons.people,
-              color: Colors.grey.shade600,
-              isSelected: _viewModel.currentTierFilter == null,
-              onTap: () {
-                Navigator.pop(context);
-                _viewModel.handleIntent( FilterByTierIntent(null));
-              },
-            ),
-            _buildFilterOption(
-              title: 'Ouro',
-              icon: Icons.emoji_events,
-              color: Colors.amber.shade700,
-              isSelected: _viewModel.currentTierFilter == 'ouro',
-              onTap: () {
-                Navigator.pop(context);
-                _viewModel.handleIntent( FilterByTierIntent('ouro'));
-              },
-            ),
-            _buildFilterOption(
-              title: 'Prata',
-              icon: Icons.military_tech,
-              color: Colors.blueGrey.shade600,
-              isSelected: _viewModel.currentTierFilter == 'prata',
-              onTap: () {
-                Navigator.pop(context);
-                _viewModel.handleIntent( FilterByTierIntent('prata'));
-              },
-            ),
-            _buildFilterOption(
-              title: 'Bronze',
-              icon: Icons.workspace_premium,
-              color: Colors.brown.shade600,
-              isSelected: _viewModel.currentTierFilter == 'bronze',
-              onTap: () {
-                Navigator.pop(context);
-                _viewModel.handleIntent( FilterByTierIntent('bronze'));
-              },
-            ),
-
-            const SizedBox(height: 24),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -215,29 +231,38 @@ class _CustomerListPageState extends State<CustomerListPage>
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
-          // ÍCONE DE FILTRO (agora bonito!)
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.tune, size: 28),
-                if (_viewModel.currentTierFilter != null)
-                  Positioned(
-                    right: 4,
-                    top: 4,
-                    child: Container(
-                      padding: const EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: theme.primaryColor, width: 2),
+          // ÍCONE DE FILTRO COM BADGE DINÂMICO (AGORA FUNCIONA!)
+          StreamBuilder<CustomerListState>(
+            stream: _viewModel.state,
+            builder: (context, snapshot) {
+              final hasActiveFilter = snapshot.hasData &&
+                  snapshot.data is CustomerListSuccessState &&
+                  (snapshot.data as CustomerListSuccessState).selectedTierKeyword != null;
+
+              return IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(Icons.tune, size: 28),
+                    if (hasActiveFilter)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          width: 12,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                        ),
                       ),
-                      child: const Icon(Icons.check, size: 10, color: Colors.green),
-                    ),
-                  ),
-              ],
-            ),
-            tooltip: 'Filtrar por nível',
-            onPressed: _showFilterDialog,
+                  ],
+                ),
+                tooltip: 'Filtrar por nível',
+                onPressed: _showFilterDialog,
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.add),

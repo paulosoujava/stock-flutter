@@ -25,6 +25,7 @@ class CustomerFormViewModel {
     this._eventBus,
   ) {
     _stateController.add(CustomerFormInitialState());
+
   }
 
   /// Processa as intenções recebidas da UI.
@@ -44,6 +45,7 @@ class CustomerFormViewModel {
       );
       await _addCustomer(newCustomer);
       _stateController.add(CustomerFormSuccessState());
+      _eventBus.fire(RegisterEvent());
     } catch (e) {
       _stateController.add(
           CustomerFormErrorState('Erro ao salvar cliente: ${e.toString()}'));
@@ -51,9 +53,6 @@ class CustomerFormViewModel {
   }
 
   Future<void> _updateCustomerMethod(Customer customer) async {
-    print('--- _updateCustomerMethod INICIADO ---');
-    print('Cliente recebido: ${customer}');
-
     _stateController.add(CustomerFormLoadingState());
 
     try {

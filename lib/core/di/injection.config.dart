@@ -211,7 +211,7 @@ _i174.GetIt $initGetIt(
       ));
   gh.factory<_i531.UpdateCustomer>(
       () => _i531.UpdateCustomer(gh<_i141.ICustomerRepository>()));
-  gh.factory<_i393.CategoryCreateViewModel>(() => _i393.CategoryCreateViewModel(
+  gh.factory<_i393.CategoryFormViewModel>(() => _i393.CategoryFormViewModel(
         gh<_i159.AddCategory>(),
         gh<_i339.UpdateCategory>(),
       ));

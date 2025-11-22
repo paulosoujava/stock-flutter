@@ -79,14 +79,14 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: AppRoutes.categoryCreate,
-      builder: (context, state) => const CategoryCreatePage(),
+      builder: (context, state) => const CategoryFormPage(),
     ),
     GoRoute(
       path: AppRoutes.categoryEdit,
       builder: (context, state) {
         // Recupera o objeto Category passado como 'extra'
         final category = state.extra as Category?;
-        return CategoryCreatePage(categoryToEdit: category);
+        return CategoryFormPage(categoryToEdit: category);
       },
     ),
 //PRODUCTS
