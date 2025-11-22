@@ -105,7 +105,6 @@ _i174.GetIt $initGetIt(
     environmentFilter,
   );
   final appModule = _$AppModule();
-  gh.factory<_i201.LiveSaleViewModel>(() => _i201.LiveSaleViewModel());
   gh.lazySingleton<_i706.Uuid>(() => appModule.uuid);
   gh.lazySingleton<_i59.FirebaseAuth>(() => appModule.firebaseAuth);
   gh.lazySingleton<_i141.ICustomerRepository>(
@@ -248,6 +247,14 @@ _i174.GetIt $initGetIt(
   gh.factory<_i922.ProductListViewModel>(() => _i922.ProductListViewModel(
         gh<_i887.GetProductsByCategory>(),
         gh<_i403.DeleteProduct>(),
+      ));
+  gh.factory<_i201.LiveSaleViewModel>(() => _i201.LiveSaleViewModel(
+        gh<_i720.ILiveRepository>(),
+        gh<_i141.ICustomerRepository>(),
+        gh<_i378.SaveSaleUseCase>(),
+        gh<_i421.UpdateProduct>(),
+        gh<_i439.GetCurrentUserUseCase>(),
+        gh<_i569.FinishLiveUseCase>(),
       ));
   gh.factory<_i689.ProductFormViewModel>(() => _i689.ProductFormViewModel(
         gh<_i125.AddProduct>(),

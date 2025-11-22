@@ -7,6 +7,8 @@ import 'package:confetti/confetti.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:stock/core/di/injection.dart';
+import 'package:stock/presentation/pages/live/sale/widget/customer_chip.dart';
+import '../list/live_list_intent.dart';
 import '../list/live_list_screen.dart.dart';
 import '../list/live_list_view_model.dart';
 import 'live_sale_intent.dart';
@@ -24,7 +26,6 @@ class LiveSaleScreen extends StatefulWidget {
 
 class _LiveSaleScreenState extends State<LiveSaleScreen> {
   late final LiveSaleViewModel _vm;
-  late final ConfettiController _confetti;
   late final FocusNode _instagramFocusNode;
   late final TextEditingController _discountController;
   final _searchProductController = TextEditingController();
@@ -34,13 +35,11 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
     super.initState();
     _instagramFocusNode = FocusNode();
     _vm = getIt<LiveSaleViewModel>()..add(LoadLiveIntent(widget.liveId));
-    _confetti = ConfettiController(duration: const Duration(seconds: 3));
     _discountController = TextEditingController();
   }
 
   @override
   void dispose() {
-    _confetti.dispose();
     _instagramFocusNode.dispose();
     _discountController.dispose();
     _searchProductController.dispose();
@@ -55,26 +54,33 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
       builder: (context, snapshot) {
         final state = snapshot.data ?? LiveSaleLoading();
 
+
+        if (state is LiveSaleFinished) {
+          // Força o pop e recarrega a lista imediatamente
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              context.pop(); // volta pra LiveListScreen
+
+              // RECARREGA A LISTA FORA DA TELA ATUAL
+              final listViewModel = getIt<LiveListViewModel>();
+              listViewModel.loadLives(); // <--- isso resolve o erro
+              print("caiu aqui");
+            }
+          });
+        }
+
         if (state is LiveSaleLoading) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
         }
 
         if (state is LiveSaleLoaded) {
-          if (state.goalAchieved && _confetti.state != ConfettiControllerState.playing) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) {
-                _confetti.play();
-              }
-            });
-          }
           final sessionTotal = state.orders.fold<double>(
               0,
               (sum, o) =>
                   sum + o.totalWithGlobalDiscount(state.globalDiscount));
           final totalFaturado =
               (state.live.achievedAmount / 100) + sessionTotal;
-
 
           return Scaffold(
             backgroundColor: Colors.grey[50],
@@ -86,22 +92,30 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                     context: context,
                     barrierDismissible: false, // obriga a escolher
                     builder: (ctx) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                      icon: const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 48),
-                      title: const Text('Sair da Live?', style: TextStyle(fontWeight: FontWeight.bold)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20)),
+                      icon: const Icon(Icons.warning_amber_rounded,
+                          color: Colors.orange, size: 48),
+                      title: const Text('Sair da Live?',
+                          style: TextStyle(fontWeight: FontWeight.bold)),
                       content: const Text(
                         'Se você sair agora, todos os pedidos adicionados nesta sessão serão perdidos.\n\nTem certeza que deseja sair?',
                         textAlign: TextAlign.center,
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(ctx, false), // não sai
-                          child: const Text('Cancelar', style: TextStyle(fontWeight: FontWeight.bold)),
+                          onPressed: () => Navigator.pop(ctx, false),
+                          // não sai
+                          child: const Text('Cancelar',
+                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                         ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                          onPressed: () => Navigator.pop(ctx, true), // sai mesmo
-                          child: const Text('Sair mesmo assim', style: TextStyle(color: Colors.white)),
+                          style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          // sai mesmo
+                          child: const Text('Sair mesmo assim',
+                              style: TextStyle(color: Colors.white)),
                         ),
                       ],
                     ),
@@ -118,14 +132,18 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                 },
               ),
               title: Text(state.live.title.toUpperCase(),
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 18, color: Colors.black)),
+                  style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 18,
+                      color: Colors.black)),
               backgroundColor: Colors.amberAccent,
               elevation: 1,
               actions: [
                 Stack(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.discount_outlined, color: Colors.deepPurple),
+                      icon: const Icon(Icons.discount_outlined,
+                          color: Colors.deepPurple),
                       onPressed: () async {
                         final controller = TextEditingController(
                             text: state.globalDiscount.toString());
@@ -267,11 +285,79 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                 style: TextStyle(
                                     color: Colors.grey[600], fontSize: 14)),
                             const SizedBox(height: 8),
-                            Text(
-                                state.currency
-                                    .format(state.live.goalAmount / 100),
-                                style: GoogleFonts.poppins(
-                                    fontSize: 32, fontWeight: FontWeight.bold)),
+                            AnimatedSwitcher(
+                              duration: const Duration(milliseconds: 500),
+                              transitionBuilder: (child, animation) {
+                                // Animação de Fade e Scale para uma entrada mais impactante
+                                return FadeTransition(
+                                  opacity: animation,
+                                  child: ScaleTransition(
+                                      scale: animation, child: child),
+                                );
+                              },
+                              child: state.goalAchieved
+                                  // --- WIDGET QUANDO A META É ATINGIDA ---
+                                  ? Container(
+                                      // Chave única para o AnimatedSwitcher identificar a mudança
+                                      key: const ValueKey('goalAchieved'),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 8),
+                                      decoration: BoxDecoration(
+                                        // Fundo verde com gradiente para um visual mais rico
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.green.shade600,
+                                            Colors.green.shade800
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color:
+                                                Colors.green.withOpacity(0.4),
+                                            blurRadius: 10,
+                                            offset: const Offset(0, 4),
+                                          )
+                                        ],
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        // Para o container se ajustar ao conteúdo
+                                        children: [
+                                          // Ícone de troféu para celebrar a conquista
+                                          const Icon(
+                                              Icons.emoji_events_outlined,
+                                              color: Colors.white,
+                                              size: 32),
+                                          const SizedBox(width: 12),
+                                          // Texto comemorativo
+                                          Text('META ATINGIDA!',
+                                              style: GoogleFonts.poppins(
+                                                  fontSize: 24,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white,
+                                                  letterSpacing: 1.2)),
+                                        ],
+                                      ),
+                                    )
+                                  // --- WIDGET NO ESTADO NORMAL (META NÃO ATINGIDA) ---
+                                  : Row(
+                                      // Chave única para o AnimatedSwitcher
+                                      key: const ValueKey('goalNotAchieved'),
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                            state.currency.format(
+                                                state.live.goalAmount / 100),
+                                            style: GoogleFonts.poppins(
+                                                fontSize: 32,
+                                                fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                            ),
                             const SizedBox(height: 16),
                             LinearProgressIndicator(
                               value:
@@ -298,7 +384,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                             if (state.globalDiscount > 0)
                               Container(
                                 margin: const EdgeInsets.only(top: 12),
-                                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 16),
                                 decoration: BoxDecoration(
                                   color: Colors.red[50],
                                   borderRadius: BorderRadius.circular(8),
@@ -308,7 +395,6 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                   children: [
                                     const Icon(Icons.info, color: Colors.red),
                                     const SizedBox(width: 8),
-
                                     Expanded(
                                       child: Text(
                                         'Desconto global de ${state.globalDiscount}% aplicado em todas as vendas',
@@ -318,13 +404,13 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         ),
                                       ),
                                     ),
-
-
                                     TextButton(
                                       style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         minimumSize: Size.zero,
-                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        tapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
                                       ),
                                       onPressed: () {
                                         _vm.add(SetGlobalDiscountIntent(0));
@@ -343,12 +429,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                           ],
                         ),
                       ),
-                      ConfettiWidget(
-                          confettiController: _confetti,
-                          blastDirectionality: BlastDirectionality.explosive),
 
                       // GRID DE PRODUTOS - só aparece se NÃO tiver produto selecionado
-
                       if (state.selectedProduct == null)
                         Expanded(
                           // A Column permite colocar o campo de busca e a grade juntos
@@ -356,7 +438,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                             children: [
                               // --- CAMPO DE BUSCA ---
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                                padding:
+                                    const EdgeInsets.fromLTRB(16, 16, 16, 8),
                                 child: TextField(
                                   controller: _searchProductController,
                                   decoration: InputDecoration(
@@ -369,7 +452,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                     ),
                                     filled: true,
                                     fillColor: Colors.grey[200],
-                                    contentPadding: const EdgeInsets.symmetric(vertical: 0),
+                                    contentPadding:
+                                        const EdgeInsets.symmetric(vertical: 0),
                                     // Ícone para limpar a busca
                                     suffixIcon: IconButton(
                                       icon: const Icon(Icons.clear, size: 20),
@@ -392,9 +476,10 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                 child: GridView.builder(
                                   padding: const EdgeInsets.all(16),
                                   gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 4,
-                                    childAspectRatio: 1.1, // Ajuste de proporção para o novo card
+                                    childAspectRatio: 1.1,
+                                    // Ajuste de proporção para o novo card
                                     mainAxisSpacing: 16,
                                     crossAxisSpacing: 16,
                                   ),
@@ -402,10 +487,12 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                   itemCount: state.products.length,
                                   itemBuilder: (_, i) {
                                     final p = state.products[i];
-                                    final bool isLowStock = p.stockQuantity <= p.lowStockThreshold;
+                                    final bool isLowStock =
+                                        p.stockQuantity <= p.lowStockThreshold;
 
-                                   return  InkWell(
-                                      onTap: () => _vm.add(SelectProductIntent(p)),
+                                    return InkWell(
+                                      onTap: () =>
+                                          _vm.add(SelectProductIntent(p)),
                                       borderRadius: BorderRadius.circular(16),
                                       // O Builder foi removido. O Card agora é o filho direto do InkWell.
                                       child: Card(
@@ -414,16 +501,20 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                             ? Colors.orange.withOpacity(0.3)
                                             : Colors.black.withOpacity(0.1),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(16),
+                                          borderRadius:
+                                              BorderRadius.circular(16),
                                           side: BorderSide(
-                                            color: isLowStock ? Colors.orange.shade600 : Colors.transparent,
+                                            color: isLowStock
+                                                ? Colors.orange.shade600
+                                                : Colors.transparent,
                                             width: 1.5,
                                           ),
                                         ),
                                         child: Padding(
                                           padding: const EdgeInsets.all(12.0),
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               // --- SEÇÃO SUPERIOR: Título e Código ---
                                               Text(
@@ -441,7 +532,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                                 style: GoogleFonts.robotoMono(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w500,
-                                                  color: Colors.black.withOpacity(0.8),
+                                                  color: Colors.black
+                                                      .withOpacity(0.8),
                                                 ),
                                               ),
                                               Divider(),
@@ -453,35 +545,56 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                                 style: GoogleFonts.robotoMono(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.w500,
-                                                  color: Colors.black.withOpacity(0.8),
+                                                  color: Colors.black
+                                                      .withOpacity(0.8),
                                                 ),
                                               ),
                                               const Spacer(),
                                               // --- SEÇÃO INFERIOR: Estoque e Preço ---
                                               // Indicador de Estoque
                                               Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        horizontal: 8,
+                                                        vertical: 4),
                                                 decoration: BoxDecoration(
                                                   color: isLowStock
-                                                      ? Colors.orange.withOpacity(0.15)
-                                                      : Colors.blueGrey.withOpacity(0.1),
-                                                  borderRadius: BorderRadius.circular(20),
+                                                      ? Colors.orange
+                                                          .withOpacity(0.15)
+                                                      : Colors.blueGrey
+                                                          .withOpacity(0.1),
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
                                                 ),
                                                 child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
                                                   children: [
                                                     Icon(
-                                                      isLowStock ? Icons.warning_amber_rounded : Icons.inventory_2_outlined,
+                                                      isLowStock
+                                                          ? Icons
+                                                              .warning_amber_rounded
+                                                          : Icons
+                                                              .inventory_2_outlined,
                                                       size: 14,
-                                                      color: isLowStock ? Colors.orange.shade800 : Colors.blueGrey,
+                                                      color: isLowStock
+                                                          ? Colors
+                                                              .orange.shade800
+                                                          : Colors.blueGrey,
                                                     ),
                                                     const SizedBox(width: 6),
                                                     Text(
                                                       '${p.stockQuantity} em estoque',
-                                                      style: GoogleFonts.poppins(
-                                                        fontWeight: FontWeight.w600,
+                                                      style:
+                                                          GoogleFonts.poppins(
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                         fontSize: 11,
-                                                        color: isLowStock ? Colors.orange.shade900 : Colors.blueGrey.shade700,
+                                                        color: isLowStock
+                                                            ? Colors
+                                                                .orange.shade900
+                                                            : Colors.blueGrey
+                                                                .shade700,
                                                       ),
                                                     ),
                                                   ],
@@ -492,17 +605,22 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                               // Preço de Venda (com grande destaque)
                                               Container(
                                                 width: double.infinity,
-                                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                        vertical: 8),
                                                 decoration: BoxDecoration(
                                                   color: Colors.green.shade700,
-                                                  borderRadius: BorderRadius.circular(10),
+                                                  borderRadius:
+                                                      BorderRadius.circular(10),
                                                 ),
                                                 child: Center(
                                                   child: Text(
-                                                    state.currency.format(p.salePrice),
+                                                    state.currency
+                                                        .format(p.salePrice),
                                                     style: GoogleFonts.poppins(
                                                       fontSize: 18,
-                                                      fontWeight: FontWeight.bold,
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: Colors.white,
                                                     ),
                                                   ),
@@ -513,14 +631,12 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         ),
                                       ),
                                     );
-
                                   },
                                 ),
                               ),
                             ],
                           ),
                         ),
-
 
                       // CAMPO DE INSTAGRAM E LISTA DE CLIENTES
                       if (state.selectedProduct != null) ...[
@@ -530,34 +646,33 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                           child: Row(
                             children: [
                               Expanded(
-                                child:  TextField(controller: state.instagramController,
-                                  focusNode: _instagramFocusNode,
-                                  // 1. Bloqueia a digitação de espaços
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                                  ],
-                                  decoration: InputDecoration(
-                                    // 2. A dica volta a ser específica para Instagram
-                                    labelText: 'Adicionar @instagram',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    // 3. O prefixo '@' volta para guiar o usuário
-                                    prefixText: '@',
-                                    prefixStyle: TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                        color: Colors.grey.shade600
-                                    ),
+                                  child: TextField(
+                                controller: state.instagramController,
+                                focusNode: _instagramFocusNode,
+                                // 1. Bloqueia a digitação de espaços
+                                inputFormatters: [
+                                  FilteringTextInputFormatter.deny(
+                                      RegExp(r'\s')),
+                                ],
+                                decoration: InputDecoration(
+                                  // 2. A dica volta a ser específica para Instagram
+                                  labelText: 'Adicionar @instagram',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  onSubmitted: (_) {
-                                    // A lógica de submissão permanece a mesma
-                                    _vm.add(SearchInstagramIntent());
-                                    _instagramFocusNode.requestFocus();
-                                  },
-                                )
-
-                              ),
+                                  // 3. O prefixo '@' volta para guiar o usuário
+                                  prefixText: '@',
+                                  prefixStyle: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                      color: Colors.grey.shade600),
+                                ),
+                                onSubmitted: (_) {
+                                  // A lógica de submissão permanece a mesma
+                                  _vm.add(SearchInstagramIntent());
+                                  _instagramFocusNode.requestFocus();
+                                },
+                              )),
                               const SizedBox(width: 12),
                               FloatingActionButton(
                                 onPressed: () =>
@@ -584,12 +699,13 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                   itemCount: state.currentCustomers.length,
                                   itemBuilder: (_, i) {
                                     final c = state.currentCustomers[i];
-                                    return  Card(
+                                    return Card(
                                       elevation: 1.5,
                                       shadowColor: Colors.black12,
                                       color: Colors.white,
                                       surfaceTintColor: Colors.white,
-                                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                      margin: const EdgeInsets.symmetric(
+                                          horizontal: 16, vertical: 4),
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                         side: BorderSide(
@@ -598,21 +714,31 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         ),
                                       ),
                                       child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
                                         child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.start,
                                           children: [
                                             CustomerChip(
-                                              buyer: {'id': c.id, 'name': c.name},
+                                              buyer: {
+                                                'id': c.id,
+                                                'name': c.name
+                                              },
                                               live: state.live,
                                             ),
                                             const Spacer(),
 
                                             // Botão de remover
                                             InkWell(
-                                              borderRadius: BorderRadius.circular(50),
-                                              onTap: () => _vm.add(RemoveCurrentCustomerIntent(i)),
+                                              borderRadius:
+                                                  BorderRadius.circular(50),
+                                              onTap: () => _vm.add(
+                                                  RemoveCurrentCustomerIntent(
+                                                      i)),
                                               child: Container(
-                                                padding: const EdgeInsets.all(6),
+                                                padding:
+                                                    const EdgeInsets.all(6),
                                                 decoration: BoxDecoration(
                                                   shape: BoxShape.circle,
                                                   color: Colors.grey.shade100,
@@ -628,7 +754,6 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         ),
                                       ),
                                     );
-
                                   },
                                 ),
                         ),
@@ -753,7 +878,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                               child: Tooltip(
                                 message: 'Deseja trocar de produto?',
                                 child: CircleAvatar(
-                                  radius: 22, // Um pouco maior para se destacar
+                                  radius: 22,
+                                  // Um pouco maior para se destacar
                                   backgroundColor: Colors.red[400],
                                   child: IconButton(
                                       icon: const Icon(Icons.close,
@@ -821,8 +947,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
                                     vertical: 8.0, horizontal: 4.0),
-                                child:
-                                ListTile(
+                                child: ListTile(
                                   title: Row(
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
@@ -861,30 +986,27 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         height: 1,
                                       ),
                                       const SizedBox(height: 12),
-                                      Text("Clientes:", style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,)),
+                                      Text("Clientes:",
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                          )),
                                       const SizedBox(height: 12),
                                       Wrap(
                                         spacing: 6.0,
                                         runSpacing: 4.0,
-                                        children: order.customers
-                                            .map((customer) {
-                                          // --- INÍCIO DA CORREÇÃO ---
-                                          // Agora usamos o nosso widget reutilizável CustomerChip.
-                                          // Ele precisa de um mapa com 'id' e 'name'.
+                                        children:
+                                            order.customers.map((customer) {
                                           final buyerMap = {
                                             'id': customer.id,
                                             'name': customer.name,
                                           };
-                                          return CustomerChip(buyer: buyerMap, live: state.live,);
-                                          // --- FIM DA CORREÇÃO ---
-                                        })
-                                            .toList(),
+                                          return CustomerChip(
+                                              buyer: buyerMap,
+                                             live: state.live
+                                          );
+                                        }).toList(),
                                       ),
-                                      const SizedBox(height: 8),
-                                      Divider(),
-                                      const SizedBox(height: 8),
                                       if (totalDiscount > 0)
                                         Padding(
                                           padding: const EdgeInsets.only(
@@ -922,13 +1044,13 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                                           FontWeight.bold),
                                                 ),
                                                 TextSpan(
-                                                  text: " •Valor unit.: "
-                                                ),
+                                                    text: " •Valor unit.: "),
                                                 TextSpan(
-                                                  text: "R\$${order.product.salePrice}",
+                                                  text:
+                                                      "R\$${order.product.salePrice}",
                                                   style: const TextStyle(
                                                       fontWeight:
-                                                      FontWeight.bold),
+                                                          FontWeight.bold),
                                                 ),
                                               ],
                                             ),
@@ -961,10 +1083,9 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
     // Gera a lista de compradores únicos para evitar a repetição do toSet() no build
     final uniqueCustomers = state.orders.expand((o) => o.customers).toSet();
 
-    final confirm = await showDialog<bool>(
+    final bool? confirmar = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        // Título mais impactante com ícone
         title: Row(
           children: [
             const Icon(Icons.check_circle_outline,
@@ -1091,11 +1212,8 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
         ],
       ),
     );
-
-    if (confirm == true) {
+    if (confirmar == true) {
       _vm.add(FinalizeLiveIntent());
-      getIt<LiveListViewModel>().loadLives();
-      if (mounted) context.pop();
     }
   }
 

@@ -6,15 +6,17 @@ import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/presentation/widgets/dialog_customer_details.dart';
 
+import '../../../../../domain/entities/live/live.dart';
 import '../../../../../domain/repositories/icustomer_repository.dart';
 
-// Enum para representar o tier do cliente
+
 enum CustomerTier { none, bronze, silver, gold }
 
 class CustomerChip extends StatefulWidget {
-  final Map<String, dynamic> buyer; // Vem do LiveSaleState
+  final Map<String, dynamic> buyer;
+  final Live live;
 
-  const CustomerChip({super.key, required this.buyer});
+  const CustomerChip({super.key, required this.buyer, required this.live});
 
   @override
   State<CustomerChip> createState() => _CustomerChipState();
@@ -65,6 +67,7 @@ class _CustomerChipState extends State<CustomerChip> {
 
   @override
   Widget build(BuildContext context) {
+    final status = widget.live.status;
     return FutureBuilder<Customer?>(
       future: _customerFuture,
       builder: (context, snapshot) {
@@ -98,7 +101,7 @@ class _CustomerChipState extends State<CustomerChip> {
                   context: context,
                   builder: (dialogContext) =>
                       CustomerDetailsDialog(customer: fullCustomer));
-            } else {
+            } else if( status == LiveStatus.finished) {
               // NAO CADASTRADO ABRE TELA DE EDICAO
               String raw = name.replaceAll(' (não cadastrado)', '').trim();
               String instagram = raw.startsWith('@') ? raw.substring(1) : raw;
@@ -135,7 +138,7 @@ class _CustomerChipState extends State<CustomerChip> {
                   Icon(
                     tierIcon,
                     size: 16,
-
+                  color: _getTierColor(tier),
                   ),
                 ],
               ],

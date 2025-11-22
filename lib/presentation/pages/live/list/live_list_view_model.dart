@@ -49,7 +49,7 @@ class LiveListViewModel {
       loadLives();
     } else if (intent is FinishLiveIntent) {
       await _finishLive(intent.liveId);
-      loadLives(); // AQUI É O QUE ESTAVA FALTANDO
+      loadLives();
     } else if (intent is DeleteLiveIntent) {
       await _deleteLive(intent.liveId);
       loadLives();

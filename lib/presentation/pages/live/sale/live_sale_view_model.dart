@@ -11,6 +11,7 @@ import '../../../../domain/entities/sale/sale_item.dart';
 import '../../../../domain/repositories/icustomer_repository.dart';
 import '../../../../domain/repositories/ilive_repository.dart';
 import '../../../../domain/usecases/auth/get_current_user_use_case.dart';
+import '../../../../domain/usecases/live/finish_live_use_case.dart';
 import '../../../../domain/usecases/products/get_all_products_use_case.dart';
 import '../../../../domain/usecases/products/update_product.dart';
 import '../../../../domain/usecases/sales/save_sale_use_case.dart';
@@ -19,17 +20,27 @@ import 'live_sale_state.dart';
 
 @injectable
 class LiveSaleViewModel {
-  final ILiveRepository _liveRepo = getIt<ILiveRepository>();
-  final ICustomerRepository _customerRepo = getIt<ICustomerRepository>();
-  final SaveSaleUseCase _saveSale = getIt<SaveSaleUseCase>();
-  final UpdateProduct _updateProduct = getIt<UpdateProduct>();
-  final GetCurrentUserUseCase _getUser = getIt<GetCurrentUserUseCase>();
+  final ILiveRepository _liveRepo;
+  final ICustomerRepository _customerRepo;
+  final SaveSaleUseCase _saveSale;
+  final UpdateProduct _updateProduct;
+  final GetCurrentUserUseCase _getUser;
+  final FinishLiveUseCase _finishLive;
 
   final _state = BehaviorSubject<LiveSaleState>.seeded(LiveSaleLoading());
+
   Stream<LiveSaleState> get state => _state.stream;
 
-  // CORREÇÃO: Estas listas agora são controladas pelo ViewModel
   List<Product> _allProducts = [];
+
+  LiveSaleViewModel(
+      this._liveRepo,
+      this._customerRepo,
+      this._saveSale,
+      this._updateProduct,
+      this._getUser,
+      this._finishLive,
+      );
 
   void add(LiveSaleIntent intent) async {
     final current = _state.value;
@@ -40,12 +51,11 @@ class LiveSaleViewModel {
         final live = lives.firstWhere((l) => l.id == intent.liveId);
         final products = await getIt<GetAllProductsUseCase>()();
 
-        // CORREÇÃO: Armazena a lista completa de produtos
         _allProducts = products;
 
         _state.add(LiveSaleLoaded(
           live: live,
-          products: products, // A lista inicial exibida é a lista completa
+          products: products,
         ));
       } catch (e) {
         _state.add(LiveSaleError(e.toString()));
@@ -55,9 +65,7 @@ class LiveSaleViewModel {
 
     if (current is! LiveSaleLoaded) return;
 
-    // A estrutura do switch/case é mais limpa para lidar com múltiplos intents
     switch (intent.runtimeType) {
-    // CORREÇÃO: Adiciona o caso para o SearchProductIntent
       case SearchProductIntent:
         _handleSearchProduct(intent as SearchProductIntent, current);
         break;
@@ -76,7 +84,13 @@ class LiveSaleViewModel {
             id: 'temp_${DateTime.now().millisecondsSinceEpoch}',
             name: '@$text',
             instagram: text,
-            cpf: '', email: '', phone: '', whatsapp: '', address: '', address1: null, address2: null,
+            cpf: '',
+            email: '',
+            phone: '',
+            whatsapp: '',
+            address: '',
+            address1: null,
+            address2: null,
           ));
         }
 
@@ -85,7 +99,8 @@ class LiveSaleViewModel {
         break;
 
       case RemoveCurrentCustomerIntent:
-        final newList = List<Customer>.from(current.currentCustomers)..removeAt((intent as RemoveCurrentCustomerIntent).index);
+        final newList = List<Customer>.from(current.currentCustomers)
+          ..removeAt((intent as RemoveCurrentCustomerIntent).index);
         _state.add(current.copyWith(currentCustomers: newList));
         break;
 
@@ -99,13 +114,13 @@ class LiveSaleViewModel {
             currentCustomers: [],
           ));
         } else {
-          // Quando seleciona um novo produto
           _state.add(current.copyWith(selectedProduct: productIntent.product));
         }
         break;
 
       case AddOrderIntent:
         if (current.selectedProduct == null || current.currentCustomers.isEmpty) return;
+
         final newOrders = List<LiveOrder>.from(current.orders);
         newOrders.add(LiveOrder(
           product: current.selectedProduct!,
@@ -124,7 +139,8 @@ class LiveSaleViewModel {
         break;
 
       case RemoveOrderIntent:
-        final newOrders = List<LiveOrder>.from(current.orders)..removeAt((intent as RemoveOrderIntent).index);
+        final newOrders = List<LiveOrder>.from(current.orders)
+          ..removeAt((intent as RemoveOrderIntent).index);
         _state.add(current.copyWith(orders: newOrders));
         break;
 
@@ -143,6 +159,7 @@ class LiveSaleViewModel {
           final user = await _getUser();
           if (user == null) throw 'Vendedor não autenticado';
 
+          // 1. Salvar todas as vendas
           for (final order in current.orders) {
             for (final customer in order.customers) {
               final totalDiscount = order.individualDiscount + current.globalDiscount;
@@ -171,21 +188,40 @@ class LiveSaleViewModel {
               await _saveSale(sale);
             }
 
-            await _updateProduct(order.product.copyWith(stockQuantity: order.product.stockQuantity - order.customers.length));
+            // Atualizar estoque
+            await _updateProduct(order.product.copyWith(
+                stockQuantity: order.product.stockQuantity - order.customers.length));
           }
 
-          final totalCents = current.orders.fold<int>(0, (sum, o) => sum + (o.totalWithGlobalDiscount(current.globalDiscount) * 100).toInt());
-          final updatedLive = current.live.copyWith(endDate: DateTime.now(), achievedAmount: current.live.achievedAmount + totalCents);
+          // 2. Calcular total faturado nesta sessão
+          final totalCents = current.orders.fold<int>(
+            0,
+                (sum, o) => sum + (o.totalWithGlobalDiscount(current.globalDiscount) * 100).toInt(),
+          );
+
+          // 3. Atualizar a live com endDate e valor alcançado
+          final updatedLive = current.live.copyWith(
+            endDate: DateTime.now(),
+            achievedAmount: current.live.achievedAmount + totalCents,
+          );
+
+          // CORREÇÃO PRINCIPAL: Apenas updateLive (NUNCA addLive aqui!)
           await _liveRepo.updateLive(updatedLive);
 
-          _state.add(LiveSaleFinished(success: true, goalAchieved: updatedLive.goalAchieved));
+          // Usa a UseCase oficial (igual ao botão "Finalizar" na lista)
+          await _finishLive(updatedLive.id);
+
+          // Emite sucesso
+          _state.add(LiveSaleFinished(
+            success: true,
+            goalAchieved: updatedLive.goalAchieved,
+          ));
         } catch (e) {
           _state.add(LiveSaleError(e.toString()));
         }
         break;
     }
   }
-
 
   void _handleSearchProduct(SearchProductIntent intent, LiveSaleLoaded current) {
     final query = intent.query.toLowerCase();
@@ -196,12 +232,8 @@ class LiveSaleViewModel {
     } else {
       filteredProducts = _allProducts.where((product) {
         final nameMatches = product.name.toLowerCase().contains(query);
-        final codeMatches = product.codeOfProduct?.toLowerCase().contains(query);
-        if(codeMatches != null) {
-          return nameMatches || codeMatches;
-        } else {
-          return nameMatches;
-        }
+        final codeMatches = product.codeOfProduct?.toLowerCase().contains(query) ?? false;
+        return nameMatches || codeMatches;
       }).toList();
     }
 

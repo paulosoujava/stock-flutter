@@ -579,9 +579,9 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
-  Widget _buildProductSearchSection(
-      BuildContext context, SalesReadyState state) {
+  Widget _buildProductSearchSection(BuildContext context, SalesReadyState state) {
     final theme = Theme.of(context);
+
     return AnimatedSlide(
       duration: const Duration(milliseconds: 400),
       offset: const Offset(0, 0),
@@ -607,7 +607,8 @@ class _SalesPageState extends State<SalesPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              // sales_page.dart — apenas o TextField da pesquisa (substitua por este)
+
+              // Campo de busca
               TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
@@ -621,7 +622,6 @@ class _SalesPageState extends State<SalesPage> {
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _searchController.clear();
-                          // FORÇA LIMPEZA IMEDIATA DA LISTA
                           _viewModel.handleIntent(SearchProductsIntent(''));
                         },
                       );
@@ -640,40 +640,56 @@ class _SalesPageState extends State<SalesPage> {
                 },
               ),
               const SizedBox(height: 16),
+
+              // Loading / vazio / resultados
               if (state.isSearching)
                 const Center(child: CircularProgressIndicator())
-              else if (state.searchResults.isEmpty &&
-                  state.currentSearchQuery.isNotEmpty)
-                const Center(
-                  child: Text('Nenhum produto encontrado.',
-                      style: TextStyle(color: Colors.grey)),
-                )
+              else if (state.searchResults.isEmpty && state.currentSearchQuery.isNotEmpty)
+                const Center(child: Text('Nenhum produto encontrado.', style: TextStyle(color: Colors.grey)))
               else if (state.searchResults.isNotEmpty)
-                ListView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  itemCount: state.searchResults.length,
-                  itemBuilder: (context, index) {
-                    final product = state.searchResults[index];
-                    return _ProductSearchItem(
-                      product: product,
-                      onAddToCart: (quantity, discount) {
-                        _viewModel.handleIntent(AddProductToCartIntent(
-                            product, quantity, discount));
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                                'Adicionado: ${product.name} × $quantity${discount > 0 ? ' com $discount% desconto' : ''}'),
-                            duration: const Duration(milliseconds: 800),
-                            backgroundColor: Colors.green,
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      globalDiscount: state.globalDiscount,
-                    );
-                  },
-                ),
+                // LISTA COM ESTOQUE EM TEMPO REAL
+                  StreamBuilder<SalesState>(
+                    stream: _viewModel.state,
+                    builder: (context, snapshot) {
+                      final currentState = snapshot.data as SalesReadyState? ?? state;
+
+                      return ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: state.searchResults.length,
+                        itemBuilder: (context, index) {
+                          final searchProduct = state.searchResults[index];
+
+                          // Produto sempre atualizado do estado global
+                          final latestProduct = currentState.originalProducts.firstWhere(
+                                (p) => p.id == searchProduct.id,
+                            orElse: () => searchProduct,
+                          );
+
+                          return _ProductSearchItem(
+                            key: ValueKey('${latestProduct.id}_${latestProduct.stockQuantity}'),
+                            product: latestProduct,
+                            onAddToCart: (quantity, discount) {
+                              _viewModel.handleIntent(
+                                AddProductToCartIntent(latestProduct, quantity, discount),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Adicionado: ${latestProduct.name} × $quantity${discount > 0 ? ' com $discount% desconto' : ''}',
+                                  ),
+                                  duration: const Duration(milliseconds: 800),
+                                  backgroundColor: Colors.green,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            },
+                            globalDiscount: currentState.globalDiscount,
+                          );
+                        },
+                      );
+                    },
+                  ),
             ],
           ),
         ),
@@ -905,195 +921,159 @@ class _ProductSearchItem extends StatefulWidget {
   final Function(int quantity, int discount) onAddToCart;
   final int globalDiscount;
 
-  const _ProductSearchItem(
-      {required this.product,
-      required this.onAddToCart,
-      required this.globalDiscount});
+  const _ProductSearchItem({
+    required super.key,
+    required this.product,
+    required this.onAddToCart,
+    required this.globalDiscount,
+  });
 
   @override
-  State<_ProductSearchItem> createState() => __ProductSearchItemState();
+  State<_ProductSearchItem> createState() => _ProductSearchItemState();
 }
 
-class __ProductSearchItemState extends State<_ProductSearchItem>
-    with TickerProviderStateMixin {
-  int _quantity = 1;
-  int _discount = 0;
-  late AnimationController _animationController;
-  late Animation<double> _scaleAnimation;
-  final TextEditingController _discountController = TextEditingController();
+class _ProductSearchItemState extends State<_ProductSearchItem>
+    with AutomaticKeepAliveClientMixin {
+  late int _quantity = 1;
+  late int _discount = 0;
 
   @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 200));
-    _scaleAnimation =
-        Tween<double>(begin: 1.0, end: 0.95).animate(_animationController);
-    _discountController.text = '0';
+  bool get wantKeepAlive => true; // Mantém o estado enquanto visível
+
+  void _increment() {
+    if (_quantity < widget.product.stockQuantity) {
+      setState(() => _quantity++);
+    }
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    _discountController.dispose();
-    super.dispose();
+  void _decrement() {
+    if (_quantity > 1) {
+      setState(() => _quantity--);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Necessário por causa do AutomaticKeepAlive
+
     final hasStock = widget.product.stockQuantity > 0;
-    final isLowStock = hasStock &&
-        widget.product.stockQuantity <= widget.product.lowStockThreshold;
-    final isMaxed = _quantity >= widget.product.stockQuantity;
+    final isLowStock = hasStock && widget.product.stockQuantity <= widget.product.lowStockThreshold;
+    final canAddMore = _quantity < widget.product.stockQuantity;
     final hasGlobalDiscount = widget.globalDiscount > 0;
 
-    return ScaleTransition(
-      scale: _scaleAnimation,
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        color: hasStock ? Colors.white : Colors.grey[100],
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.product.name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'R\$ ${widget.product.salePrice.toStringAsFixed(2)}',
-                          style: TextStyle(
-                              color: Colors.green[700],
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
+    return Card(
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: hasStock ? Colors.white : Colors.grey[100],
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Estoque',
-                          style: TextStyle(fontSize: 12, color: Colors.grey)),
                       Text(
-                        '${widget.product.stockQuantity}',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: isLowStock
-                              ? Colors.orange[800]
-                              : (hasStock ? Colors.green[700] : Colors.red),
-                        ),
+                        widget.product.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'R\$ ${widget.product.salePrice.toStringAsFixed(2)}',
+                        style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                ],
-              ),
-              const Divider(height: 24),
-              Row(
-                children: [
-                  if (hasStock) ...[
-                    const Text('Qtd:'),
-                    const SizedBox(width: 12),
-                    _quantityButton(
-                        Icons.remove_circle_outline,
-                        _quantity > 1
-                            ? () => setState(() => _quantity--)
-                            : null),
-                    SizedBox(
-                        width: 40,
-                        child: Center(
-                            child: Text('$_quantity',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)))),
-                    _quantityButton(Icons.add_circle_outline,
-                        !isMaxed ? () => setState(() => _quantity++) : null,
-                        tooltip: isMaxed ? 'Estoque máximo' : null),
-                  ] else
-                    const Row(
-                      children: [
-                        Icon(Icons.sentiment_very_dissatisfied,
-                            color: Colors.red, size: 20),
-                        SizedBox(width: 8),
-                        Text('Esgotado',
-                            style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  const SizedBox(width: 16),
-                  if (hasStock && !hasGlobalDiscount) ...[
-                    const Text('Desc. (%):'),
-                    const SizedBox(width: 8),
-                    SizedBox(
-                      width: 60,
-                      child: TextField(
-                        controller: _discountController,
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          // ACEITA APENAS DÍGITOS
-                        ],
-                        onChanged: (value) {
-                          final parsed = int.tryParse(value);
-                          _discount = parsed ?? 0;
-                          // Opcional: limpa o campo se não for número válido
-                          if (parsed == null && value.isNotEmpty) {
-                            _discountController.clear();
-                          }
-                        },
-                        decoration: const InputDecoration(
-                          border: OutlineInputBorder(),
-                          contentPadding:
-                              EdgeInsets.symmetric(vertical: 8, horizontal: 8),
-                          hintText: '0', // opcional
-                        ),
+                ),
+                Column(
+                  children: [
+                    const Text('Estoque', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(
+                      '${widget.product.stockQuantity}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: isLowStock
+                            ? Colors.orange[800]
+                            : (hasStock ? Colors.green[700] : Colors.red),
                       ),
                     ),
                   ],
-                  const Spacer(),
-                  FilledButton(
-                    onPressed: hasStock
-                        ? () {
-                            _animationController
-                                .forward()
-                                .then((_) => _animationController.reverse());
-                            widget.onAddToCart(
-                                _quantity, hasGlobalDiscount ? 0 : _discount);
-                            setState(() => _quantity = 1);
-                            _discountController.text = '0';
-                          }
-                        : null,
-                    style: FilledButton.styleFrom(
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10))),
-                    child: const Text('Adicionar'),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Row(
+              children: [
+                if (hasStock) ...[
+                  const Text('Qtd:'),
+                  const SizedBox(width: 12),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle_outline),
+                    color: _quantity > 1 ? null : Colors.grey[400],
+                    onPressed: _quantity > 1 ? _decrement : null,
+                  ),
+                  SizedBox(
+                    width: 40,
+                    child: Center(
+                      child: Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    color: canAddMore ? null : Colors.grey[400],
+                    onPressed: canAddMore ? _increment : null,
+                    tooltip: !canAddMore ? 'Sem estoque' : null,
+                  ),
+                ] else
+                  const Row(
+                    children: [
+                      Icon(Icons.sentiment_very_dissatisfied, color: Colors.red, size: 20),
+                      SizedBox(width: 8),
+                      Text('Esgotado', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                const SizedBox(width: 16),
+                if (hasStock && !hasGlobalDiscount) ...[
+                  const Text('Desc. (%):'),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 60,
+                    child: TextField(
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (v) => _discount = int.tryParse(v) ?? 0,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        hintText: '0',
+                      ),
+                    ),
                   ),
                 ],
-              ),
-            ],
-          ),
+                const Spacer(),
+                FilledButton(
+                  onPressed: hasStock
+                      ? () {
+                    widget.onAddToCart(_quantity, hasGlobalDiscount ? 0 : _discount);
+                    setState(() {
+                      _quantity = 1;
+                      _discount = 0;
+                    });
+                  }
+                      : null,
+                  style: FilledButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: const Text('Adicionar'),
+                ),
+              ],
+            ),
+          ],
         ),
-      ),
-    );
-  }
-
-  Widget _quantityButton(IconData icon, VoidCallback? onPressed,
-      {String? tooltip}) {
-    return Tooltip(
-      message: tooltip ?? '',
-      child: IconButton(
-        icon: Icon(icon, color: onPressed != null ? null : Colors.grey),
-        onPressed: onPressed,
-        disabledColor: Colors.grey[400],
       ),
     );
   }

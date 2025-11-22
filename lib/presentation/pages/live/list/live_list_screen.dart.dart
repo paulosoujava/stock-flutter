@@ -1,6 +1,5 @@
 // presentation/pages/live/live_list_screen.dart
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -12,9 +11,7 @@ import 'package:stock/domain/repositories/isale_repository.dart';
 import 'package:stock/presentation/widgets/custom_dialog.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/events/event_bus.dart';
-import '../../../../core/navigation/app_routes.dart';
-import '../../../../domain/repositories/icustomer_repository.dart';
-import '../../../widgets/dialog_customer_details.dart';
+import '../sale/widget/customer_chip.dart';
 import 'live_list_intent.dart';
 import 'live_list_state.dart';
 import 'live_list_view_model.dart';
@@ -28,9 +25,7 @@ class LiveListScreen extends StatefulWidget {
 
 class _LiveListScreenState extends State<LiveListScreen> {
   late final LiveListViewModel _viewModel;
-
-  final NumberFormat _currency =
-      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
+  final NumberFormat _currency = NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   final DateFormat _dateFormat = DateFormat('dd MMM yyyy • HH:mm', 'pt_BR');
   StreamSubscription? _tempCustomerSavedSubscription;
 
@@ -39,11 +34,8 @@ class _LiveListScreenState extends State<LiveListScreen> {
     super.initState();
     _viewModel = getIt<LiveListViewModel>();
     _viewModel.loadLives();
-    final eventBus = getIt<EventBus>();
-    _tempCustomerSavedSubscription = eventBus.stream.listen((event) {
-      if (event is RegisterEvent) {
-        _viewModel.loading();
-      }
+    _tempCustomerSavedSubscription = getIt<EventBus>().stream.listen((event) {
+      if (event is RegisterEvent) _viewModel.loading();
     });
   }
 
@@ -57,10 +49,11 @@ class _LiveListScreenState extends State<LiveListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.deepPurple,
+        icon: const Icon(Icons.add, color: Colors.white),
+        label: const Text("Nova Live", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         onPressed: _showCreateDialog,
-        child: const Icon(Icons.add, size: 28, color: Colors.white),
       ),
       body: StreamBuilder<LiveListState>(
         stream: _viewModel.state,
@@ -68,31 +61,56 @@ class _LiveListScreenState extends State<LiveListScreen> {
           final state = snapshot.data ?? LiveListLoading();
 
           if (state is LiveListLoading) {
-            return const Center(
-                child: CircularProgressIndicator(color: Colors.deepPurple));
+            return const Center(child: CircularProgressIndicator(color: Colors.deepPurple));
           }
+
           if (state is LiveListError) {
-            return Center(child: Text('Erro: ${state.message}'));
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text('Erro ao carregar lives', style: Theme.of(context).textTheme.titleMedium),
+                  Text(state.message, style: const TextStyle(color: Colors.grey)),
+                ],
+              ),
+            );
           }
 
           if (state is LiveListLoaded) {
             if (state.lives.isEmpty) {
-              return const Center(
-                child: Text(
-                  'Nenhuma live criada ainda.\nToque no + para começar',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.live_tv_outlined, size: 80, color: Colors.grey[400]),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Nenhuma live criada ainda',
+                        style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Toque no botão + para começar sua primeira live',
+                        style: TextStyle(color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
 
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
               itemCount: state.lives.length,
               itemBuilder: (_, i) {
                 final live = state.lives[i];
                 final isActive = state.activeLive?.id == live.id;
-                return _LiveCardClean(
+                return _LiveCardModern(
                   live: live,
                   isActive: isActive,
                   viewModel: _viewModel,
@@ -102,6 +120,7 @@ class _LiveListScreenState extends State<LiveListScreen> {
               },
             );
           }
+
           return const SizedBox();
         },
       ),
@@ -118,127 +137,68 @@ class _LiveListScreenState extends State<LiveListScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Nova Live',
-            style: TextStyle(fontWeight: FontWeight.bold)),
+        title: Row(
+          children: [
+            const Icon(Icons.live_tv, color: Colors.deepPurple),
+            const SizedBox(width: 12),
+            Text('Nova Live', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+          ],
+        ),
         content: SizedBox(
           width: 500,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(
-                  labelText: 'Título da Live',
-                  border: OutlineInputBorder(),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'Descrição (opcional)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: goalController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Meta',
-                  border: OutlineInputBorder(),
-                  hintText: 'Ex: 5000,00',
-                ),
-                onChanged: (value) {
-                  var text = value.replaceAll(RegExp(r'[^0-9]'), '');
-                  if (text.isEmpty) text = '0';
-                  final formatted = _currency.format(int.parse(text) / 100);
-                  goalController.value = TextEditingValue(
-                    text: formatted,
-                    selection:
-                        TextSelection.collapsed(offset: formatted.length),
-                  );
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: titleController, decoration: const InputDecoration(labelText: 'Título da Live', border: OutlineInputBorder())),
+            const SizedBox(height: 16),
+            TextField(controller: descriptionController, maxLines: 3, decoration: const InputDecoration(labelText: 'Descrição (opcional)', border: OutlineInputBorder())),
+            const SizedBox(height: 16),
+            TextField(
+              controller: goalController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Meta', border: OutlineInputBorder(), hintText: 'Ex: 5000,00'),
+              onChanged: (value) {
+                var text = value.replaceAll(RegExp(r'[^0-9]'), '');
+                if (text.isEmpty) text = '0';
+                final formatted = _currency.format(int.parse(text) / 100);
+                goalController.value = TextEditingValue(text: formatted, selection: TextSelection.collapsed(offset: formatted.length));
+              },
+            ),
+            const SizedBox(height: 16),
+            StatefulBuilder(builder: (context, setStateDialog) {
+              return ListTile(
+                leading: const Icon(Icons.calendar_today, color: Colors.deepPurple),
+                title: Text('Data e hora: ${_dateFormat.format(selectedDate)}', style: const TextStyle(fontWeight: FontWeight.w500)),
+                trailing: const Icon(Icons.edit_calendar),
+                onTap: () async {
+                  final date = await showDatePicker(context: context, initialDate: selectedDate, firstDate: DateTime.now(), lastDate: DateTime.now().add(const Duration(days: 365)));
+                  if (date != null) {
+                    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(selectedDate));
+                    if (time != null) {
+                      setStateDialog(() => selectedDate = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+                    }
+                  }
                 },
-              ),
-              const SizedBox(height: 16),
-              StatefulBuilder(
-                builder: (context, setStateDialog) {
-                  return ListTile(
-                    leading: const Icon(Icons.calendar_today),
-                    title: Text(
-                        'Data e hora: ${_dateFormat.format(selectedDate)}'),
-                    trailing: const Icon(Icons.edit_calendar),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: selectedDate,
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 365)),
-                      );
-                      if (date != null) {
-                        final time = await showTimePicker(
-                          context: context,
-                          initialTime: TimeOfDay.fromDateTime(selectedDate),
-                        );
-                        if (time != null) {
-                          setStateDialog(() {
-                            selectedDate = DateTime(date.year, date.month,
-                                date.day, time.hour, time.minute);
-                          });
-                        }
-                      }
-                    },
-                  );
-                },
-              ),
-            ],
-          ),
+              );
+            }),
+          ]),
         ),
         actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancelar')),
-          ElevatedButton(
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          ElevatedButton.icon(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.deepPurple),
+            icon: const Icon(Icons.live_tv, color: Colors.white),
+            label: const Text("Criar Live", style: TextStyle(color: Colors.white)),
             onPressed: () {
               final title = titleController.text.trim();
-              final description = descriptionController.text.trim();
-              final goalText =
-                  goalController.text.replaceAll(RegExp(r'[^0-9]'), '');
-              final goalCents = goalText.isEmpty ? 0 : int.parse(goalText);
+              final goalCents = int.tryParse(goalController.text.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
               if (title.isEmpty || goalCents < 100) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                      content: Text(
-                          'Preencha título e meta válida (mínimo R\$ 1,00)')),
-                );
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preencha título e meta válida (mínimo R\$ 1,00)')));
                 return;
               }
 
-              _viewModel.handleIntent(
-                CreateLiveIntent(
-                  title,
-                  description,
-                  selectedDate,
-                  goalCents,
-                ),
-              );
+              _viewModel.handleIntent(CreateLiveIntent(title, descriptionController.text.trim(), selectedDate, goalCents));
               Navigator.pop(ctx);
             },
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              // Para a Row ocupar apenas o espaço necessário
-              children: [
-                Icon(Icons.live_tv, color: Colors.white),
-                // Ícone
-                SizedBox(width: 8),
-                // Espaçamento entre o ícone e o texto
-                Text("Criar live", style: TextStyle(color: Colors.white)),
-                // Texto
-              ],
-            ),
           ),
         ],
       ),
@@ -246,181 +206,152 @@ class _LiveListScreenState extends State<LiveListScreen> {
   }
 }
 
-class _LiveCardClean extends StatefulWidget {
+// CARD MODERNO E LIMPO
+class _LiveCardModern extends StatefulWidget {
   final Live live;
   final bool isActive;
   final LiveListViewModel viewModel;
   final NumberFormat currency;
   final DateFormat dateFormat;
 
-  const _LiveCardClean({
-    required this.live,
-    required this.isActive,
-    required this.viewModel,
-    required this.currency,
-    required this.dateFormat,
-  });
+  const _LiveCardModern({required this.live, required this.isActive, required this.viewModel, required this.currency, required this.dateFormat});
 
   @override
-  State<_LiveCardClean> createState() => _LiveCardCleanState();
+  State<_LiveCardModern> createState() => _LiveCardModernState();
 }
 
-class _LiveCardCleanState extends State<_LiveCardClean> {
-  bool _expanded = true;
+class _LiveCardModernState extends State<_LiveCardModern> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final live = widget.live;
-    final progress =
-        live.goalAmount > 0 ? live.achievedAmount / live.goalAmount : 0.0;
+    final progress = live.goalAmount > 0 ? live.achievedAmount / live.goalAmount : 0.0;
     final totalFaturado = live.achievedAmount / 100;
 
-    return Card(
-      elevation: widget.isActive ? 8 : 2,
-      shadowColor: widget.isActive ? Colors.deepPurple.withOpacity(0.3) : null,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () => setState(() => _expanded = !_expanded),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                _StatusBadge(status: live.status, isActive: widget.isActive),
-                Row(children: [
-                  ..._buildActions(context, live),
-                ])
-              ]),
-              Divider(),
-              Row(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(color: widget.isActive ? Colors.deepPurple.withOpacity(0.2) : Colors.black.withOpacity(0.08), blurRadius: 12, offset: const Offset(0, 4)),
+        ],
+        border: widget.isActive ? Border.all(color: Colors.deepPurple, width: 2) : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          live.title,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          live.description ?? 'Sem descrição',
-                          style: TextStyle(color: Colors.grey[600]),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
+                  // Cabeçalho
+                  Row(
+                    children: [
+                      _StatusBadge(status: live.status, isActive: widget.isActive),
+                      const Spacer(),
+                      if (live.status == LiveStatus.scheduled) ...[
+                        IconButton(icon: const Icon(Icons.delete_outline, color: Colors.red), onPressed: () => CustomDialog.show(context: context, title: 'Excluir?', content: 'Não pode ser desfeito', onConfirm: () => widget.viewModel.handleIntent(DeleteLiveIntent(live.id)))),
+                        FilledButton.tonal(onPressed: () {
+                          widget.viewModel.handleIntent(StartLiveIntent(live.id));
+                          context.push('/live-sale/${live.id}');
+                        }, child: const Text('Iniciar Live')),
                       ],
-                    ),
+                      if (live.status == LiveStatus.inProgress)
+                        FilledButton(onPressed: () => context.push('/live-sale/${live.id}'), child: const Text('Entrar na Live')),
+                      if (live.status == LiveStatus.finished)
+                        Text('Finalizada • ${DateFormat('dd/MM HH:mm').format(live.endDate!)}', style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                    ],
                   ),
+
+                  const SizedBox(height: 16),
+
+                  // Título e descrição
+                  Text(live.title, style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey[900])),
+                  if (live.description?.isNotEmpty == true)
+                    Padding(padding: const EdgeInsets.only(top: 4), child: Text(live.description!, style: TextStyle(color: Colors.grey[600]), maxLines: 2, overflow: TextOverflow.ellipsis)),
+
+                  const SizedBox(height: 20),
+
+                  // Meta e progresso
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Meta: ${widget.currency.format(live.goalAmount / 100)}', style: const TextStyle(fontWeight: FontWeight.w600)),
+                      Text(widget.currency.format(totalFaturado), style: GoogleFonts.poppins(fontSize: 24, fontWeight: FontWeight.bold, color: live.goalAchieved ? Colors.green.shade700 : Colors.deepPurple)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  LinearProgressIndicator(
+                    value: progress,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: AlwaysStoppedAnimation(live.goalAchieved ? Colors.green : Colors.deepPurple),
+                    minHeight: 10,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        live.startDate != null
+                            ? 'Iniciada em ${widget.dateFormat.format(live.startDate!)}'
+                            : 'Agendada para ${widget.dateFormat.format(live.scheduledDate)}',
+                        style: TextStyle(color: Colors.grey[600], fontSize: 13),
+                      ),
+                      Icon(_expanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down, color: Colors.grey[600]),
+                    ],
+                  ),
+
+                  // Conteúdo expandido
+                  if (_expanded) ...[
+                    const Divider(height: 40),
+                    _buildExpansionContent(live: live, currency: widget.currency),
+                  ],
                 ],
               ),
-              const SizedBox(height: 36),
-              Row(
-                children: [
-                  Text('Meta: ${widget.currency.format(live.goalAmount / 100)}',
-                      style: const TextStyle(fontWeight: FontWeight.w600)),
-                  const Spacer(),
-                  Text(
-                    widget.currency.format(totalFaturado),
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: live.goalAchieved
-                          ? Colors.green.shade700
-                          : Colors.deepPurple,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Colors.grey[300],
-                valueColor: AlwaysStoppedAnimation(
-                    live.goalAchieved ? Colors.green : Colors.deepPurple),
-                minHeight: 8,
-                borderRadius: BorderRadius.circular(4),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    live.startDate != null
-                        ? 'Iniciada em ${widget.dateFormat.format(live.startDate!)}'
-                        : 'Agendada para ${widget.dateFormat.format(live.scheduledDate)}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
-                  ),
-                  Icon(_expanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down),
-                ],
-              ),
-              if (_expanded) ...[
-                const Divider(height: 32),
-                _buildExpansionContent(live: live, currency: widget.currency),
-              ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildExpansionContent(
-      {required Live live, required NumberFormat currency}) {
+  Widget _buildExpansionContent({required Live live, required NumberFormat currency}) {
     return FutureBuilder<List<Sale>>(
       future: getIt<ISaleRepository>().getAllSales(),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Padding(
-            padding: EdgeInsets.all(20),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
         final salesThisLive = snapshot.data!.where((sale) {
           final saleDate = sale.saleDate;
           final start = live.startDate;
           final end = live.endDate ?? DateTime.now();
-          return start != null &&
-              saleDate.isAfter(start.subtract(const Duration(minutes: 2))) &&
-              saleDate.isBefore(end.add(const Duration(minutes: 10)));
+          return start != null && saleDate.isAfter(start.subtract(const Duration(minutes: 2))) && saleDate.isBefore(end.add(const Duration(minutes: 10)));
         }).toList();
 
         if (salesThisLive.isEmpty) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Text(
-              'Nenhuma venda registrada nesta live',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-              textAlign: TextAlign.center,
-            ),
-          );
+          return const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Text('Nenhuma venda registrada nesta live', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic), textAlign: TextAlign.center));
         }
 
         final Map<String, List<Map<String, String>>> productSales = {};
         for (final sale in salesThisLive) {
           for (final item in sale.items) {
             final productName = item.productName;
-            final customerName =
-                sale.customerName.replaceAll(' (não cadastrado)', '');
+            final customerName = sale.customerName.replaceAll(' (não cadastrado)', '');
             final customerId = sale.customerId;
-
             productSales.putIfAbsent(productName, () => []);
-            productSales[productName]!
-                .add({'name': customerName, 'id': customerId});
+            productSales[productName]!.add({'name': customerName, 'id': customerId});
           }
         }
 
-        // Remove duplicatas por produto
         final uniqueProductSales = productSales.map((product, buyers) {
-          print(buyers);
           final unique = <String, Map<String, String>>{};
           for (var b in buyers) {
             final key = b['id']!.isNotEmpty ? b['id']! : b['name']!;
@@ -429,390 +360,79 @@ class _LiveCardCleanState extends State<_LiveCardClean> {
           return MapEntry(product, unique.values.toList());
         });
 
-        // Compradores únicos
-        final uniqueCustomers = <String>{};
-        for (final buyers in uniqueProductSales.values) {
-          for (final b in buyers) {
-            final key = b['id']!.isNotEmpty ? b['id']! : b['name']!;
-            uniqueCustomers.add(key);
-          }
-        }
+        final uniqueCustomers = uniqueProductSales.values.expand((e) => e).map((b) => b['id']!.isNotEmpty ? b['id']! : b['name']!).toSet();
 
         return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                  color: Colors.deepPurple.shade50,
-                  borderRadius: BorderRadius.circular(12)),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.deepPurple.shade50, borderRadius: BorderRadius.circular(16)),
               child: Row(
                 children: [
-                  const Icon(Icons.people_alt_outlined,
-                      color: Colors.deepPurple),
-                  const SizedBox(width: 10),
-                  Text(
-                    '${uniqueCustomers.length} comprador${uniqueCustomers.length != 1 ? 'es' : ''} único${uniqueCustomers.length > 1 ? 's' : ''}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
+                  const Icon(Icons.people_alt, color: Colors.deepPurple),
+                  const SizedBox(width: 12),
+                  Text('${uniqueCustomers.length} comprador${uniqueCustomers.length > 1 ? 'es' : ''} único${uniqueCustomers.length > 1 ? 's' : ''}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   const Spacer(),
-                  Text(
-                    'Total: ${currency.format(salesThisLive.fold(0.0, (sum, s) => sum + s.totalAmount))}',
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, color: Colors.green),
-                  ),
+                  Text('Total: ${currency.format(salesThisLive.fold(0.0, (sum, s) => sum + s.totalAmount))}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
                 ],
               ),
             ),
             const SizedBox(height: 16),
-            ...uniqueProductSales.entries.map((entry) {
-              final productName = entry.key;
-              final buyers = entry.value;
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.shopping_bag_outlined, size: 18),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: Text(productName,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 15))),
-                        Text(
-                            '${buyers.length} venda${buyers.length > 1 ? 's' : ''}'),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 6,
-                      children: buyers.map((buyer) {
-                        return CustomerChip(
-                          buyer: buyer,
-                          live: live,
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              );
-            }),
+            ...uniqueProductSales.entries.map((e) => Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.grey[50], borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.shopping_bag_outlined, color: Colors.deepPurple),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(e.key, style: GoogleFonts.poppins(fontWeight: FontWeight.w600))),
+                      Text('${e.value.length} venda${e.value.length > 1 ? 's' : ''}'),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Wrap(spacing: 8, runSpacing: 8, children: e.value.map((b) => CustomerChip(buyer: b, live: live)).toList()),
+                ],
+              ),
+            )),
           ],
         );
       },
     );
   }
-
-  List<Widget> _buildActions(BuildContext context, Live live) {
-    switch (live.status) {
-      case LiveStatus.scheduled:
-        return [
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.red),
-            onPressed: () => CustomDialog.show(
-              context: context,
-              title: 'Excluir?',
-              content: 'Não pode ser desfeito',
-              onConfirm: () =>
-                  widget.viewModel.handleIntent(DeleteLiveIntent(live.id)),
-            ),
-          ),
-          FilledButton.tonal(
-            onPressed: () {
-              widget.viewModel.handleIntent(StartLiveIntent(live.id));
-              context.push('/live-sale/${live.id}');
-            },
-            child: const Text('Iniciar'),
-          ),
-        ];
-      case LiveStatus.inProgress:
-        return [
-          FilledButton(
-              onPressed: () => context.push('/live-sale/${live.id}'),
-              child: const Text('Entrar na Live')),
-          const SizedBox(width: 8),
-          OutlinedButton(
-            onPressed: () => CustomDialog.show(
-              context: context,
-              title: 'Finalizar?',
-              content: 'Não poderá mais vender',
-              onConfirm: () =>
-                  widget.viewModel.handleIntent(FinishLiveIntent(live.id)),
-            ),
-            child: const Text('Finalizar', style: TextStyle(color: Colors.red)),
-          ),
-        ];
-      case LiveStatus.finished:
-        return [
-          Text(
-            'Finalizada em ${DateFormat('dd/MM HH:mm').format(live.endDate!)}',
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
-          )
-        ];
-    }
-  }
 }
 
-class CustomerChip extends StatefulWidget {
-  final Map<String, dynamic> buyer;
-  final Live live;
-
-  const CustomerChip({super.key, required this.buyer, required this.live});
-
-  @override
-  State<CustomerChip> createState() => _CustomerChipState();
-}
-
-class _CustomerChipState extends State<CustomerChip> {
-  Future<Customer?>? _customerFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    _customerFuture = _fetchCustomerData();
-  }
-
-  Future<Customer?> _fetchCustomerData() {
-    final name = widget.buyer['name'] as String;
-    final id = widget.buyer['id'] as String;
-    final customerRepo = getIt<ICustomerRepository>();
-    return customerRepo.getCustomersByIdOrInstagram(id, name);
-  }
-
-  CustomerTier _getTier(String? notes) {
-    final lowerCaseNotes = notes?.toLowerCase() ?? '';
-    if (lowerCaseNotes.contains('ouro')) return CustomerTier.gold;
-    if (lowerCaseNotes.contains('prata')) return CustomerTier.silver;
-    if (lowerCaseNotes.contains('bronze')) return CustomerTier.bronze;
-    return CustomerTier.none;
-  }
-
-  // Retorna o ícone para o tier
-  IconData _getTierIcon(CustomerTier tier) {
-    switch (tier) {
-      case CustomerTier.gold:
-        return Icons.emoji_events;
-      case CustomerTier.silver:
-        return Icons.military_tech;
-      case CustomerTier.bronze:
-        return Icons.workspace_premium;
-      default:
-        return Icons.person; // Não será usado se a lógica for correta
-    }
-  }
-
-  // Retorna a cor principal para o tier
-  Color _getTierColor(CustomerTier tier) {
-    switch (tier) {
-      case CustomerTier.gold:
-        return Colors.amber.shade700;
-      case CustomerTier.silver:
-        return Colors.blueGrey.shade500;
-      case CustomerTier.bronze:
-        return Colors.brown.shade500;
-      default:
-        return Colors.grey; // Cor padrão
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final live = widget.live;
-    return FutureBuilder<Customer?>(
-      future: _customerFuture,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Chip(
-            label: SizedBox(
-                width: 20, height: 10, child: LinearProgressIndicator()),
-          );
-        }
-
-        final fullCustomer = snapshot.data;
-        final notes = fullCustomer?.notes?.toLowerCase();
-        var type;
-        if (notes?.contains("ouro") == true) {
-          type = "cliente ouro";
-        } else if (notes?.contains("prata") == true) {
-          type = "cliente prata";
-        } else if (notes?.contains("bronze") == true) {
-          type = "cliente bronze";
-        }
-
-        final name = widget.buyer['name'] as String;
-        final isRegistered = (fullCustomer != null &&
-            fullCustomer.id.isNotEmpty &&
-            !fullCustomer.id.startsWith('temp_'));
-
-        String displayName;
-        if (isRegistered && (fullCustomer.instagram?.isNotEmpty ?? false)) {
-          // Se REGISTRADO e tem INSTAGRAM, usa o @instagram
-          displayName = '@${fullCustomer.instagram}';
-        } else {
-          // Senão, usa o nome original que veio do mapa 'buyer'
-          displayName = name;
-        }
-
-        final tier = _getTier(fullCustomer?.notes);
-        final isSpecialTier = tier != CustomerTier.none;
-
-        final IconData mainIcon;
-        final Color iconColor;
-        if (isSpecialTier) {
-          mainIcon = _getTierIcon(tier);
-          iconColor = _getTierColor(tier);
-        } else {
-          mainIcon = isRegistered ? Icons.person : Icons.person_add;
-          iconColor =
-              isRegistered ? Colors.green.shade700 : Colors.orange.shade700;
-        }
-          if(!isRegistered){
-            type= "cliente não cadastrado";
-          }
-        return GestureDetector(
-            onTap: () {
-              if (isRegistered && fullCustomer != null) {
-                showDialog(
-                    context: context,
-                    builder: (dialogContext) =>
-                        CustomerDetailsDialog(customer: fullCustomer));
-              } else if (live.status == LiveStatus.finished) {
-                // NAO CADASTRADO ABRE TELA DE EDICAO
-                String raw = name.replaceAll(' (não cadastrado)', '').trim();
-                String instagram = raw.startsWith('@') ? raw.substring(1) : raw;
-                instagram = instagram.split(' ').first;
-
-                final tempCustomer = Customer(
-                  id: '',
-                  name: raw.replaceAll('@', '').split(' ').first,
-                  instagram: instagram,
-                  cpf: '',
-                  email: '',
-                  phone: '',
-                  whatsapp: '',
-                  address: '',
-                  address1: null,
-                  address2: null,
-                  notes: null, // Notes é nulo para cliente temporário
-                );
-                context.push(AppRoutes.customerEdit, extra: tempCustomer);
-              }
-            },
-            child: SizedBox(
-              width: 410,
-              height: 80,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: iconColor.withOpacity(0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        mainIcon,
-                        size: 34,
-                        color: iconColor,
-                      ),
-                    ),
-                    const SizedBox(width: 18),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          displayName,
-                          textAlign: TextAlign.start,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                            letterSpacing: 0.2,
-                            color: Colors.grey.shade800,
-                          ),
-                        ),
-                        if (type != null)
-                          Text(
-                            type,
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: Colors.grey.shade500,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ));
-      },
-    );
-  }
-}
-
+// Status Badge (melhorado)
 class _StatusBadge extends StatelessWidget {
   final LiveStatus status;
   final bool isActive;
-
   const _StatusBadge({required this.status, required this.isActive});
 
   @override
   Widget build(BuildContext context) {
-    final config = {
-      LiveStatus.scheduled: (
-        text: 'Agendada',
-        color: Colors.orange,
-        icon: Icons.schedule
-      ),
-      LiveStatus.inProgress: (
-        text: 'Em Live',
-        color: Colors.green,
-        icon: Icons.circle
-      ),
-      LiveStatus.finished: (
-        text: 'Finalizada',
-        color: Colors.grey,
-        icon: Icons.check_circle
-      ),
-    }[status]!;
+    final Map<LiveStatus, ({String text, Color color, IconData icon})> config = {
+      LiveStatus.scheduled: (text: 'Agendada', color: Colors.orange.shade700, icon: Icons.schedule),
+      LiveStatus.inProgress: (text: 'AO VIVO', color: Colors.green.shade600, icon: Icons.circle),
+      LiveStatus.finished: (text: 'Finalizada', color: Colors.grey.shade600, icon: Icons.check_circle),
+    };
+
+    final c = config[status]!;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: config.color.withOpacity(isActive ? 0.2 : 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: isActive ? Border.all(color: config.color) : null,
+        color: c.color.withOpacity(isActive ? 0.2 : 0.1),
+        borderRadius: BorderRadius.circular(30),
+        border: isActive ? Border.all(color: c.color, width: 1.5) : null,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(config.icon, size: 14, color: config.color),
-          const SizedBox(width: 6),
-          Text(config.text,
-              style: TextStyle(
-                  color: config.color,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12)),
-        ],
-      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(c.icon, size: 16, color: c.color),
+        const SizedBox(width: 6),
+        Text(c.text, style: TextStyle(color: c.color, fontWeight: FontWeight.bold, fontSize: 13)),
+      ]),
     );
   }
 }

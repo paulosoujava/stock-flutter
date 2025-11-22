@@ -167,113 +167,105 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildActionsTab(BuildContext context, HomeState? state) {
-    final String formattedDate =
-        DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(DateTime.now());
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          padding: const EdgeInsets.fromLTRB(22, 24, 22, 6),
-          child: const Text(
-            "Olá, seja bem-vindo 👋",
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(22, 0, 22, 16),
-          child: Text(
-            "Hoje é $formattedDate. O que deseja fazer?",
-            style: const TextStyle(
-              fontSize: 15,
-              color: Colors.black54,
-            ),
-          ),
-        ),
-        if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: LowStockAlertCard(
-              lowStockInfoList: state.lowStockInfo,
-            ),
-          ),
-        if (state is HomeErrorState)
-          Padding(
-            padding: const EdgeInsets.all(6),
-            child: Text(
-              state.errorMessage,
-              style: const TextStyle(color: Colors.red, fontSize: 16),
-              textAlign: TextAlign.center,
-            ),
-          ),
-        Divider(),
-        const SizedBox(height: 10),
-        // Substitua o trecho selecionado por este:
-        Expanded(
-          child: Column(
-            children: [
-              SingleChildScrollView(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 22),
-                  child: GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 22,
-                      mainAxisSpacing: 22,
-                      mainAxisExtent: 180,
-                    ),
-                    itemCount: _actionItems.length,
-                    itemBuilder: (context, index) {
-                      final item = _actionItems[index];
+    final String formattedDate = DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(DateTime.now());
 
-                      VoidCallback onTapAction;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          children: [
+            // ================== CABEÇALHO FIXO ==================
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(22, 24, 22, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Olá, seja bem-vindo",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Hoje é $formattedDate. O que deseja fazer?",
+                    style: const TextStyle(fontSize: 15, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+
+            // ================== ALERTA DE ESTOQUE BAIXO (OPCIONAL) ==================
+            if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: LowStockAlertCard(lowStockInfoList: state.lowStockInfo),
+              ),
+
+            if (state is HomeErrorState)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  state.errorMessage,
+                  style: const TextStyle(color: Colors.red, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+
+            const Divider(height: 1),
+
+            // ================== GRID DE AÇÕES (OCUPA O RESTANTE E ROLA) ==================
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(22),
+                child: GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 22,
+                    mainAxisSpacing: 22,
+                    mainAxisExtent: 180,
+                  ),
+                  itemCount: _actionItems.length,
+                  itemBuilder: (context, index) {
+                    final item = _actionItems[index];
+                    Future<void> onTapAction() async {
                       if (item.title == 'Produtos' ||
                           item.title == 'Categorias' ||
                           item.title == 'Clientes' ||
                           item.title == 'Vendas') {
-                        onTapAction = () async {
-                          await context.push(item.route);
-                          _viewModel.handleIntent(LoadInitialDataIntent());
-                        };
+                        await context.push(item.route);
+                        _viewModel.handleIntent(LoadInitialDataIntent());
                       } else {
-                        onTapAction = () => context.push(item.route);
+                        context.push(item.route);
                       }
+                    }
 
-                      return ActionCard(
-                        title: item.title,
-                        description: item.description,
-                        icon: item.icon,
-                        iconColor: item.iconColor,
-                        onTap: onTapAction,
-                      );
-                    },
-                  ),
+                    return ActionCard(
+                      title: item.title,
+                      description: item.description,
+                      icon: item.icon,
+                      iconColor: item.iconColor,
+                      onTap: onTapAction,
+                    );
+                  },
                 ),
               ),
-              Expanded(
-                child: Align(
-                  alignment: Alignment.bottomCenter,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      "Versão 1.0.0",
-                      style: TextStyle(
-                        color: Colors.grey.shade600,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ),
+            ),
+
+            // ================== RODAPÉ COM VERSÃO ==================
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: const Center(
+                child: Text(
+                  "Versão 1.0.0",
+                  style: TextStyle(color: Colors.grey, fontSize: 14),
                 ),
               ),
-            ],
-          ),
-        ),
-
-      ],
+            ),
+          ],
+        );
+      },
     );
   }
 
