@@ -58,7 +58,7 @@ Future<void> main() async {
       await windowManager.show();
       await windowManager.focus();
 
-      // AQUI É O SEGREDO NO MACOS:
+      //  NO MACOS:
       // Espera um frame antes de maximizar → evita o "Resize timed out"
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 100));

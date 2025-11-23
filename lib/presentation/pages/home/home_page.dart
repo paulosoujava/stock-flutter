@@ -173,25 +173,7 @@ class _HomePageState extends State<HomePage> {
       builder: (context, constraints) {
         return Column(
           children: [
-            // ================== CABEÇALHO FIXO ==================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(22, 24, 22, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    "Olá, seja bem-vindo",
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    "Hoje é $formattedDate. O que deseja fazer?",
-                    style: const TextStyle(fontSize: 15, color: Colors.black54),
-                  ),
-                ],
-              ),
-            ),
+
 
             // ================== ALERTA DE ESTOQUE BAIXO (OPCIONAL) ==================
             if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)

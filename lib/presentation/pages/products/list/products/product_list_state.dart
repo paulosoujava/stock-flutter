@@ -4,12 +4,16 @@ import 'package:stock/domain/entities/product/product.dart';
 abstract class ProductListState {}
 
 /// Estado enquanto os dados dos produtos estão sendo buscados.
-class ProductListLoading extends ProductListState {}
+class ProductListLoading extends ProductListState {
+
+}
 
 /// Estado de sucesso, quando a lista de produtos é carregada.
 class ProductListLoaded extends ProductListState {
-  final List<Product> products;
-  ProductListLoaded(this.products);
+  final List<Product> allProducts;
+  final List<Product> displayedProducts;
+
+  ProductListLoaded({required this.allProducts, required this.displayedProducts});
 }
 
 /// Estado de erro, caso algo falhe na busca dos produtos.
@@ -17,3 +21,4 @@ class ProductListError extends ProductListState {
   final String message;
   ProductListError(this.message);
 }
+

@@ -6,6 +6,8 @@ import 'package:stock/domain/usecases/products/get_products_by_category.dart';
 import 'package:stock/presentation/pages/products/list/products/product_list_intent.dart';
 import 'package:stock/presentation/pages/products/list/products/product_list_state.dart';
 
+import '../../../../../domain/entities/product/product.dart';
+
 @injectable
 class ProductListViewModel {
   final GetProductsByCategory _getProductsByCategory;
@@ -13,7 +15,7 @@ class ProductListViewModel {
   late final StreamSubscription _eventBusSubscription;
 
   final _stateController = StreamController<ProductListState>.broadcast();
-
+  List<Product> _originalProducts = [];
   Stream<ProductListState> get state => _stateController.stream;
   late String idCategory;
 
@@ -28,6 +30,16 @@ class ProductListViewModel {
       _loadProducts(intent.categoryId);
     } else if (intent is DeleteProductIntent) {
       await _deleteProductById(intent.productId);
+    }else if (intent is SearchProducts) {
+      final searchTerm = intent.searchTerm.toLowerCase();
+      final filteredList = _originalProducts.where((product) {
+        return product.name.toLowerCase().contains(searchTerm);
+      }).toList();
+
+      _stateController.add(ProductListLoaded(
+        allProducts: _originalProducts,
+        displayedProducts: filteredList,
+      ));
     }
   }
 
@@ -37,7 +49,11 @@ class ProductListViewModel {
     _stateController.add(ProductListLoading());
     try {
       final products = await _getProductsByCategory(categoryId);
-      _stateController.add(ProductListLoaded(products));
+      _originalProducts = products;
+      _stateController.add(ProductListLoaded(
+        allProducts: _originalProducts,
+        displayedProducts: _originalProducts,
+      ));
     } catch (e) {
       _stateController.add(ProductListError("Falha ao carregar produtos."));
     }

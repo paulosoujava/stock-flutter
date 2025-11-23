@@ -12,3 +12,8 @@ class DeleteProductIntent extends ProductListIntent {
   final String productId;
   DeleteProductIntent(this.productId);
 }
+
+class SearchProducts extends ProductListIntent {
+  final String searchTerm;
+  SearchProducts(this.searchTerm);
+}

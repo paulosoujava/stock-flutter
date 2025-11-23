@@ -26,6 +26,7 @@ class ProductListPage extends StatefulWidget {
 
 class _ProductListPageState extends State<ProductListPage> {
   late final ProductListViewModel _viewModel;
+  final _searchController = TextEditingController();
 
 
   @override
@@ -33,16 +34,19 @@ class _ProductListPageState extends State<ProductListPage> {
     super.initState();
     _viewModel = getIt<ProductListViewModel>();
     _loadProducts();
+    _searchController.addListener(() {
+      _viewModel.handleIntent(SearchProducts(_searchController.text));
+    });
   }
 
   void _loadProducts() {
     _viewModel.handleIntent(LoadProducts(widget.category.id));
   }
 
-
   @override
   void dispose() {
     _viewModel.dispose();
+    _searchController.dispose(); // <-- Limpa o controller
     super.dispose();
   }
 
@@ -95,16 +99,43 @@ class _ProductListPageState extends State<ProductListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.category.name),
-          actions: [
-            IconButton(
-                icon: const Icon(Icons.add),
-                tooltip: 'Cadastrar produto em categoria',
-                onPressed:_navigateToCreateProduct),
-            SizedBox(
-              width: 20,
-            )
-          ]
+        actions: [
+          IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Cadastrar produto em categoria',
+              onPressed: _navigateToCreateProduct),
+          SizedBox(
+            width: 20,
+          )
+        ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(kToolbarHeight),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Buscar produto...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                  borderSide: BorderSide.none,
+                ),
+                filled: true,
+                contentPadding: EdgeInsets.zero,
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                  },
+                )
+                    : null,
+              ),
+            ),
+          ),
+        ),
+
       ),
       body: StreamBuilder<ProductListState>(
         stream: _viewModel.state,
@@ -120,13 +151,24 @@ class _ProductListPageState extends State<ProductListPage> {
           }
 
           if (state is ProductListLoaded) {
-            if (state.products.isEmpty) {
+            // Se a lista *original* estiver vazia, mostre o estado de vazio
+            if (state.allProducts.isEmpty) {
               return _buildEmptyState();
             }
+
+            // Se a busca não retornou resultados, mostre uma mensagem
+            if (state.displayedProducts.isEmpty && _searchController.text.isNotEmpty) {
+              return Center(
+                child: Text('Nenhum produto encontrado para "${_searchController.text}"'),
+              );
+            }
+
+            // --- Lógica de filtro foi removida daqui ---
+
             return ListView.builder(
-              itemCount: state.products.length,
+              itemCount: state.displayedProducts.length, // <-- Usa a lista do estado
               itemBuilder: (context, index) {
-                final product = state.products[index];
+                final product = state.displayedProducts[index]; // <-- Usa a lista do estado
                 return ProductCard(
                   product: product,
                   onEdit: () => _navigateToEditProduct(product),
@@ -138,9 +180,9 @@ class _ProductListPageState extends State<ProductListPage> {
           return const SizedBox.shrink();
         },
       ),
-
     );
   }
+
 
   Widget _buildEmptyState() {
     return Center(
@@ -171,7 +213,7 @@ class _ProductListPageState extends State<ProductListPage> {
                 backgroundColor: Colors.deepPurple,
                 foregroundColor: Colors.white,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               onPressed: _navigateToCreateProduct,
             ),
