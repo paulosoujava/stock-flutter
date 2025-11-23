@@ -45,8 +45,8 @@ Future<void> main() async {
     await windowManager.ensureInitialized();
 
     WindowOptions windowOptions = const WindowOptions(
-      minimumSize: Size(850, 750),
-      size: Size(1280, 720),        // tamanho inicial decente
+      minimumSize: Size(1480, 780),
+      size: Size(1480, 780),
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
@@ -62,7 +62,7 @@ Future<void> main() async {
       // Espera um frame antes de maximizar → evita o "Resize timed out"
       WidgetsBinding.instance.addPostFrameCallback((_) async {
         await Future.delayed(const Duration(milliseconds: 100));
-        await windowManager.maximize();
+        //await windowManager.maximize();
         // ou: await windowManager.setFullScreen(true); // se quiser tela cheia total
       });
     });

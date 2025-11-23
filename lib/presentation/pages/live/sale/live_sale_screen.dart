@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/presentation/pages/live/sale/widget/customer_chip.dart';
+import '../../raffle/raffle_screen.dart';
 import '../list/live_list_intent.dart';
 import '../list/live_list_screen.dart.dart';
 import '../list/live_list_view_model.dart';
@@ -255,6 +256,29 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                         ),
                       ),*/
                   ],
+                ),
+                IconButton(
+                  tooltip: 'Sortear brinde entre os compradores',
+                  icon:  Icon(Icons.card_giftcard, color: state.orders.isEmpty ? Colors.black12 : Colors.deepPurple),
+                  onPressed: state.orders.isEmpty
+                      ? null
+                      : () async {
+                    // Extrai todos os compradores únicos
+                    final uniqueBuyers = state.orders
+                        .expand((o) => o.customers)
+                        .toSet()
+                        .map((c) => {'id': c.id, 'name': c.name})
+                        .toList();
+
+                    if (uniqueBuyers.isEmpty) return;
+
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RaffleScreen(buyers: uniqueBuyers),
+                      ),
+                    );
+                  },
                 ),
                 TextButton.icon(
                   onPressed: () =>
