@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/src/intl/number_format.dart';
 import 'package:stock/domain/entities/sale/sale.dart';
 import 'package:stock/presentation/pages/sales/sales_view_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../../core/navigation/app_routes.dart';
 import '../../../../../domain/entities/customer/customer.dart';
@@ -196,24 +197,75 @@ void showDeletedCustomer(BuildContext context, Sale sale){
 // POPUP HISTÓRICO
 // ===============================================================
 void openSaleHistory(BuildContext context, Sale sale, NumberFormat currency) {
+  // --- 2. CRIAR FUNÇÃO PARA ABRIR WHATSAPP ---
+  void _sendWhatsAppMessage() async {
+    // Monta a mensagem de texto
+    String messageText = 'Olá ${sale.customerName}! Segue o resumo da sua compra:\n\n';
+
+    double subtotal = 0;
+    for (var item in sale.items) {
+      final itemTotal = item.quantity * item.pricePerUnit;
+      subtotal += itemTotal;
+      messageText +=
+      '🛍️ *${item.productName}*\n(${item.quantity}x ${currency.format(item.pricePerUnit)}) = *${currency.format(itemTotal)}*\n';
+      if ((item.discount ?? 0) > 0) {
+        messageText += '  (Desconto de ${item.discount}%)\n';
+      }
+    }
+    messageText += '\n-------------------\n';
+    messageText += '*Subtotal:* ${currency.format(subtotal)}\n';
+
+    if ((sale.globalDiscount ?? 0) > 0) {
+      messageText += '*Desconto Global:* ${sale.globalDiscount}%\n';
+    }
+
+    // O total já vem calculado na entidade `Sale`, vamos usá-lo.
+    messageText += '*Total a Pagar:* *${currency.format(sale.totalAmount)}*\n\n';
+    messageText += 'Agradecemos a preferência! 😊';
+
+    // Codifica a mensagem para a URL
+    final encodedMessage = Uri.encodeComponent(messageText);
+
+    // Tenta abrir o WhatsApp.
+    // O ideal seria ter o número do cliente salvo.
+    // Como não temos certeza, a URL não incluirá o número,
+    // o que fará o WhatsApp pedir para o usuário escolher um contato.
+    final uri = Uri.parse('https://wa.me/?text=$encodedMessage');
+
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      // Se não conseguir abrir, mostra um erro.
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.red,
+            content: Text('Não foi possível abrir o WhatsApp. Verifique se ele está instalado.'),
+          ),
+        );
+      }
+    }
+  }
+
   showDialog(
     context: context,
     builder: (ctx) {
       return AlertDialog(
-        shape:
-        RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        // ... (shape, backgroundColor, surfaceTintColor, title - sem alterações) ...
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
         title: Row(
           children: [
-            const Icon(Icons.receipt_long,
-                color: Colors.deepPurple, size: 26),
+            const Icon(Icons.receipt_long, color: Colors.deepPurple, size: 26),
             const SizedBox(width: 10),
             Text("Histórico da Venda",
                 style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold, fontSize: 19)),
           ],
         ),
+
+        // --- CONTENT (SEM ALTERAÇÕES) ---
         content: ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.75,
@@ -234,8 +286,7 @@ void openSaleHistory(BuildContext context, Sale sale, NumberFormat currency) {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.discount,
-                            color: Colors.green, size: 22),
+                        const Icon(Icons.discount, color: Colors.green, size: 22),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
@@ -289,12 +340,15 @@ void openSaleHistory(BuildContext context, Sale sale, NumberFormat currency) {
             ),
           ),
         ),
+
+
         actions: [
+
           TextButton(
             onPressed: () => Navigator.pop(ctx),
             child: Text("Fechar",
-                style: GoogleFonts.poppins(color: Colors.deepPurple)),
-          )
+                style: GoogleFonts.poppins(color: Colors.grey.shade700)),
+          ),
         ],
       );
     },

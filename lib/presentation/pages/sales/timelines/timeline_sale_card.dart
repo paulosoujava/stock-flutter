@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:stock/data/model/delivery.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/di/injection.dart';
+import '../../../../domain/entities/customer/customer.dart';
 import '../../../../domain/entities/sale/sale.dart';
 import '../report/sales_report_view_model.dart';
 import '../widgets/action_cars.dart';
@@ -148,6 +150,7 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
 
     final delivery = snapshot?.data;
 
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -289,7 +292,88 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
               ),
               Row(
                 children: [
-                  // Oculta o botão de entrega se for venda na loja
+                  if (!isStoreSale && widget.sale.isCanceled == null)
+                  ActionButton(
+                    icon: Icons.message,
+                    tooltip: "WhatsApp",
+                    onPressed: () async {
+                      final deliveryData = await _viewModel.fetchDeliveryData(widget.sale.id);
+                      final Customer? customer = await _viewModel.getCustomerByIdOrInstagram(
+                          widget.sale.customerId, widget.sale.customerName);
+
+                      if (customer == null || deliveryData == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Cliente ou dados de entrega não encontrados.')),
+                        );
+                        return;
+                      }
+
+                      final phone = customer.phone?.replaceAll(RegExp(r'[^0-9]'), '');
+                      if (phone == null || phone.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Telefone do cliente não encontrado.')),
+                        );
+                        return;
+                      }
+
+                      // Código do país (Brasil)
+                      final fullPhoneNumber = phone.startsWith('55') ? phone : '55$phone';
+
+                      String message;
+                      bool podeEnviar = true;
+
+                      switch (deliveryData.status.trim()) {
+                        case 'Saiu para entrega':
+                          message =
+                          'Olá, ${customer.name}, sua compra *saiu para entrega*! '
+                              'O entregador *${deliveryData.courierName}* está a caminho.\n'
+                              'Endereço de entrega: ${deliveryData.addressId}';
+                          break;
+
+                        case 'Retornou':
+                          message =
+                          'Olá, ${customer.name}, informamos que seu pedido *retornou* para nossa loja. '
+                              'Entraremos em contato em breve para combinar uma nova tentativa de entrega ou esclarecer o motivo do retorno.\n'
+                              'Qualquer dúvida, é só nos chamar!';
+                          break;
+
+                        default:
+                          podeEnviar = false;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              backgroundColor: Colors.orange[700],
+                              content: Text(
+                                'O status atual do delivery é "${deliveryData.status}". '
+                                    'Mensagem automática só é enviada quando está "Saiu para entrega" ou "Retornou".',
+                              ),
+                            ),
+                          );
+                          return; // Não abre o WhatsApp
+                      }
+
+                      if (!podeEnviar) return;
+
+                      final whatsappUri = Uri.parse(
+                        'https://wa.me/$fullPhoneNumber?text=${Uri.encodeComponent(message)}',
+                      );
+
+                      try {
+                        final bool launched = await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+                        if (!launched) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Não foi possível abrir o WhatsApp.')),
+                          );
+                        }
+                      } catch (e) {
+                        print('Erro ao abrir WhatsApp: $e');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Erro ao abrir o WhatsApp.')),
+                        );
+                      }
+                    },
+                    color: Colors.green,
+                  ),
+                  const SizedBox(width: 4),
                   if (!isStoreSale && widget.sale.isCanceled == null)
                     ActionButton(
                       icon: Icons.delivery_dining,

@@ -23,8 +23,6 @@ class Sale extends HiveObject {
   final String sellerId;
   @HiveField(7)
   final String sellerName;
-
-  // CAMPOS NOVOS: devem ser OPCIONAIS
   @HiveField(8)
   final int? globalDiscount;
   @HiveField(9)
@@ -36,6 +34,9 @@ class Sale extends HiveObject {
 
   @HiveField(12)
   DeliveryInfo? delivery;
+
+  @HiveField(13)
+  final String? liveId;
 
   Sale({
     required this.id,
@@ -51,10 +52,12 @@ class Sale extends HiveObject {
     this.globalDescription,
     this.isCanceled,
     this.cancelReason,
+    this.liveId,
   });
 
   Sale copyWith({
     String? id,
+    String? liveId,
     String? customerId,
     String? customerName,
     DateTime? saleDate,
@@ -70,6 +73,7 @@ class Sale extends HiveObject {
   }) {
     return Sale(
       id: id ?? this.id,
+      liveId: liveId ?? this.liveId,
       customerId: customerId ?? this.customerId,
       delivery: delivery ?? this.delivery,
       customerName: customerName ?? this.customerName,
@@ -89,6 +93,7 @@ class Sale extends HiveObject {
   @override
   String toString() {
     return 'Sale(id: $id, '
+        'liveId: $liveId,'
         'customer: $customerName,'
         ' total: $totalAmount,'
         ' discount: $globalDiscount,'

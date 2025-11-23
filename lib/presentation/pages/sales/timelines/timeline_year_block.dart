@@ -138,7 +138,7 @@ class _TimelineYearBlockState extends State<TimelineYearBlock> {
                     onHistory: widget.onHistory,
                     onCancel: widget.onCancel,
                     onRegisterDelivery: widget
-                        .onRegisterDelivery, // ← Passa diretamente (tipo alinhado)
+                        .onRegisterDelivery,
                   );
                 }),
               ],

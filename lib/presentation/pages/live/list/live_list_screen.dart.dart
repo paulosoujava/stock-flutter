@@ -329,17 +329,22 @@ class _LiveCardModernState extends State<_LiveCardModern> {
       builder: (context, snapshot) {
         if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
-        final salesThisLive = snapshot.data!.where((sale) {
-          final saleDate = sale.saleDate;
-          final start = live.startDate;
-          final end = live.endDate ?? DateTime.now();
-          return start != null && saleDate.isAfter(start.subtract(const Duration(minutes: 2))) && saleDate.isBefore(end.add(const Duration(minutes: 10)));
-        }).toList();
+        final salesThisLive = snapshot.data!
+            .where((sale) => sale.liveId == live.id)  // ← SÓ USA liveId, sem fallback
+            .toList();
 
         if (salesThisLive.isEmpty) {
-          return const Padding(padding: EdgeInsets.symmetric(vertical: 24), child: Text('Nenhuma venda registrada nesta live', style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic), textAlign: TextAlign.center));
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Text(
+              'Nenhuma venda registrada nesta live',
+              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
+            ),
+          );
         }
 
+        // === resto do código 100% igual (agrupamento, chips, etc) ===
         final Map<String, List<Map<String, String>>> productSales = {};
         for (final sale in salesThisLive) {
           for (final item in sale.items) {
@@ -360,7 +365,10 @@ class _LiveCardModernState extends State<_LiveCardModern> {
           return MapEntry(product, unique.values.toList());
         });
 
-        final uniqueCustomers = uniqueProductSales.values.expand((e) => e).map((b) => b['id']!.isNotEmpty ? b['id']! : b['name']!).toSet();
+        final uniqueCustomers = uniqueProductSales.values
+            .expand((e) => e)
+            .map((b) => b['id']!.isNotEmpty ? b['id']! : b['name']!)
+            .toSet();
 
         return Column(
           children: [
@@ -371,9 +379,11 @@ class _LiveCardModernState extends State<_LiveCardModern> {
                 children: [
                   const Icon(Icons.people_alt, color: Colors.deepPurple),
                   const SizedBox(width: 12),
-                  Text('${uniqueCustomers.length} comprador${uniqueCustomers.length > 1 ? 'es' : ''} único${uniqueCustomers.length > 1 ? 's' : ''}', style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
+                  Text('${uniqueCustomers.length} comprador${uniqueCustomers.length > 1 ? 'es' : ''} único${uniqueCustomers.length > 1 ? 's' : ''}',
+                      style: GoogleFonts.poppins(fontWeight: FontWeight.bold)),
                   const Spacer(),
-                  Text('Total: ${currency.format(salesThisLive.fold(0.0, (sum, s) => sum + s.totalAmount))}', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                  Text('Total: ${currency.format(salesThisLive.fold(0.0, (sum, s) => sum + s.totalAmount))}',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
                 ],
               ),
             ),

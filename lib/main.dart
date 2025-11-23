@@ -111,6 +111,7 @@ Future<void> clearBD()async {
   await Hive.deleteBoxFromDisk('liveBox');
   await Hive.deleteBoxFromDisk('saleBox');
   await Hive.deleteBoxFromDisk('productBox');
+  await Hive.deleteBoxFromDisk('categoryBox');
   //await fakeClients();
 }
 Future<void> fakeClients() async {

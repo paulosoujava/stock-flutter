@@ -170,6 +170,7 @@ class LiveSaleViewModel {
                 customerId: customer.id.startsWith('temp_') ? '' : customer.id,
                 customerName: customer.name.replaceAll(' (não cadastrado)', ''),
                 saleDate: DateTime.now(),
+                liveId: current.live.id,
                 items: [
                   SaleItem(
                     productId: order.product.id,
