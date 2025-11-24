@@ -55,7 +55,6 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
       builder: (context, snapshot) {
         final state = snapshot.data ?? LiveSaleLoading();
 
-
         if (state is LiveSaleFinished) {
           // Força o pop e recarrega a lista imediatamente
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -69,7 +68,18 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
             }
           });
         }
-
+        if (state is LiveSaleMessage) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: Colors.red.shade700,
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          });
+        }
         if (state is LiveSaleLoading) {
           return const Scaffold(
               body: Center(child: CircularProgressIndicator()));
@@ -259,26 +269,30 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                 ),
                 IconButton(
                   tooltip: 'Sortear brinde entre os compradores',
-                  icon:  Icon(Icons.card_giftcard, color: state.orders.isEmpty ? Colors.black12 : Colors.deepPurple),
+                  icon: Icon(Icons.card_giftcard,
+                      color: state.orders.isEmpty
+                          ? Colors.black12
+                          : Colors.deepPurple),
                   onPressed: state.orders.isEmpty
                       ? null
                       : () async {
-                    // Extrai todos os compradores únicos
-                    final uniqueBuyers = state.orders
-                        .expand((o) => o.customers)
-                        .toSet()
-                        .map((c) => {'id': c.id, 'name': c.name})
-                        .toList();
+                          // Extrai todos os compradores únicos
+                          final uniqueBuyers = state.orders
+                              .expand((o) => o.customers)
+                              .toSet()
+                              .map((c) => {'id': c.id, 'name': c.name})
+                              .toList();
 
-                    if (uniqueBuyers.isEmpty) return;
+                          if (uniqueBuyers.isEmpty) return;
 
-                    await Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => RaffleScreen(buyers: uniqueBuyers),
-                      ),
-                    );
-                  },
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  RaffleScreen(buyers: uniqueBuyers),
+                            ),
+                          );
+                        },
                 ),
                 TextButton.icon(
                   onPressed: () =>
@@ -515,8 +529,30 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         p.stockQuantity <= p.lowStockThreshold;
 
                                     return InkWell(
-                                      onTap: () =>
-                                          _vm.add(SelectProductIntent(p)),
+                                      key: ValueKey('${p.id}_${p.stockQuantity}'),
+                                      onTap: () {
+                                        // CALCULA ESTOQUE REAL EM TEMPO REAL (considerando vendas já feitas)
+                                        final sold = state.orders
+                                            .where((o) => o.product.id == p.id)
+                                            .fold(0, (sum, o) => sum + o.customers.length);
+
+                                        final remaining = p.stockQuantity - sold;
+
+                                        if (remaining <= 0) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text("Produto ${p.name} esgotado!"),
+                                              backgroundColor: Colors.red.shade700,
+                                              behavior: SnackBarBehavior.floating,
+                                              duration: const Duration(seconds: 3),
+                                            ),
+                                          );
+                                          return; // BLOQUEIA TOTALMENTE
+                                        }
+
+                                        // Só chega aqui se tiver estoque
+                                        _vm.add(SelectProductIntent(p));
+                                      },
                                       borderRadius: BorderRadius.circular(16),
                                       // O Builder foi removido. O Card agora é o filho direto do InkWell.
                                       child: Card(
@@ -817,6 +853,45 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                               color: Colors.white),
                                           overflow: TextOverflow.ellipsis,
                                         ),
+                                        // CONTADOR DE ESTOQUE QUE ATUALIZA EM TEMPO REAL (StreamBuilder interno)
+                                        StreamBuilder<LiveSaleState>(
+                                          stream: _vm.state,
+                                          builder: (context, snapshot) {
+                                            final currentState = snapshot.data
+                                                    as LiveSaleLoaded? ??
+                                                state;
+
+                                            final vendidos = currentState.orders
+                                                .where((o) =>
+                                                    o.product.id ==
+                                                    state.selectedProduct!.id)
+                                                .fold<int>(
+                                                    0,
+                                                    (sum, o) =>
+                                                        sum +
+                                                        o.customers.length);
+
+                                            final restantes = state
+                                                    .selectedProduct!
+                                                    .stockQuantity -
+                                                vendidos;
+
+                                            final cor = restantes <= 0
+                                                ? Colors.redAccent
+                                                : restantes <= 3
+                                                    ? Colors.orangeAccent
+                                                    : Colors.white70;
+
+                                            return Text(
+                                              "Estoque: $restantes",
+                                              style: GoogleFonts.poppins(
+                                                fontSize: 15,
+                                                color: cor,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            );
+                                          },
+                                        ),
                                         Text(
                                           state.currency.format(
                                               state.selectedProduct!.salePrice),
@@ -1027,8 +1102,7 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                           };
                                           return CustomerChip(
                                               buyer: buyerMap,
-                                             live: state.live
-                                          );
+                                              live: state.live);
                                         }).toList(),
                                       ),
                                       if (totalDiscount > 0)

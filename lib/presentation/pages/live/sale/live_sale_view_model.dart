@@ -34,13 +34,13 @@ class LiveSaleViewModel {
   List<Product> _allProducts = [];
 
   LiveSaleViewModel(
-      this._liveRepo,
-      this._customerRepo,
-      this._saveSale,
-      this._updateProduct,
-      this._getUser,
-      this._finishLive,
-      );
+    this._liveRepo,
+    this._customerRepo,
+    this._saveSale,
+    this._updateProduct,
+    this._getUser,
+    this._finishLive,
+  );
 
   void add(LiveSaleIntent intent) async {
     final current = _state.value;
@@ -73,6 +73,29 @@ class LiveSaleViewModel {
       case SearchInstagramIntent:
         final text = current.instagramController.text.trim().toLowerCase();
         if (text.isEmpty) return;
+
+        // Validação 1: Verificar se um produto está selecionado
+        if (current.selectedProduct == null) {
+          _emitMessage(current, "Selecione um produto primeiro!");
+          current.instagramController.clear();
+          return;
+        }
+
+        // Validação 2: Verificar o estoque
+        if (current.currentCustomers.length >=
+            current.selectedProduct!.stockQuantity) {
+          _emitMessage(current, "Estoque do produto esgotado.");
+          current.instagramController.clear();
+          return;
+        }
+
+        // Validação 3: Verificar cliente duplicado
+        if (current.currentCustomers
+            .any((customer) => customer.instagram == text)) {
+          _emitMessage(current, "Cliente @$text já foi adicionado.");
+          current.instagramController.clear();
+          return;
+        }
 
         final customer = await _customerRepo.getCustomerByInstagram(text);
         final newList = List<Customer>.from(current.currentCustomers);
@@ -117,16 +140,38 @@ class LiveSaleViewModel {
           _state.add(current.copyWith(selectedProduct: productIntent.product));
         }
         break;
-
       case AddOrderIntent:
-        if (current.selectedProduct == null || current.currentCustomers.isEmpty) return;
+        if (current.selectedProduct == null || current.currentCustomers.isEmpty) break;
+
+        final product = current.selectedProduct!;
+        final alreadySold = current.orders
+            .where((o) => o.product.id == product.id)
+            .fold(0, (sum, o) => sum + o.customers.length);
+
+        final sellingNow = current.currentCustomers.length;
+
+        if (alreadySold + sellingNow > product.stockQuantity) {
+          _emitMessage(current, "Not enough stock! Only ${product.stockQuantity - alreadySold} left.");
+          break;
+        }
 
         final newOrders = List<LiveOrder>.from(current.orders);
         newOrders.add(LiveOrder(
-          product: current.selectedProduct!,
-          individualDiscount: current.individualDiscount,
+          product: product,
+          discountPercent: current.discountPercent,
           customers: List.from(current.currentCustomers),
         ));
+
+        // UPDATE STOCK IN THE PRODUCT LIST (forces new object + rebuild)
+        final updatedProducts = current.products.map((p) {
+          if (p.id == product.id) {
+            final totalSoldNow = newOrders
+                .where((o) => o.product.id == p.id)
+                .fold(0, (sum, o) => sum + o.customers.length);
+            return p.copyWith(stockQuantity: product.stockQuantity - (totalSoldNow - alreadySold));
+          }
+          return p.copyWith(); // forces new instance even if unchanged
+        }).toList();
 
         current.instagramController.clear();
 
@@ -135,13 +180,37 @@ class LiveSaleViewModel {
           currentCustomers: [],
           clearSelectedProduct: true,
           orders: newOrders,
+          products: updatedProducts,
         ));
         break;
-
       case RemoveOrderIntent:
-        final newOrders = List<LiveOrder>.from(current.orders)
-          ..removeAt((intent as RemoveOrderIntent).index);
-        _state.add(current.copyWith(orders: newOrders));
+        final index = (intent as RemoveOrderIntent).index;
+        final orderToRemove = current.orders[index];
+
+        // 1. Remove o pedido da lista
+        final newOrders = List<LiveOrder>.from(current.orders)..removeAt(index);
+
+        // 2. Recalcula o estoque VISÍVEL no grid corretamente
+        final updatedProducts = current.products.map((p) {
+          if (p.id == orderToRemove.product.id) {
+            // Quantas unidades desse produto ainda estão vendidas (após remoção)
+            final stillSold = newOrders
+                .where((o) => o.product.id == p.id)
+                .fold(0, (sum, o) => sum + o.customers.length);
+
+            // Estoque original - o que ainda está vendido = estoque disponível agora
+            final originalStock = p.stockQuantity + orderToRemove.customers.length; // devolve o que foi removido
+            final newVisibleStock = originalStock - stillSold;
+
+            return p.copyWith(stockQuantity: newVisibleStock);
+          }
+          return p;
+        }).toList();
+
+        _state.add(current.copyWith(
+          orders: newOrders,
+          products: updatedProducts,
+        ));
         break;
 
       case SetGlobalDiscountIntent:
@@ -151,7 +220,8 @@ class LiveSaleViewModel {
 
       case SetIndividualDiscountIntent:
         final newValue = (intent as SetIndividualDiscountIntent).value;
-        _state.add(current.copyWith(individualDiscount: newValue.clamp(0, 100)));
+        _state.add(current.copyWith(
+            discountPercent: newValue.clamp(0, 100))); // Revertido
         break;
 
       case FinalizeLiveIntent:
@@ -159,11 +229,12 @@ class LiveSaleViewModel {
           final user = await _getUser();
           if (user == null) throw 'Vendedor não autenticado';
 
-          // 1. Salvar todas as vendas
           for (final order in current.orders) {
             for (final customer in order.customers) {
-              final totalDiscount = order.individualDiscount + current.globalDiscount;
-              final priceAfterDiscount = order.product.salePrice * (1 - totalDiscount / 100);
+              final totalDiscount =
+                  order.discountPercent + current.globalDiscount;
+              final priceAfterDiscount =
+                  order.product.salePrice * (1 - totalDiscount / 100);
 
               final sale = Sale(
                 id: const Uuid().v4(),
@@ -183,36 +254,34 @@ class LiveSaleViewModel {
                 totalAmount: priceAfterDiscount,
                 sellerId: user.uid,
                 sellerName: user.displayName ?? 'Vendedor',
-                globalDiscount: current.globalDiscount > 0 ? current.globalDiscount : null,
+                globalDiscount:
+                    current.globalDiscount > 0 ? current.globalDiscount : null,
               );
 
               await _saveSale(sale);
             }
 
-            // Atualizar estoque
             await _updateProduct(order.product.copyWith(
-                stockQuantity: order.product.stockQuantity - order.customers.length));
+                stockQuantity:
+                    order.product.stockQuantity - order.customers.length));
           }
 
-          // 2. Calcular total faturado nesta sessão
           final totalCents = current.orders.fold<int>(
             0,
-                (sum, o) => sum + (o.totalWithGlobalDiscount(current.globalDiscount) * 100).toInt(),
+            (sum, o) =>
+                sum +
+                (o.totalWithGlobalDiscount(current.globalDiscount) * 100)
+                    .toInt(),
           );
 
-          // 3. Atualizar a live com endDate e valor alcançado
           final updatedLive = current.live.copyWith(
             endDate: DateTime.now(),
             achievedAmount: current.live.achievedAmount + totalCents,
           );
 
-          // CORREÇÃO PRINCIPAL: Apenas updateLive (NUNCA addLive aqui!)
           await _liveRepo.updateLive(updatedLive);
-
-          // Usa a UseCase oficial (igual ao botão "Finalizar" na lista)
           await _finishLive(updatedLive.id);
 
-          // Emite sucesso
           _state.add(LiveSaleFinished(
             success: true,
             goalAchieved: updatedLive.goalAchieved,
@@ -224,7 +293,15 @@ class LiveSaleViewModel {
     }
   }
 
-  void _handleSearchProduct(SearchProductIntent intent, LiveSaleLoaded current) {
+  void _emitMessage(LiveSaleLoaded current, String message) {
+    _state.add(LiveSaleMessage(
+      message: message,
+      state: current,
+    ));
+  }
+
+  void _handleSearchProduct(
+      SearchProductIntent intent, LiveSaleLoaded current) {
     final query = intent.query.toLowerCase();
     List<Product> filteredProducts;
 
@@ -233,7 +310,8 @@ class LiveSaleViewModel {
     } else {
       filteredProducts = _allProducts.where((product) {
         final nameMatches = product.name.toLowerCase().contains(query);
-        final codeMatches = product.codeOfProduct?.toLowerCase().contains(query) ?? false;
+        final codeMatches =
+            product.codeOfProduct?.toLowerCase().contains(query) ?? false;
         return nameMatches || codeMatches;
       }).toList();
     }

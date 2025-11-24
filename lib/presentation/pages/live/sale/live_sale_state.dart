@@ -1,9 +1,8 @@
-// presentation/viewmodels/live/sale/live_sale_state.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:stock/domain/entities/customer/customer.dart';
-import 'package:stock/domain/entities/live/live.dart';
-import 'package:stock/domain/entities/product/product.dart';
+import '../../../../domain/entities/live/live.dart';
+import '../../../../domain/entities/product/product.dart';
+import '../../../../domain/entities/customer/customer.dart';
 
 abstract class LiveSaleState {}
 
@@ -11,37 +10,44 @@ class LiveSaleLoading extends LiveSaleState {}
 
 class LiveSaleError extends LiveSaleState {
   final String message;
-
   LiveSaleError(this.message);
+}
+
+class LiveSaleMessage extends LiveSaleLoaded {
+  final String message;
+
+  LiveSaleMessage({
+    required this.message,
+    required LiveSaleLoaded state,
+  }) : super(
+          live: state.live,
+          products: state.products,
+          selectedProduct: state.selectedProduct,
+          currentCustomers: state.currentCustomers,
+          orders: state.orders,
+          globalDiscount: state.globalDiscount,
+          discountPercent: state.discountPercent, // Revertido
+        );
+}
+
+class LiveSaleFinished extends LiveSaleState {
+  final bool success;
+  final bool goalAchieved;
+
+  LiveSaleFinished({required this.success, required this.goalAchieved});
 }
 
 class LiveSaleLoaded extends LiveSaleState {
   final Live live;
-  final List<Product> products;
   final Product? selectedProduct;
+  final List<Product> products;
   final List<Customer> currentCustomers;
   final List<LiveOrder> orders;
   final int globalDiscount;
-  final int individualDiscount;
-  final TextEditingController instagramController = TextEditingController();
-  final NumberFormat currency =
-      NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
-
-  double get progress =>
-      live.achievedAmount / live.goalAmount.clamp(1, double.infinity);
-
-  bool get goalAchieved {
-    final currentTotalCents = live.achievedAmount +
-        (orders.fold<int>(0, (sum, o) => sum + (o.totalWithGlobalDiscount(globalDiscount) * 100).toInt()));
-    return currentTotalCents >= live.goalAmount;
-  }
-
-  String get formattedAchieved => currency.format(live.achievedAmount / 100);
-
-  String get formattedSessionTotal => currency.format(_sessionTotal);
-
-  double get _sessionTotal => orders.fold(
-      0.0, (sum, o) => sum + o.totalWithGlobalDiscount(globalDiscount));
+  final int discountPercent; // Revertido para o nome original
+  final TextEditingController instagramController;
+  final bool clearSelectedProduct;
+  final NumberFormat currency; // Adicionado
 
   LiveSaleLoaded({
     required this.live,
@@ -50,58 +56,68 @@ class LiveSaleLoaded extends LiveSaleState {
     this.currentCustomers = const [],
     this.orders = const [],
     this.globalDiscount = 0,
-    this.individualDiscount = 0,
-  });
+    this.discountPercent = 0, // Revertido
+    this.clearSelectedProduct = false,
+  }) : instagramController = TextEditingController(),
+       currency = NumberFormat.simpleCurrency(locale: 'pt_BR'); // Adicionado
 
+  // Adicionado para corrigir erro de compilação
+  bool get goalAchieved => live.goalAchieved;
+
+  int get totalItemsSold => orders.fold(0, (sum, order) => sum + order.customers.length);
+  double get totalAmount => orders.fold(0.0, (sum, order) => sum + order.total);
+
+  double get totalAmountWithDiscounts {
+    return orders.fold(0.0, (sum, order) {
+      return sum + order.totalWithGlobalDiscount(globalDiscount);
+    });
+  }
 
   LiveSaleLoaded copyWith({
     Live? live,
-    List<Product>? products,
     Product? selectedProduct,
     bool clearSelectedProduct = false,
+    List<Product>? products,
     List<Customer>? currentCustomers,
     List<LiveOrder>? orders,
-    int? individualDiscount,
     int? globalDiscount,
+    int? discountPercent, // Revertido
   }) {
-    return LiveSaleLoaded(
+    final newState = LiveSaleLoaded(
       live: live ?? this.live,
+      selectedProduct: clearSelectedProduct ? null : selectedProduct ?? this.selectedProduct,
       products: products ?? this.products,
-      selectedProduct: clearSelectedProduct ? null : (selectedProduct ?? this.selectedProduct),
       currentCustomers: currentCustomers ?? this.currentCustomers,
       orders: orders ?? this.orders,
       globalDiscount: globalDiscount ?? this.globalDiscount,
-      individualDiscount: individualDiscount  ?? this.individualDiscount,
+      discountPercent: discountPercent ?? this.discountPercent, // Revertido
     );
+    newState.instagramController.text = instagramController.text;
+    return newState;
   }
 }
 
 class LiveOrder {
   final Product product;
   final List<Customer> customers;
-  final int individualDiscount;
+  final int discountPercent; // Revertido para o nome original
 
-  LiveOrder(
-      {required this.product,
-      required this.customers,
-      this.individualDiscount = 0});
+  LiveOrder({
+    required this.product,
+    required this.customers,
+    this.discountPercent = 0, // Revertido
+  });
 
-  int get discountPercent => individualDiscount;
+  double get total => product.salePrice * customers.length;
 
-  double get total {
-    final disc = (individualDiscount + 0) / 100;
-    return product.salePrice * customers.length * (1 - disc);
+  double totalWithIndividualDiscount() {
+    if (discountPercent == 0) return total;
+    return total * (1 - discountPercent / 100);
   }
 
   double totalWithGlobalDiscount(int globalDiscount) {
-    final totalDiscount = individualDiscount + globalDiscount;
-    return product.salePrice * customers.length * (1 - totalDiscount / 100);
+    final combinedDiscount = (discountPercent + globalDiscount).clamp(0, 100);
+    if (combinedDiscount == 0) return total;
+    return total * (1 - combinedDiscount / 100);
   }
-}
-
-class LiveSaleFinished extends LiveSaleState {
-  final bool success;
-  final bool goalAchieved;
-
-  LiveSaleFinished({required this.success, required this.goalAchieved});
 }
