@@ -239,7 +239,9 @@ class LiveSaleViewModel {
               final sale = Sale(
                 id: const Uuid().v4(),
                 customerId: customer.id.startsWith('temp_') ? '' : customer.id,
-                customerName: customer.name.replaceAll(' (não cadastrado)', ''),
+                customerName: customer.instagram != null && customer.instagram!.isNotEmpty
+                    ? '@${customer.instagram!}'
+                    : customer.name,
                 saleDate: DateTime.now(),
                 liveId: current.live.id,
                 items: [

@@ -99,6 +99,7 @@ class _ProductListPageState extends State<ProductListPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        title: Text('Produtos  da categoria - ${widget.category.name}'),
         actions: [
           IconButton(
               icon: const Icon(Icons.add),
@@ -163,7 +164,6 @@ class _ProductListPageState extends State<ProductListPage> {
               );
             }
 
-            // --- Lógica de filtro foi removida daqui ---
 
             return ListView.builder(
               itemCount: state.displayedProducts.length, // <-- Usa a lista do estado

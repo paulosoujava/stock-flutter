@@ -36,7 +36,7 @@ Future<void> main() async {
   _registerHiveAdapters();
 
   // ❗ REMOVER EM PRODUÇÃO
-  //clearBD();
+  clearBD();
 
   //Injeção de dependências
   await configureDependencies();

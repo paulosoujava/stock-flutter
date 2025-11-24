@@ -109,6 +109,7 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
 
   @override
   Widget build(BuildContext context) {
+    print("vedas ${widget.sale}");
     final bool canceled = widget.sale.isCanceled == true;
     final bool isStoreSale = !widget.sale.customerName.contains('@');
 
@@ -183,8 +184,12 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+
                 Text(
-                  widget.sale.customerName.toUpperCase(),
+                  (widget.sale.liveId != null && widget.sale.liveId!.isNotEmpty
+                      ? widget.sale.customerName
+                      : widget.sale.customerName // pode até buscar o nome real depois se quiser, mas não precisa agora
+                  ).toUpperCase(),
                   style: GoogleFonts.poppins(
                     fontWeight: FontWeight.bold,
                     fontSize: 15,

@@ -202,7 +202,21 @@ class SalesReportViewModel {
           .add(SalesReportError("Erro ao cancelar venda: ${e.toString()}"));
     }
   }
+// Adicione este método no SalesReportViewModel
+  String getDisplayCustomerName(Sale sale, Customer? customer) {
+    // Se veio de uma Live (liveId não nulo) → sempre mostra o nome usado na live (que já vem com @)
+    if (sale.liveId != null && sale.liveId!.isNotEmpty) {
+      return sale.customerName; // já vem com @, ex: @maria_silva
+    }
 
+    // Se não veio de live, mas tem cliente cadastrado → mostra nome real
+    if (customer != null) {
+      return customer.name;
+    }
+
+    // Caso raro: não é live e cliente não existe mais → mostra o que estava salvo
+    return sale.customerName;
+  }
 
   void dispose() {
     _stateController.close();
