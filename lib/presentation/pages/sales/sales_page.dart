@@ -723,6 +723,7 @@ class _SalesPageState extends State<SalesPage> {
                   const BorderRadius.vertical(top: Radius.circular(20)),
             ),
             child: ExpansionTile(
+              shape: const Border(),
               collapsedIconColor: Colors.black54,
               iconColor: theme.primaryColor,
               title: Row(
