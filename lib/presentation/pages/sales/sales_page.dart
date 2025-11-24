@@ -8,7 +8,7 @@ import 'package:stock/domain/entities/customer/customer.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/presentation/pages/sales/customer_selection/customer_selection_page.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../widgets/url_launcher_utils.dart';
+import '../../widgets/dialog_customer_details.dart';
 import 'sales_intent.dart';
 import 'sales_state.dart';
 import 'sales_view_model.dart';
@@ -33,46 +33,46 @@ class _SalesPageState extends State<SalesPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _viewModel.dispose(); // Garante que o viewModel seja limpo
     super.dispose();
   }
 
+  // NENHUMA LÓGICA ALTERADA - Apenas reorganizada para o novo layout
   Future<bool> _onWillPop() async {
-    final currentState =
-        await _viewModel.state.first; // Lê o valor atual do Stream
-
-    if (currentState is! SalesReadyState) return true;
-
-    if (currentState.cart.isEmpty && currentState.selectedCustomer == null) {
+    final currentState = await _viewModel.state.first;
+    if (currentState is! SalesReadyState ||
+        (currentState.cart.isEmpty && currentState.selectedCustomer == null)) {
       return true;
     }
 
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Encerrar venda?'),
+        title: const Text('Descartar Venda?'),
         content: const Text(
-            'Você tem itens no carrinho ou cliente selecionado. Deseja descartar tudo e sair?'),
+            'Você tem uma venda em andamento. Deseja descartar as alterações e sair?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
-          ),
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Continuar Vendendo')),
           FilledButton(
-            style: FilledButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Descartar'),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red.shade700),
+            onPressed: () {
+              Navigator.pop(context, true);
+            },
+            child: const Text('Descartar e Sair'),
           ),
         ],
       ),
     );
+
     if (shouldExit == true) {
-      // LIMPA O CARRINHO E O CLIENTE ANTES DE SAIR
       _viewModel.reset();
     }
     return shouldExit ?? false;
   }
 
-  void _openCustomerSelection(BuildContext context) async {
+  void _openCustomerSelection() async {
     final selectedCustomer = await showModalBottomSheet<Customer>(
       context: context,
       isScrollControlled: true,
@@ -103,81 +103,81 @@ class _SalesPageState extends State<SalesPage> {
     }
   }
 
-  void _openSaleConfigDialog() {
-    final TextEditingController _globalDiscountController =
-        TextEditingController(
-      text: _viewModel.globalDiscount > 0
-          ? _viewModel.globalDiscount.toString()
-          : '',
-    );
-    final TextEditingController _descriptionController = TextEditingController(
-      text: _viewModel.globalDescription,
-    );
-
+  void _openSaleConfigDialog(SalesReadyState state) {
+    // A lógica original foi preservada, apenas o design do dialog foi atualizado.
+    final globalDiscountController =
+    TextEditingController(text: state.globalDiscount > 0 ? '${state.globalDiscount}' : '');
+    final descriptionController = TextEditingController(text: state.globalDescription);
     showDialog(
       context: context,
       builder: (dialogContext) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(Icons.settings, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Configuração da Venda',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        child: SizedBox(
+          width: 450,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(children: const [
+                  Icon(Icons.discount_outlined, color: Colors.deepPurple, size: 28),
+                  SizedBox(width: 12),
+                  Text('Configuração da Venda',
+                      style:
+                      TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                ]),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: globalDiscountController,
+                  decoration: const InputDecoration(
+                    labelText: 'Desconto Global (%)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.percent),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _globalDiscountController,
-                decoration: InputDecoration(
-                  labelText: 'Desconto Global (%)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.percent),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 ),
-                keyboardType: TextInputType.number,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _descriptionController,
-                decoration: InputDecoration(
-                  labelText: 'Descrição',
-                  border: OutlineInputBorder(),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'Descrição do Desconto (Opcional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
                 ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerRight,
-                child: FilledButton(
-                  onPressed: () {
-                    final discount =
-                        int.tryParse(_globalDiscountController.text) ?? 0;
-                    final description = _descriptionController.text;
-                    _viewModel.handleIntent(
-                        SetGlobalDiscountIntent(discount, description));
-                    Navigator.pop(dialogContext);
-                  },
-                  child: const Text('Aplicar'),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.check_circle),
+                    onPressed: () {
+                      final discount = int.tryParse(globalDiscountController.text) ?? 0;
+                      _viewModel.handleIntent(
+                          SetGlobalDiscountIntent(discount, descriptionController.text));
+                      Navigator.pop(dialogContext);
+                    },
+                    label: const Text('Aplicar'),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  void _showCustomerDetailsDialog(Customer customer) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => CustomerDetailsDialog(customer: customer),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return PopScope(
       canPop: false,
       onPopInvoked: (didPop) async {
@@ -188,665 +188,411 @@ class _SalesPageState extends State<SalesPage> {
         }
       },
       child: Scaffold(
-        backgroundColor: Colors.grey[50],
-        appBar: AppBar(
-          backgroundColor: theme.primaryColor,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          title: StreamBuilder<SalesState>(
-            stream: _viewModel.state,
-            builder: (context, snapshot) {
-              final state = snapshot.data;
-              final customer =
-                  state is SalesReadyState ? state.selectedCustomer : null;
+        backgroundColor: Colors.grey[100],
+        body: StreamBuilder<SalesState>(
+          stream: _viewModel.state,
+          builder: (context, snapshot) {
+            final state = snapshot.data;
+            return Stack(
+              children: [
+                if (state is SalesReadyState)
+                  _buildSalesReadyView(context, state)
+                else
+                // Estado inicial ou qualquer outro que não seja "Ready"
+                // mostra um loading central para evitar tela vazia no início.
+                  const Center(child: CircularProgressIndicator()),
 
-              if (customer == null) {
-                return const Text('Registrar Venda');
-              }
-
-              return Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => _showCustomerDetailsDialog(customer),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 14,
-                          backgroundColor: Colors.white,
-                          child: Text(
-                            customer.name.isNotEmpty
-                                ? customer.name[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                                fontSize: 12,
-                                color: theme.primaryColor,
-                                fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          customer.name,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Spacer(),
-                  _iconButton(
-                    icon: Icons.info_outline,
-                    tooltip: 'Detalhes',
-                    onPressed: () => _showCustomerDetailsDialog(customer),
-                    color: Colors.white,
-                  ),
-                  _iconButton(
-                    icon: Icons.swap_horiz,
-                    tooltip: 'Trocar Cliente',
-                    onPressed: () => _openCustomerSelection(context),
-                    color: Colors.white,
-                  ),
-                ],
-              );
-            },
-          ),
-          centerTitle: true,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.settings, color: Colors.white),
-              tooltip: 'Configuração',
-              onPressed: _openSaleConfigDialog,
-            ),
-            const SizedBox(width: 16),
-          ],
-        ),
-        body: Card(
-          elevation: 8,
-          margin: const EdgeInsets.all(16.0),
-          color: Colors.white,
-          shadowColor: Colors.black12,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: StreamBuilder<SalesState>(
-                stream: _viewModel.state,
-                builder: (context, snapshot) {
-                  final state = snapshot.data;
-                  if (state is SalesLoadingState) {
-                    return Container(
-                      color: Colors.white.withOpacity(0.95),
-                      child: const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            CircularProgressIndicator(color: Colors.deepPurple),
-                            SizedBox(height: 16),
-                            Text(
-                              "Finalizando venda...",
-                              style: TextStyle(
-                                  fontSize: 16, color: Colors.deepPurple),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-                  if (state is SalesErrorState) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(Icons.error_outline,
-                              size: 64, color: Colors.red),
-                          const SizedBox(height: 16),
-                          Text(state.message, textAlign: TextAlign.center),
-                        ],
-                      ),
-                    );
-                  }
-                  if (state is SalesSaleSuccessfulState) {
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      showDialog(
-                        context: context,
-                        builder: (dialogContext) => Dialog(
-                          shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(20)),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                                vertical: 30, horizontal: 20),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const CircleAvatar(
-                                  radius: 35,
-                                  backgroundColor: Colors.green,
-                                  child: Icon(
-                                    Icons.check_circle_outline,
-                                    color: Colors.white,
-                                    size: 40,
-                                  ),
-                                ),
-                                const SizedBox(height: 20),
-                                const Text(
-                                  'Venda Registrada!',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'A venda foi concluída com sucesso e o carrinho foi limpo.',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                ),
-                                const SizedBox(height: 24),
-                                FilledButton(
-                                  onPressed: () {
-                                    _viewModel.reset();
-                                    Navigator.pop(dialogContext);
-                                  },
-                                  child: const Text('Ótimo!'),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      );
-                    });
-
-                  }
-                  if (state is SalesReadyState) {
-                    return _buildSalesReadyView(context, state);
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-          ),
+                // Camada de sobreposição para outros estados (Loading, Error, Success)
+                if (state is! SalesReadyState)
+                  _buildOverlayStates(context, state),
+              ],
+            );
+          },
         ),
       ),
     );
   }
 
+  // CONSTRÓI A TELA PRINCIPAL QUANDO TUDO ESTÁ PRONTO
   Widget _buildSalesReadyView(BuildContext context, SalesReadyState state) {
     return Column(
       children: [
+        _buildAppBar(context, state),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            children: [
-              const SizedBox(height: 8),
-              if (state.selectedCustomer == null)
-                _buildCustomerSection(context, state),
-              if (state.selectedCustomer != null) ...[
-                const SizedBox(height: 24),
-                _buildProductSearchSection(context, state),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Coluna da Esquerda: Seleção de cliente ou busca de produtos
+                Expanded(
+                  flex: 3, // Ocupa mais espaço
+                  child: state.selectedCustomer == null
+                      ? _buildCustomerSelectionPrompt(context)
+                      : _buildProductSearchSection(context, state),
+                ),
+                const SizedBox(width: 16),
+                // Coluna da Direita: Carrinho
+                Expanded(
+                  flex: 2, // Ocupa menos espaço
+                  child: _buildShoppingCart(context, state),
+                ),
               ],
-            ],
+            ),
           ),
         ),
-        if (state.cart.isNotEmpty) _buildShoppingCart(context, state),
       ],
     );
   }
 
-  Widget _buildCustomerSection(BuildContext context, SalesReadyState state) {
+  // NOVO APPBAR CUSTOMIZADO
+  Widget _buildAppBar(BuildContext context, SalesReadyState state) {
     final theme = Theme.of(context);
+    final customer = state.selectedCustomer;
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade300),
+    return Card(
+      margin: EdgeInsets.zero,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
       ),
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.person_search, color: theme.primaryColor),
-              const SizedBox(width: 8),
-              Text(
-                'Cliente',
-                style: theme.textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.primaryColor,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: FilledButton.tonalIcon(
-              icon: const Icon(Icons.person_add),
-              label: const Text('Selecionar ou Cadastrar Cliente'),
-              style: FilledButton.styleFrom(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-              ),
-              onPressed: () => _openCustomerSelection(context),
+      elevation: 4,
+      shadowColor: Colors.black38,
+      child: Container(
+        padding: const EdgeInsets.only(top: 8, bottom: 8, left: 8, right: 16),
+        child: Row(
+          children: [
+            IconButton(
+              icon: Icon(Icons.arrow_back, color: theme.primaryColor),
+              onPressed: () async {
+                final shouldPop = await _onWillPop();
+                if (shouldPop && mounted) {
+                  context.pop();
+                }
+              },
             ),
-          ),
-        ],
-      ),
-    );
-  }
+            const SizedBox(width: 8),
+            if (customer == null)
+              Text('Registrar Nova Venda',
+                  style: theme.textTheme.titleLarge
+                      ?.copyWith(fontWeight: FontWeight.bold)),
+            if (customer != null) ...[
+              Builder(builder: (context) {
+                final notes = customer.notes?.toLowerCase() ?? '';
+                Color avatarColor = theme.primaryColor;
+                Widget avatarChild = Text(
+                  customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
+                  style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold),
+                );
 
-  void _showCustomerDetailsDialog(Customer customer) {
-    final theme = Theme.of(context);
-    Future<void> _launchWhatsApp(String phone) async {
-      final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
-      final whatsappUrl = Uri.parse("https://wa.me/55$cleanPhone");
-      if (await canLaunchUrl(whatsappUrl)) {
-        await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Não foi possível abrir o WhatsApp para $phone'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
+                if (notes.contains('ouro')) {
+                  avatarColor = const Color(0xFFD4AF37);
+                  avatarChild = const Icon(Icons.emoji_events, color: Colors.white, size: 20);
+                } else if (notes.contains('prata')) {
+                  avatarColor = const Color(0xFFA8A9AD);
+                  avatarChild = const Icon(Icons.emoji_events, color: Colors.white, size: 20);
+                } else if (notes.contains('bronze')) {
+                  avatarColor = const Color(0xFFCD7F32);
+                  avatarChild = const Icon(Icons.emoji_events, color: Colors.white, size: 20);
+                }
 
-    showDialog(
-      context: context,
-      builder: (dialogContext) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: theme.primaryColor.withOpacity(0.1),
-                    child: const Icon(Icons.person, color: Colors.blue),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      'Detalhes do Cliente',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                return CircleAvatar(
+                    radius: 20,
+                    backgroundColor: avatarColor,
+                    child: avatarChild);
+              }),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Cliente',
+                        style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    Text(
+                      customer.name.toUpperCase(),
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                ],
-              ),
-              const Divider(height: 32),
-              _infoRow('Nome', customer.name, Icons.person_outline),
-              const Divider(),
-              _infoRow('Telefone', customer.phone, Icons.phone),
-              const Divider(),
-              _infoRow(
-                'WhatsApp',
-                customer.whatsapp.isEmpty ? 'Não informado' : customer.whatsapp,
-                Icons.message,
-                trailing: customer.whatsapp.isNotEmpty
-                    ? IconButton(
-                        icon:
-                            const Icon(Icons.open_in_new, color: Colors.green),
-                        onPressed: () => _launchWhatsApp(customer.whatsapp),
-                      )
-                    : null,
-              ),
-              const Divider(),
-              _infoRow(
-                'Endereço',
-                customer.address.isEmpty ? 'Não informado' : customer.address,
-                Icons.location_on_outlined,
-                trailing: customer.address.isNotEmpty
-                    ? IconButton(
-                        icon:
-                            const Icon(Icons.map, color: Colors.blue, size: 20),
-                        onPressed: () => UrlLauncherUtils.launchMap(
-                            context, customer.address),
-                        padding: EdgeInsets.zero,
-                        constraints:
-                            const BoxConstraints(minWidth: 36, minHeight: 36),
-                        tooltip: 'Abrir no mapa',
-                      )
-                    : null,
-              ),
-              const Divider(),
-              _infoRow('Observação', customer.notes ?? 'Sem observações',
-                  Icons.note),
-              const SizedBox(height: 20),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('FECHAR',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
+                  ],
                 ),
               ),
+              _iconButton(
+                  icon: Icons.info_outline,
+                  tooltip: 'Detalhes do Cliente',
+                  onPressed: () => _showCustomerDetailsDialog(customer)),
+              _iconButton(
+                  icon: Icons.swap_horiz,
+                  tooltip: 'Trocar Cliente',
+                  onPressed: _openCustomerSelection),
             ],
-          ),
+            const Spacer(),
+            // Botão de configuração com o badge de desconto
+            Badge(
+              isLabelVisible: state.globalDiscount > 0,
+              label: const Icon(Icons.check, size: 10, color: Colors.white),
+              backgroundColor: Colors.green,
+              child: _iconButton(
+                icon: Icons.discount_outlined,
+                tooltip: 'Configuração da Venda',
+                onPressed: () => _openSaleConfigDialog(state),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _infoRow(String label, String value, IconData icon,
-      {Widget? trailing}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Icon(icon, size: 22, color: Colors.grey[700]),
-          const SizedBox(width: 12),
-          Expanded(
-            flex: 2,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.black87),
+  // WIDGET PARA QUANDO NENHUM CLIENTE ESTÁ SELECIONADO
+  Widget _buildCustomerSelectionPrompt(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 0,
+      color: Colors.white,
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.person_search,
+                size: 80, color: Theme.of(context).primaryColor.withOpacity(0.7)),
+            const SizedBox(height: 24),
+            const Text('Nenhum Cliente Selecionado',
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text('Selecione um cliente para iniciar a venda.',
+                style: TextStyle(fontSize: 16, color: Colors.grey[600])),
+            const SizedBox(height: 32),
+            FilledButton.icon(
+              icon: const Icon(Icons.person_add_alt_1),
+              label: const Text('Selecionar ou Cadastrar Cliente'),
+              style: FilledButton.styleFrom(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 16)),
+              onPressed: _openCustomerSelection,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // SEÇÃO DE BUSCA DE PRODUTOS (COLUNA ESQUERDA)
+  Widget _buildProductSearchSection(
+      BuildContext context, SalesReadyState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Campo de busca
+        TextField(
+          controller: _searchController,
+          decoration: InputDecoration(
+            hintText: 'Pesquise por nome, código ou preço...',
+            prefixIcon: const Icon(Icons.search),
+            suffixIcon: _searchController.text.isNotEmpty
+                ? IconButton(
+              icon: const Icon(Icons.clear),
+              onPressed: () {
+                _searchController.clear();
+                _viewModel.handleIntent(SearchProductsIntent(''));
+              },
+            )
+                : null,
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey.shade300),
             ),
           ),
-          Expanded(
-            flex: 3,
+          onChanged: (query) =>
+              _viewModel.handleIntent(SearchProductsIntent(query)),
+        ),
+        const SizedBox(height: 16),
+        // Resultados da busca
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: _buildSearchResultsView(context, state),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // CONTEÚDO DOS RESULTADOS DA BUSCA
+  Widget _buildSearchResultsView(BuildContext context, SalesReadyState state) {
+    if (state.isSearching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.searchResults.isEmpty && state.currentSearchQuery.isNotEmpty) {
+      return const Center(child: Text('Nenhum produto encontrado.'));
+    }
+
+    // A lista de produtos agora usa o espaço expandido
+    return ListView.builder(
+      key: const PageStorageKey('product-search-list'),
+      padding: const EdgeInsets.only(bottom: 16), // Espaço no final
+      itemCount: state.searchResults.length,
+      itemBuilder: (context, index) {
+        final searchProduct = state.searchResults[index];
+        final latestProduct = state.originalProducts.firstWhere(
+              (p) => p.id == searchProduct.id,
+          orElse: () => searchProduct,
+        );
+        return _ProductSearchItem(
+          key: ValueKey('${latestProduct.id}_${latestProduct.stockQuantity}'),
+          product: latestProduct,
+          onAddToCart: (quantity, discount) {
+            _viewModel
+                .handleIntent(AddProductToCartIntent(latestProduct, quantity, discount));
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                    'Adicionado: ${latestProduct.name} × $quantity${discount > 0 ? ' com $discount% desconto' : ''}'),
+                duration: const Duration(milliseconds: 900),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.only(left: 300, right: 20, bottom: 20),
+                shape: const StadiumBorder(),
+              ),
+            );
+          },
+          globalDiscount: state.globalDiscount,
+        );
+      },
+    );
+  }
+
+  // CARRINHO (COLUNA DIREITA)
+  Widget _buildShoppingCart(BuildContext context, SalesReadyState state) {
+    final theme = Theme.of(context);
+    final cartTotal = state.cart.fold<double>(0, (sum, item) => sum + item.totalPrice);
+    final discountedTotal = cartTotal * (1 - state.globalDiscount / 100);
+
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 0,
+      color: Colors.white,
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Row(
               children: [
-                Expanded(
-                  child: Text(
-                    value,
-                    style: const TextStyle(color: Colors.black87),
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                Badge(
+                  label: Text('${state.cart.length}'),
+                  isLabelVisible: state.cart.isNotEmpty,
+                  child: const Icon(Icons.shopping_cart_outlined, size: 28),
                 ),
-                if (trailing != null) SizedBox(height: 36, child: trailing),
+                const SizedBox(width: 12),
+                Text('Carrinho',
+                    style: theme.textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold)),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProductSearchSection(BuildContext context, SalesReadyState state) {
-    final theme = Theme.of(context);
-
-    return AnimatedSlide(
-      duration: const Duration(milliseconds: 400),
-      offset: const Offset(0, 0),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+          const Divider(height: 1),
+          if (state.cart.isEmpty)
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.inventory_2, color: Colors.purple),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Adicionar Produtos',
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple.shade700,
-                    ),
-                  ),
+                  const Icon(Icons.remove_shopping_cart_outlined, size: 60, color: Colors.grey),
+                  const SizedBox(height: 16),
+                  Text('Carrinho Vazio', style: TextStyle(fontSize: 16, color: Colors.grey[600])),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // Campo de busca
-              TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Pesquise por nome, código ou preço...',
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: ValueListenableBuilder<TextEditingValue>(
-                    valueListenable: _searchController,
-                    builder: (context, value, child) {
-                      if (value.text.isEmpty) return const SizedBox.shrink();
-                      return IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _viewModel.handleIntent(SearchProductsIntent(''));
-                        },
-                      );
-                    },
-                  ),
-                  filled: true,
-                  fillColor: Colors.grey[50],
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                onChanged: (query) {
-                  _viewModel.handleIntent(SearchProductsIntent(query));
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Loading / vazio / resultados
-              if (state.isSearching)
-                const Center(child: CircularProgressIndicator())
-              else if (state.searchResults.isEmpty && state.currentSearchQuery.isNotEmpty)
-                const Center(child: Text('Nenhum produto encontrado.', style: TextStyle(color: Colors.grey)))
-              else if (state.searchResults.isNotEmpty)
-                // LISTA COM ESTOQUE EM TEMPO REAL
-                  StreamBuilder<SalesState>(
-                    stream: _viewModel.state,
-                    builder: (context, snapshot) {
-                      final currentState = snapshot.data as SalesReadyState? ?? state;
-
-                      return ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: state.searchResults.length,
-                        itemBuilder: (context, index) {
-                          final searchProduct = state.searchResults[index];
-
-                          // Produto sempre atualizado do estado global
-                          final latestProduct = currentState.originalProducts.firstWhere(
-                                (p) => p.id == searchProduct.id,
-                            orElse: () => searchProduct,
-                          );
-
-                          return _ProductSearchItem(
-                            key: ValueKey('${latestProduct.id}_${latestProduct.stockQuantity}'),
-                            product: latestProduct,
-                            onAddToCart: (quantity, discount) {
-                              _viewModel.handleIntent(
-                                AddProductToCartIntent(latestProduct, quantity, discount),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    'Adicionado: ${latestProduct.name} × $quantity${discount > 0 ? ' com $discount% desconto' : ''}',
-                                  ),
-                                  duration: const Duration(milliseconds: 800),
-                                  backgroundColor: Colors.green,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                            globalDiscount: currentState.globalDiscount,
-                          );
-                        },
-                      );
-                    },
-                  ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildShoppingCart(BuildContext context, SalesReadyState state) {
-    final theme = Theme.of(context);
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            decoration: BoxDecoration(
-              color: theme.primaryColor.withOpacity(0.05),
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: ExpansionTile(
-              shape: const Border(),
-              collapsedIconColor: Colors.black54,
-              iconColor: theme.primaryColor,
-              title: Row(
-                children: [
-                  Badge(
-                    label: Text('${state.cart.length}'),
-                    backgroundColor: theme.primaryColor,
-                    child: const Icon(Icons.shopping_cart_outlined),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    'CARRINHO',
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              children: [
-                if (state.globalDiscount > 0)
-                  Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Text(
-                      'Desconto global de ${state.globalDiscount}% aplicado. ${state.globalDescription.isNotEmpty ? state.globalDescription : 'Sem descrição.'}',
-                      style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic),
-                    ),
-                  ),
-                ...state.cart.map((item) {
-                  final product = state.originalProducts.firstWhere(
-                    (p) => p.id == item.productId,
-                    orElse: () => Product(
-                      id: '',
-                      codeOfProduct: '',
-                      name: 'Produto não encontrado',
-                      description: '',
-                      costPrice: 0,
-                      salePrice: 0,
-                      stockQuantity: 0,
-                      lowStockThreshold: 0,
-                      categoryId: '',
-                    ),
-                  );
-                  String desc = product.description;
-                  if (desc.length > 80) desc = '${desc.substring(0, 80)}...';
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(8),
+                itemCount: state.cart.length,
+                itemBuilder: (context, index) {
+                  final item = state.cart[index];
                   return Dismissible(
                     key: Key(item.productId),
                     direction: DismissDirection.endToStart,
                     background: Container(
-                      color: Colors.red,
+                      color: Colors.red.shade700,
                       alignment: Alignment.centerRight,
                       padding: const EdgeInsets.only(right: 20),
-                      child: const Icon(Icons.delete, color: Colors.white),
+                      child: const Icon(Icons.delete_sweep, color: Colors.white),
                     ),
                     onDismissed: (_) {
                       _viewModel.handleIntent(
                           RemoveProductFromCartIntent(item.productId));
                     },
                     child: Card(
-                      margin: const EdgeInsets.symmetric(
-                          vertical: 4, horizontal: 8),
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor: Colors.grey[200],
-                          child: const Icon(Icons.inventory_2_outlined,
-                              color: Colors.grey),
-                        ),
-                        title: Text(
-                          item.productName.toUpperCase(),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                        subtitle: Text(
-                          desc,
-                          style: theme.textTheme.bodySmall,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      elevation: 0,
+                      color: Colors.grey[50],
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                        child: Row(
                           children: [
-                            _quantityButton(
-                              icon: Icons.remove_circle_outline,
-                              onPressed: () => _viewModel.handleIntent(
-                                  DecrementCartItemIntent(item.productId)),
-                            ),
-                            Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 8),
-                              child: Text(
-                                '${item.quantity}',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold, fontSize: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(item.productName.toUpperCase(),
+                                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  Text(
+                                    '${item.quantity} x R\$ ${item.pricePerUnit.toStringAsFixed(2)}',
+                                    style: TextStyle(color: Colors.grey[600]),
+                                  ),
+                                ],
                               ),
                             ),
+                            Text('R\$ ${item.totalPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold)),
                             _quantityButton(
-                              icon: Icons.add_circle_outline,
+                              icon: Icons.remove,
                               onPressed: () => _viewModel.handleIntent(
-                                  IncrementCartItemIntent(item.productId)),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'R\$ ${item.totalPrice.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                  color: theme.primaryColor,
-                                  fontWeight: FontWeight.bold),
+                                  DecrementCartItemIntent(item.productId)),
                             ),
                           ],
                         ),
                       ),
                     ),
                   );
-                }).toList(),
-              ],
+                },
+              ),
             ),
-          ),
+          // Seção do Total e Finalizar
           Container(
-            padding: const EdgeInsets.all(20),
-            decoration: const BoxDecoration(color: Colors.white),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Colors.grey[200]!)),
+            ),
             child: Column(
               children: [
+                if(state.globalDiscount > 0) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Subtotal', style: TextStyle(color: Colors.grey)),
+                      Text('R\$ ${cartTotal.toStringAsFixed(2)}', style: const TextStyle(color: Colors.grey, decoration: TextDecoration.lineThrough)),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Desconto (${state.globalDiscount}%)', style: const TextStyle(color: Colors.green)),
+                      Text('- R\$ ${(cartTotal - discountedTotal).toStringAsFixed(2)}', style: const TextStyle(color: Colors.green)),
+                    ],
+                  ),
+                  const Divider(height: 16),
+                ],
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -860,7 +606,7 @@ class _SalesPageState extends State<SalesPage> {
                         color: theme.primaryColor,
                       ),
                       child: Text(
-                        'R\$ ${(state.globalDiscount > 0 ? state.cartTotal * (1 - state.globalDiscount / 100) : state.cartTotal).toStringAsFixed(2)}',
+                        'R\$ ${discountedTotal.toStringAsFixed(2)}',
                       ),
                     ),
                   ],
@@ -870,16 +616,16 @@ class _SalesPageState extends State<SalesPage> {
                   width: double.infinity,
                   child: FilledButton.icon(
                     icon: const Icon(Icons.check_circle, size: 20),
-                    label: const Text('FINALIZAR VENDA',
-                        style: TextStyle(fontWeight: FontWeight.bold)),
+                    label: const Text('FINALIZAR VENDA'),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
-                      elevation: 2,
+                      elevation: 0,
                     ),
-                    onPressed: () =>
-                        _viewModel.handleIntent(FinalizeSaleIntent()),
+                    onPressed: state.cart.isEmpty || state.selectedCustomer == null
+                        ? null
+                        : () => _viewModel.handleIntent(FinalizeSaleIntent()),
                   ),
                 ),
               ],
@@ -890,8 +636,114 @@ class _SalesPageState extends State<SalesPage> {
     );
   }
 
+  // WIDGETS DE SOBREPOSIÇÃO (LOADING, ERRO, SUCESSO)
+  Widget _buildOverlayStates(BuildContext context, SalesState? state) {
+    if (state is SalesLoadingState) {
+      return Container(
+        color: Colors.black.withOpacity(0.5),
+        child: const Center(
+          child: Card(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text("Finalizando venda...", style: TextStyle(fontSize: 16)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (state is SalesErrorState) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            icon: const Icon(Icons.error, color: Colors.red, size: 48),
+            title: const Text('Erro ao Finalizar'),
+            content: Text(state.message),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                  //  _viewModel.resetToReady();
+                    Navigator.pop(ctx);
+                  },
+                  child: const Text('OK'))
+            ],
+          ),
+        );
+      });
+    }
+
+    if (state is SalesSaleSuccessfulState) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (dialogContext) => Dialog(
+            shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 30, horizontal: 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircleAvatar(
+                    radius: 35,
+                    backgroundColor: Colors.green,
+                    child: Icon(Icons.check_circle_outline, color: Colors.white, size: 40),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('Venda Registrada!',
+                      style:
+                      TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 12),
+                  Text(
+                    'A venda foi concluída com sucesso e o carrinho foi limpo.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+                  ),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: () {
+                      _viewModel.reset();
+                      Navigator.pop(dialogContext);
+                    },
+                    child: const Text('Ótimo!'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      });
+    }
+
+    // Se não for um estado de overlay, retorna um container vazio
+    return const SizedBox.shrink();
+  }
+
+  // Botões de ícone padronizados (lógica original)
+  Widget _iconButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onPressed,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: IconButton(
+        icon: Icon(icon),
+        onPressed: onPressed,
+        splashRadius: 20,
+      ),
+    );
+  }
   Widget _quantityButton(
-      {required IconData icon, required VoidCallback onPressed}) {
+      {required IconData icon, required VoidCallback? onPressed}) {
     return IconButton(
       icon: Icon(icon, size: 20),
       padding: EdgeInsets.zero,
@@ -899,24 +751,64 @@ class _SalesPageState extends State<SalesPage> {
       onPressed: onPressed,
     );
   }
+}
 
-  Widget _iconButton({
-    required IconData icon,
-    required String tooltip,
-    required VoidCallback onPressed,
-    required Color color,
-  }) {
-    return Tooltip(
-      message: tooltip,
-      child: IconButton(
-        icon: Icon(icon, color: color),
-        onPressed: onPressed,
-        splashRadius: 20,
+
+// MODAL DE SELEÇÃO DE CLIENTE (Lógica original)
+class _CustomerSelectionModal extends StatelessWidget {
+  const _CustomerSelectionModal();
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.6,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (_, scrollController) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            // Handle para arrastar
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 8),
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(3),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 20, right: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.person_search, size: 28),
+                  const SizedBox(width: 12),
+                  const Text('Selecionar Cliente', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context)),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            // A página de seleção de cliente original é inserida aqui
+            const Expanded(
+              child: CustomerSelectionPage(),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
+// WIDGET PARA ITEM DA LISTA DE BUSCA (Lógica original, com leve ajuste visual)
 class _ProductSearchItem extends StatefulWidget {
   final Product product;
   final Function(int quantity, int discount) onAddToCart;
@@ -937,9 +829,16 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
     with AutomaticKeepAliveClientMixin {
   late int _quantity = 1;
   late int _discount = 0;
+  final _discountController = TextEditingController();
 
   @override
-  bool get wantKeepAlive => true; // Mantém o estado enquanto visível
+  bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    _discountController.dispose();
+    super.dispose();
+  }
 
   void _increment() {
     if (_quantity < widget.product.stockQuantity) {
@@ -955,21 +854,22 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // Necessário por causa do AutomaticKeepAlive
+    super.build(context);
 
     final hasStock = widget.product.stockQuantity > 0;
-    final isLowStock = hasStock && widget.product.stockQuantity <= widget.product.lowStockThreshold;
+    final isLowStock = hasStock &&
+        widget.product.stockQuantity <= widget.product.lowStockThreshold;
     final canAddMore = _quantity < widget.product.stockQuantity;
     final hasGlobalDiscount = widget.globalDiscount > 0;
 
     return Card(
-      elevation: 3,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       color: hasStock ? Colors.white : Colors.grey[100],
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
@@ -977,26 +877,28 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        widget.product.name,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
+                      Text(widget.product.name,
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 4),
                       Text(
-                        'R\$ ${widget.product.salePrice.toStringAsFixed(2)}',
-                        style: TextStyle(color: Colors.green[700], fontWeight: FontWeight.bold),
-                      ),
+                          'R\$ ${widget.product.salePrice.toStringAsFixed(2)}',
+                          style: TextStyle(
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
+                const SizedBox(width: 16),
                 Column(
                   children: [
-                    const Text('Estoque', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const Text('Estoque',
+                        style: TextStyle(fontSize: 12, color: Colors.grey)),
                     Text(
                       '${widget.product.stockQuantity}',
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 18,
                         color: isLowStock
                             ? Colors.orange[800]
                             : (hasStock ? Colors.green[700] : Colors.red),
@@ -1006,143 +908,85 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
                 ),
               ],
             ),
-            const Divider(height: 24),
+            const SizedBox(height: 8),
+            const Divider(),
+            const SizedBox(height: 8),
             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                if (hasStock) ...[
-                  const Text('Qtd:'),
-                  const SizedBox(width: 12),
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    color: _quantity > 1 ? null : Colors.grey[400],
-                    onPressed: _quantity > 1 ? _decrement : null,
-                  ),
-                  SizedBox(
-                    width: 40,
-                    child: Center(
-                      child: Text('$_quantity', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    color: canAddMore ? null : Colors.grey[400],
-                    onPressed: canAddMore ? _increment : null,
-                    tooltip: !canAddMore ? 'Sem estoque' : null,
-                  ),
-                ] else
-                  const Row(
+                if (hasStock)
+                  Row(
                     children: [
-                      Icon(Icons.sentiment_very_dissatisfied, color: Colors.red, size: 20),
-                      SizedBox(width: 8),
-                      Text('Esgotado', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                      const Text('Qtd:', style: TextStyle(fontSize: 14)),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle),
+                        color:
+                        _quantity > 1 ? Colors.red.shade300 : Colors.grey[300],
+                        onPressed: _quantity > 1 ? _decrement : null,
+                      ),
+                      SizedBox(
+                        width: 40,
+                        child: Center(
+                          child: Text('$_quantity',
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 18)),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle),
+                        color: canAddMore ? Colors.green.shade400 : Colors.grey[300],
+                        onPressed: canAddMore ? _increment : null,
+                      ),
                     ],
-                  ),
-                const SizedBox(width: 16),
+                  )
+                else
+                  const Text('ESGOTADO', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+
                 if (hasStock && !hasGlobalDiscount) ...[
-                  const Text('Desc. (%):'),
+                  const SizedBox(width: 16),
+                  const Text('Desc(%):', style: TextStyle(fontSize: 14)),
                   const SizedBox(width: 8),
                   SizedBox(
-                    width: 60,
+                    width: 70,
                     child: TextField(
+                      controller: _discountController,
                       keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       onChanged: (v) => _discount = int.tryParse(v) ?? 0,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        contentPadding: EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+                        contentPadding: EdgeInsets.zero,
                         hintText: '0',
                       ),
                     ),
                   ),
                 ],
+
                 const Spacer(),
-                FilledButton(
+
+                FilledButton.icon(
+                  icon: const Icon(Icons.add_shopping_cart, size: 16),
                   onPressed: hasStock
                       ? () {
                     widget.onAddToCart(_quantity, hasGlobalDiscount ? 0 : _discount);
+                    // Reseta o estado local do item após adicionar ao carrinho
                     setState(() {
                       _quantity = 1;
                       _discount = 0;
+                      _discountController.clear();
                     });
                   }
                       : null,
                   style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
-                  child: const Text('Adicionar'),
+                  label: const Text('Adicionar'),
                 ),
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CustomerSelectionModal extends StatelessWidget {
-  const _CustomerSelectionModal();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return AnimatedPadding(
-      padding: MediaQuery.of(context).viewInsets,
-      duration: const Duration(milliseconds: 200),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.6,
-        maxChildSize: 0.95,
-        expand: false,
-        builder: (_, scrollController) => Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black26, blurRadius: 20, offset: Offset(0, -2)),
-            ],
-          ),
-          child: Column(
-            children: [
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey[400],
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.person_search,
-                        color: theme.primaryColor, size: 28),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Selecionar Cliente',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: theme.primaryColor,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(context)),
-                  ],
-                ),
-              ),
-              const Divider(height: 1),
-              Expanded(
-                child: Container(
-                    color: Colors.grey[50],
-                    child: const CustomerSelectionPage()),
-              ),
-            ],
-          ),
         ),
       ),
     );

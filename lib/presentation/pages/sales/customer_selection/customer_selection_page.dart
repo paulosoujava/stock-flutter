@@ -81,60 +81,103 @@ class _CustomerSelectionPageState extends State<CustomerSelectionPage> {
     final theme = Theme.of(context);
     final hasPhone = customer.phone.isNotEmpty;
 
+    // --- Lógica para Destaque ---
+    Icon? tierIcon;
+    Color? highlightColor;
+
+    // Assumindo que o Customer tem um campo `notes` que é uma String.
+    // Se o nome do campo for outro, basta ajustar a linha abaixo.
+    final notes = customer.notes?.toLowerCase() ?? '';
+
+    if (notes.contains('ouro')) {
+      highlightColor = Colors.amber.shade700; // Cor de Ouro
+      tierIcon = Icon(Icons.emoji_events, color: highlightColor);
+    } else if (notes.contains('prata')) {
+      highlightColor = Colors.blueGrey.shade500; // Cor de Prata
+      tierIcon = Icon(Icons.military_tech, color: highlightColor);
+    } else if (notes.contains('bronze')) {
+      highlightColor = Colors.brown.shade500; // Cor de Bronze
+      tierIcon = Icon(Icons.workspace_premium, color: highlightColor);
+    }
+    // --- Fim da Lógica ---
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       elevation: 2,
       shadowColor: Colors.black.withOpacity(0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias, // Garante que a borda interna não vaze
       child: InkWell(
         onTap: () {
           // Ação de selecionar o cliente
           Navigator.of(context).pop(customer);
         },
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          child: Row(
-            children: [
-              // Avatar com a inicial do nome
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: theme.primaryColor.withOpacity(0.1),
-                child: Text(
-                  customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: theme.primaryColor,
+        child: Container(
+          decoration: BoxDecoration(
+            // Borda lateral colorida para destaque
+            border: highlightColor != null
+                ? Border(left: BorderSide(color: highlightColor, width: 5))
+                : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Row(
+              children: [
+                // Avatar com a inicial do nome
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: (highlightColor ?? theme.primaryColor).withOpacity(0.1),
+                  child: Text(
+                    customer.name.isNotEmpty ? customer.name[0].toUpperCase() : '?',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: highlightColor ?? theme.primaryColor,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              // Nome e telefone
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customer.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                const SizedBox(width: 16),
+                // Nome, ícone e telefone
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              customer.name.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (tierIcon != null) ...[
+                            const SizedBox(width: 8),
+                            tierIcon,
+                          ],
+                        ],
                       ),
-                    ),
-                    if (hasPhone) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        customer.phone,
-                        style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
-                      ),
+                      if (customer.instagram != null) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                         "@${ customer.instagram!}",
+                          style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              // Ícone indicando que é um item selecionável
-              const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 18),
-            ],
+                // Ícone indicando que é um item selecionável
+                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.grey, size: 18),
+              ],
+            ),
           ),
         ),
       ),
