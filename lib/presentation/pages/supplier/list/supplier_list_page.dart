@@ -102,14 +102,48 @@ class _SupplierListPageState extends State<SupplierListPage> {
           }
           if (state is SupplierListLoaded) {
             if (state.suppliers.isEmpty) {
-              return const Center(child: Text('Nenhum fornecedor cadastrado.'));
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.inventory_2_outlined,
+                          size: 80, color: Colors.grey),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Nenhum fornecedor cadastrado',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Mantenha os contatos dos fornecedores, adicionando-os agora.',
+                        style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 32),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: const Text('Cadastrar Primeiro fornecedor'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.deepPurple,
+                          foregroundColor: Colors.white,
+                          padding:
+                          const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        onPressed: _navigateToCreateForm,
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
             return ListView.builder(
               padding: const EdgeInsets.only(bottom: 80),
               itemCount: state.suppliers.length,
               itemBuilder: (context, index) {
                 final supplier = state.suppliers[index];
-                // >>>>> O CARD ANTIGO FOI SUBSTITUÍDO POR ESTE <<<<<
                 return _SupplierCard(
                   supplier: supplier,
                   onEdit: () => _navigateToEditForm(supplier),
@@ -213,3 +247,4 @@ class _SupplierCard extends StatelessWidget {
     );
   }
 }
+

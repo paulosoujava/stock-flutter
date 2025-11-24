@@ -96,6 +96,7 @@ class _CustomerListPageState extends State<CustomerListPage>
   void _showFilterDialog() {
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true, // importante para bottom sheets altas
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -108,66 +109,71 @@ class _CustomerListPageState extends State<CustomerListPage>
 
           return Container(
             padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: const [
-                    Icon(Icons.filter_list, size: 28, color: Colors.black87),
-                    SizedBox(width: 12),
-                    Text(
-                      'Filtrar por nível',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                const Divider(),
-                const SizedBox(height: 16),
+            child: SingleChildScrollView(           // ← SOLUÇÃO AQUI
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: const [
+                      Icon(Icons.filter_list, size: 28, color: Colors.black87),
+                      SizedBox(width: 12),
+                      Text(
+                        'Filtrar por nível',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 16),
 
-                _buildFilterOption(
-                  title: 'Todos os clientes',
-                  icon: Icons.people,
-                  color: Colors.grey.shade600,
-                  isSelected: currentFilter == null,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _viewModel.handleIntent( FilterByTierIntent(null));
-                  },
-                ),
-                _buildFilterOption(
-                  title: 'Ouro',
-                  icon: Icons.emoji_events,
-                  color: Colors.amber.shade700,
-                  isSelected: currentFilter == 'ouro',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _viewModel.handleIntent( FilterByTierIntent('ouro'));
-                  },
-                ),
-                _buildFilterOption(
-                  title: 'Prata',
-                  icon: Icons.military_tech,
-                  color: Colors.blueGrey.shade600,
-                  isSelected: currentFilter == 'prata',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _viewModel.handleIntent( FilterByTierIntent('prata'));
-                  },
-                ),
-                _buildFilterOption(
-                  title: 'Bronze',
-                  icon: Icons.workspace_premium,
-                  color: Colors.brown.shade600,
-                  isSelected: currentFilter == 'bronze',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _viewModel.handleIntent( FilterByTierIntent('bronze'));
-                  },
-                ),
-                const SizedBox(height: 24),
-              ],
+                  _buildFilterOption(
+                    title: 'Todos os clientes',
+                    icon: Icons.people,
+                    color: Colors.grey.shade600,
+                    isSelected: currentFilter == null,
+                    onTap: () {
+                      Navigator.pop(context);
+                      _viewModel.handleIntent(FilterByTierIntent(null));
+                    },
+                  ),
+                  _buildFilterOption(
+                    title: 'Ouro',
+                    icon: Icons.emoji_events,
+                    color: Colors.amber.shade700,
+                    isSelected: currentFilter == 'ouro',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _viewModel.handleIntent(FilterByTierIntent('ouro'));
+                    },
+                  ),
+                  _buildFilterOption(
+                    title: 'Prata',
+                    icon: Icons.military_tech,
+                    color: Colors.blueGrey.shade600,
+                    isSelected: currentFilter == 'prata',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _viewModel.handleIntent(FilterByTierIntent('prata'));
+                    },
+                  ),
+                  _buildFilterOption(
+                    title: 'Bronze',
+                    icon: Icons.workspace_premium,
+                    color: Colors.brown.shade600,
+                    isSelected: currentFilter == 'bronze',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _viewModel.handleIntent(FilterByTierIntent('bronze'));
+                    },
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Garante espaço para o botão de navegação do sistema (em iPhones com gesture bar)
+                  SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
+                ],
+              ),
             ),
           );
         },

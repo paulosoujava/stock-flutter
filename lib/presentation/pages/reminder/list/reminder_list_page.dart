@@ -190,8 +190,20 @@ class _ReminderListPageState extends State<ReminderListPage>
           ),
           const SizedBox(height: 8),
           Text(
-            'Clique no botão + para adicionar',
+            'Cadastre seu primeiro lembrete, antes que você se esqueça de cadastrar!',
             style: TextStyle(color: Colors.grey[600]),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.add_alarm),
+            label: const Text('Cadastrar lembrete'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              padding:
+              const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            onPressed: _navigateToCreateForm,
           ),
         ],
       ),

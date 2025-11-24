@@ -27,6 +27,27 @@ class ProductRepositoryImpl implements IProductRepository {
   }
 
   @override
+  Future<Product?> getProductsByCode(String code) async {
+    final box = await _openBox();
+
+    // Filtra os produtos pelo código e retorna o primeiro encontrado (ou null)
+    final foundProducts = box.values
+        .where((p) => p.codeOfProduct?.trim() == code.trim())
+        .toList();
+
+    if (foundProducts.isEmpty) {
+      return null;
+    }
+
+    // Ordena por nome (opcional, se quiser o "melhor" resultado)
+    foundProducts
+        .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+
+    // Retorna o primeiro (ou o "melhor" após ordenação)
+    return foundProducts.first;
+  }
+
+  @override
   Future<void> addProduct(Product product) async {
     final box = await _openBox();
     final newProduct = product.copyWith(id: _uuid.v4());

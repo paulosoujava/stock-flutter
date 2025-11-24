@@ -36,7 +36,7 @@ Future<void> main() async {
   _registerHiveAdapters();
 
   // ❗ REMOVER EM PRODUÇÃO
-  clearBD();
+  //clearBD();
 
   //Injeção de dependências
   await configureDependencies();
@@ -112,6 +112,8 @@ Future<void> clearBD()async {
   await Hive.deleteBoxFromDisk('saleBox');
   await Hive.deleteBoxFromDisk('productBox');
   await Hive.deleteBoxFromDisk('categoryBox');
+  await Hive.deleteBoxFromDisk('remindersBox');
+  await Hive.deleteBoxFromDisk('suppliersBox');
   //await fakeClients();
 }
 Future<void> fakeClients() async {

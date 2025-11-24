@@ -221,10 +221,9 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
                     backgroundColor: Colors.green,
                   ),
                 );
-                // Verifica se ainda pode voltar antes de chamar o pop
-                if (context.canPop()) {
+
                   context.pop(true);
-                }
+
               } else if (state is CustomerFormErrorState) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text(state.message), backgroundColor: Colors.red),

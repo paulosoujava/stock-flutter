@@ -46,6 +46,7 @@ import '../../domain/usecases/products/get_all_products_use_case.dart' as _i237;
 import '../../domain/usecases/products/get_product_count_by_category.dart'
     as _i811;
 import '../../domain/usecases/products/get_products_by_category.dart' as _i887;
+import '../../domain/usecases/products/get_products_by_code.dart' as _i1056;
 import '../../domain/usecases/products/update_product.dart' as _i421;
 import '../../domain/usecases/reminder/add_reminder.dart' as _i487;
 import '../../domain/usecases/reminder/delete_reminder.dart' as _i859;
@@ -137,6 +138,8 @@ _i174.GetIt $initGetIt(
       () => _i811.GetProductCountByCategory(gh<_i213.IProductRepository>()));
   gh.factory<_i125.AddProduct>(
       () => _i125.AddProduct(gh<_i213.IProductRepository>()));
+  gh.factory<_i1056.GetProductsByCode>(
+      () => _i1056.GetProductsByCode(gh<_i213.IProductRepository>()));
   gh.factory<_i561.SignInUseCase>(
       () => _i561.SignInUseCase(gh<_i93.ILoginRepository>()));
   gh.factory<_i137.SignOutUseCase>(
@@ -228,6 +231,12 @@ _i174.GetIt $initGetIt(
   );
   gh.factory<_i439.GetCurrentUserUseCase>(
       () => _i439.GetCurrentUserUseCase(gh<_i59.FirebaseAuth>()));
+  gh.factory<_i689.ProductFormViewModel>(() => _i689.ProductFormViewModel(
+        gh<_i125.AddProduct>(),
+        gh<_i421.UpdateProduct>(),
+        gh<_i557.EventBus>(),
+        gh<_i1056.GetProductsByCode>(),
+      ));
   gh.factory<_i447.LoginViewModel>(
       () => _i447.LoginViewModel(gh<_i561.SignInUseCase>()));
   gh.factory<_i569.FinishLiveUseCase>(
@@ -255,11 +264,6 @@ _i174.GetIt $initGetIt(
         gh<_i421.UpdateProduct>(),
         gh<_i439.GetCurrentUserUseCase>(),
         gh<_i569.FinishLiveUseCase>(),
-      ));
-  gh.factory<_i689.ProductFormViewModel>(() => _i689.ProductFormViewModel(
-        gh<_i125.AddProduct>(),
-        gh<_i421.UpdateProduct>(),
-        gh<_i557.EventBus>(),
       ));
   gh.factory<_i706.CategoryListViewModel>(() => _i706.CategoryListViewModel(
         gh<_i263.GetCategories>(),

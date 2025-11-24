@@ -74,7 +74,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   void _populateFieldsForEditing() {
     final product = widget.productToEdit!;
-    _codeOfProductController.text = product.name;
+    _codeOfProductController.text = product.codeOfProduct!;
     _nameController.text = product.name;
     _descriptionController.text = product.description;
     _salePriceController.updateValue(product.salePrice);
@@ -154,6 +154,7 @@ class _ProductFormPageState extends State<ProductFormPage> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           CustomTextFormField(
+                            enabled: !isEditing,
                             controller: _codeOfProductController,
                             labelText: 'Código do Produto',
                             icon: Icons.qr_code_2_outlined, // Ícone melhorado
