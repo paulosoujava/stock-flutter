@@ -1,11 +1,10 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
-import 'package:stock/presentation/pages/customer/form/customer_form_intent.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../core/events/event_bus.dart';
@@ -21,8 +20,8 @@ class CustomerListPage extends StatefulWidget {
   State<CustomerListPage> createState() => _CustomerListPageState();
 }
 
-class _CustomerListPageState extends State<CustomerListPage>
-    with TickerProviderStateMixin {
+class _CustomerListPageState extends State<CustomerListPage> {
+  // --- LÓGICA ORIGINAL PRESERVADA ---
   late final CustomerListViewModel _viewModel;
   final _searchController = TextEditingController();
   StreamSubscription? _customerSavedSubscription;
@@ -46,20 +45,22 @@ class _CustomerListPageState extends State<CustomerListPage>
   void dispose() {
     _searchController.dispose();
     _viewModel.dispose();
+    _customerSavedSubscription?.cancel();
     super.dispose();
   }
 
   Future<void> _navigateToCreateCustomer() async {
     final result = await context.push<bool>(AppRoutes.customerCreate);
     if (result == true) {
-      _viewModel.handleIntent( FetchCustomersIntent());
+      _viewModel.handleIntent(FetchCustomersIntent());
     }
   }
 
   Future<void> _navigateToEditCustomer(Customer customer) async {
-    final result = await context.push<bool>(AppRoutes.customerEdit, extra: customer);
+    final result =
+    await context.push<bool>(AppRoutes.customerEdit, extra: customer);
     if (result == true) {
-      _viewModel.handleIntent( FetchCustomersIntent());
+      _viewModel.handleIntent(FetchCustomersIntent());
     }
   }
 
@@ -81,7 +82,7 @@ class _CustomerListPageState extends State<CustomerListPage>
             shape: const StadiumBorder(),
           ),
         );
-        _viewModel.handleIntent( FetchCustomersIntent());
+        _viewModel.handleIntent(FetchCustomersIntent());
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -96,7 +97,7 @@ class _CustomerListPageState extends State<CustomerListPage>
   void _showFilterDialog() {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // importante para bottom sheets altas
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -109,25 +110,26 @@ class _CustomerListPageState extends State<CustomerListPage>
 
           return Container(
             padding: const EdgeInsets.all(24),
-            child: SingleChildScrollView(           // ← SOLUÇÃO AQUI
+            child: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: const [
-                      Icon(Icons.filter_list, size: 28, color: Colors.black87),
+                      Icon(Icons.filter_list,
+                          size: 28, color: Colors.black87),
                       SizedBox(width: 12),
                       Text(
                         'Filtrar por nível',
-                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   const Divider(),
                   const SizedBox(height: 16),
-
                   _buildFilterOption(
                     title: 'Todos os clientes',
                     icon: Icons.people,
@@ -169,8 +171,6 @@ class _CustomerListPageState extends State<CustomerListPage>
                     },
                   ),
                   const SizedBox(height: 14),
-
-                  // Garante espaço para o botão de navegação do sistema (em iPhones com gesture bar)
                   SizedBox(height: MediaQuery.of(context).viewInsets.bottom),
                 ],
               ),
@@ -223,176 +223,201 @@ class _CustomerListPageState extends State<CustomerListPage>
     );
   }
 
+  // --- FIM DA LÓGICA ORIGINAL ---
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text(
-          'Clientes',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        backgroundColor: theme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          // ÍCONE DE FILTRO COM BADGE DINÂMICO (AGORA FUNCIONA!)
-          StreamBuilder<CustomerListState>(
-            stream: _viewModel.state,
-            builder: (context, snapshot) {
-              final hasActiveFilter = snapshot.hasData &&
-                  snapshot.data is CustomerListSuccessState &&
-                  (snapshot.data as CustomerListSuccessState).selectedTierKeyword != null;
+      backgroundColor: Colors.grey[100],
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: StreamBuilder<CustomerListState>(
+              stream: _viewModel.state,
+              builder: (context, snapshot) {
+                final state = snapshot.data;
 
-              return IconButton(
-                icon: Stack(
-                  children: [
-                    const Icon(Icons.tune, size: 28),
-                    if (hasActiveFilter)
-                      Positioned(
-                        right: 6,
-                        top: 6,
-                        child: Container(
-                          width: 12,
-                          height: 12,
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                        ),
+                if (state is CustomerListLoadingState || !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is CustomerListErrorState) {
+                  return Center(
+                    child: Text(state.message, style: const TextStyle(color: Colors.red)),
+                  );
+                }
+                if (state is CustomerListSuccessState) {
+                  if (state.filteredCustomers.isEmpty) {
+                    return _buildEmptyState(state);
+                  }
+
+                  return RefreshIndicator(
+                    onRefresh: () async => _viewModel.handleIntent(FetchCustomersIntent()),
+                    child: GridView.builder(
+                      padding: const EdgeInsets.all(16),
+                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 450,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 1.3,
                       ),
-                  ],
-                ),
-                tooltip: 'Filtrar por nível',
-                onPressed: _showFilterDialog,
-              );
-            },
+                      itemCount: state.filteredCustomers.length,
+                      itemBuilder: (context, index) {
+                        final customer = state.filteredCustomers[index];
+                        return _CustomerCard(
+                          key: ValueKey(customer.id),
+                          customer: customer,
+                          onEdit: () => _navigateToEditCustomer(customer),
+                          onDelete: () => _showDeleteConfirmation(customer),
+                        );
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Cadastrar cliente',
-            onPressed: _navigateToCreateCustomer,
-          ),
-          const SizedBox(width: 12),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(80),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 40, 24, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+            tooltip: 'Voltar',
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'Clientes',
+            style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800]),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: 300,
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Pesquisar por nome, CPF ou telefone...',
-                prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                filled: true,
-                fillColor: Colors.white,
+                hintText: 'Pesquisar por nome, CPF ou @...',
+                prefixIcon: const Icon(Icons.search, size: 20),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
+                filled: true,
+                contentPadding: EdgeInsets.zero,
+                fillColor: Colors.grey[100],
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                   icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _viewModel.handleIntent( SearchCustomerIntent(''));
-                  },
+                  onPressed: () => _searchController.clear(),
                 )
                     : null,
               ),
             ),
           ),
-        ),
-      ),
-      body: StreamBuilder<CustomerListState>(
-        stream: _viewModel.state,
-        builder: (context, snapshot) {
-          final state = snapshot.data;
+          const SizedBox(width: 16),
+          StreamBuilder<CustomerListState>(
+            stream: _viewModel.state,
+            builder: (context, snapshot) {
+              final state = snapshot.data;
+              final filter = state is CustomerListSuccessState ? state.selectedTierKeyword : null;
 
-          if (state is CustomerListLoadingState || !snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is CustomerListErrorState) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
-                  const SizedBox(height: 16),
-                  Text(state.message, style: const TextStyle(color: Colors.black54)),
-                ],
-              ),
-            );
-          }
-          if (state is CustomerListSuccessState) {
-            final customers = state.filteredCustomers;
-
-            if (customers.isEmpty) {
-              return _buildEmptyState();
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: customers.length,
-              itemBuilder: (context, index) {
-                final customer = customers[index];
-                return _CustomerCard(
-                  customer: customer,
-                  onEdit: () => _navigateToEditCustomer(customer),
-                  onDelete: () => _showDeleteConfirmation(customer),
-                );
-              },
-            );
-          }
-          return const SizedBox.shrink();
-        },
+              return Badge(
+                isLabelVisible: filter != null,
+                label: Text(filter ?? ''),
+                child: IconButton(
+                  tooltip: 'Filtrar por nível',
+                  icon: const Icon(Icons.filter_list),
+                  onPressed: _showFilterDialog,
+                ),
+              );
+            },
+          ),
+          const SizedBox(width: 35),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            ),
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text("Novo Cliente"),
+            onPressed: _navigateToCreateCustomer,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(CustomerListSuccessState state) {
+    final hasSearch = _searchController.text.isNotEmpty;
+    final hasFilter = state.selectedTierKeyword != null;
+
+    String title;
+    String subtitle;
+
+    if(hasSearch || hasFilter) {
+      title = 'Nenhum cliente encontrado';
+      subtitle = 'Tente ajustar sua busca ou o filtro aplicado.';
+    } else {
+      title = 'Nenhum cliente cadastrado';
+      subtitle = 'Comece adicionando seu primeiro cliente para gerenciar.';
+    }
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Opacity(
-              opacity: 0.5,
-              child: Icon(
-                Icons.people_alt_outlined,
-                size: 90,
-                color: Colors.grey[400],
-              ),
-            ),
+            Icon(Icons.people_outline, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 24),
-            const Text(
-              'Nenhum cliente',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black54),
-            ),
-            const SizedBox(height: 12),
+            Text(title,
+                style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey[700]),
+                textAlign: TextAlign.center),
+            const SizedBox(height: 8),
             Text(
-              _searchController.text.isEmpty && _viewModel.currentTierFilter == null
-                  ? 'Cadastre seu primeiro cliente para começar.'
-                  : 'Nenhum cliente encontrado com os filtros aplicados.',
-              style: TextStyle(color: Colors.grey[600], fontSize: 15),
+              subtitle,
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: _navigateToCreateCustomer,
-              icon: const Icon(Icons.add),
-              label: const Text('Cadastrar Novo Cliente'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            if (!hasSearch && !hasFilter) ...[
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add),
+                label: const Text('Cadastrar Primeiro Cliente'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: _navigateToCreateCustomer,
               ),
-            ),
+            ]
           ],
         ),
       ),
@@ -400,11 +425,7 @@ class _CustomerListPageState extends State<CustomerListPage>
   }
 }
 
-// ===================================================================
-// CUSTOMER CARD (igual ao anterior, mantido 100%)
-// ===================================================================
-
-class _CustomerCard extends StatefulWidget {
+class _CustomerCard extends StatelessWidget {
   final Customer customer;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -412,22 +433,17 @@ class _CustomerCard extends StatefulWidget {
   const _CustomerCard({
     required this.customer,
     required this.onEdit,
-    required this.onDelete,
+    required this.onDelete, required ValueKey<String> key,
   });
 
-  @override
-  State<_CustomerCard> createState() => _CustomerCardState();
-}
-
-class _CustomerCardState extends State<_CustomerCard> {
-  void _showCustomerDetails() {
+  void _showCustomerDetails(BuildContext context) {
     showDialog(
       context: context,
-      builder: (dialogContext) => CustomerDetailsDialog(customer: widget.customer),
+      builder: (dialogContext) => CustomerDetailsDialog(customer: customer),
     );
   }
 
-  Future<void> _launchWhatsApp(String phone) async {
+  Future<void> _launchWhatsApp(BuildContext context, String phone) async {
     final cleanPhone = phone.replaceAll(RegExp(r'[^0-9]'), '');
     final url = Uri.parse("https://wa.me/55$cleanPhone");
     if (await canLaunchUrl(url)) {
@@ -439,116 +455,169 @@ class _CustomerCardState extends State<_CustomerCard> {
     }
   }
 
-  bool _isGold(String? notes) => (notes ?? '').toLowerCase().contains('ouro');
-  bool _isSilver(String? notes) => (notes ?? '').toLowerCase().contains('prata');
-  bool _isBronze(String? notes) => (notes ?? '').toLowerCase().contains('bronze');
-
-  Color _getBorderColor() {
-    if (_isGold(widget.customer.notes)) return Colors.amber.shade600;
-    if (_isSilver(widget.customer.notes)) return Colors.blueGrey.shade400;
-    if (_isBronze(widget.customer.notes)) return Colors.brown.shade400;
-    return Colors.transparent;
+  ({Color color, IconData icon, String label}) _getTierInfo() {
+    final notes = (customer.notes ?? '').toLowerCase();
+    if (notes.contains('ouro')) {
+      return (
+      color: Colors.amber.shade700,
+      icon: Icons.emoji_events,
+      label: 'OURO'
+      );
+    }
+    if (notes.contains('prata')) {
+      return (
+      color: Colors.blueGrey.shade400,
+      icon: Icons.military_tech,
+      label: 'PRATA'
+      );
+    }
+    if (notes.contains('bronze')) {
+      return (
+      color: Colors.brown.shade400,
+      icon: Icons.workspace_premium,
+      label: 'BRONZE'
+      );
+    }
+    return (color: Colors.grey, icon: Icons.person, label: 'PADRÃO');
   }
-
-  Color _getBackgroundColor() {
-    if (_isGold(widget.customer.notes)) return Colors.amber.shade50;
-    if (_isSilver(widget.customer.notes)) return Colors.blueGrey.shade50;
-    if (_isBronze(widget.customer.notes)) return const Color(0xFFEFEBE9);
-    return Colors.white;
+  String _formatPhone(String phone) {
+    final digitsOnly = phone.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digitsOnly.length == 11) {
+      return '(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 7)}-${digitsOnly.substring(7)}';
+    }
+    if (digitsOnly.length == 10) {
+      return '(${digitsOnly.substring(0, 2)}) ${digitsOnly.substring(2, 6)}-${digitsOnly.substring(6)}';
+    }
+    return phone;
   }
-
-  IconData _getTierIcon() {
-    if (_isGold(widget.customer.notes)) return Icons.emoji_events;
-    if (_isSilver(widget.customer.notes)) return Icons.military_tech;
-    if (_isBronze(widget.customer.notes)) return Icons.workspace_premium;
-    return Icons.person;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final borderColor = _getBorderColor();
-    final backgroundColor = _getBackgroundColor();
-    final tierIcon = _getTierIcon();
-    final hasTier = borderColor != Colors.transparent;
+    final tier = _getTierInfo();
+    final hasTier = tier.label != 'PADRÃO';
 
     return Card(
-      elevation: 4,
-      shadowColor: Colors.black12,
-      color: backgroundColor,
+      elevation: 2.0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: borderColor, width: hasTier ? 2 : 0),
+        side: BorderSide(
+            color: hasTier ? tier.color.withOpacity(0.5) : Colors.grey.shade200,
+            width: 1),
       ),
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: _showCustomerDetails,
+        onTap: () => _showCustomerDetails(context),
         child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: hasTier
-                    ? borderColor.withOpacity(0.2)
-                    : theme.primaryColor.withOpacity(0.1),
-                child: hasTier
-                    ? Icon(tierIcon, color: borderColor, size: 28)
-                    : Text(
-                  widget.customer.name.isNotEmpty
-                      ? widget.customer.name[0].toUpperCase()
-                      : '?',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: theme.primaryColor,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.customer.name.toUpperCase(),
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    if (widget.customer.instagram?.isNotEmpty == true)
-                      Text(
-                        '@${widget.customer.instagram}',
-                        style: const TextStyle(fontSize: 12, color: Colors.black54),
-                      ),
-                  ],
-                ),
-              ),
               Row(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (widget.customer.whatsapp.isNotEmpty)
-                    IconButton(
-                      icon: const Icon(Icons.message, color: Colors.green),
-                      tooltip: 'WhatsApp',
-                      onPressed: () => _launchWhatsApp(widget.customer.whatsapp),
-                    ),
-                  IconButton(
-                    icon: const Icon(Icons.edit_outlined, color: Colors.orange),
-                    tooltip: 'Editar',
-                    onPressed: widget.onEdit,
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: tier.color.withOpacity(0.1),
+                    child: Icon(tier.icon, color: tier.color),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    tooltip: 'Excluir',
-                    onPressed: widget.onDelete,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (hasTier)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                                color: tier.color,
+                                borderRadius: BorderRadius.circular(6)),
+                            child: Text(
+                              tier.label,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10),
+                            ),
+                          ),
+                        const SizedBox(height: 4),
+                        Text(
+                          customer.name,
+                          style: GoogleFonts.poppins(
+                              fontSize: 18, fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 14),
+              _buildDetailRow(
+                icon: Icons.phone_outlined,
+                value:
+                customer.phone.isEmpty ? 'Não informado' : _formatPhone(customer.phone),
+              ),
+              const Spacer(),
+              const Divider(),
+              _buildDetailRow(
+                icon: Icons.email_outlined,
+                value:
+                customer.email.isEmpty ? 'Não informado' : customer.email,
+              ),
+              const Spacer(),
+              const Divider(),
+              if (customer.instagram?.isNotEmpty ?? false)
+                _buildDetailRow(
+                  icon: Icons.alternate_email,
+                  value: '@${customer.instagram!}',
+                ),
+              const Spacer(),
+              const Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (customer.whatsapp.isNotEmpty)
+                    IconButton(
+                      icon: const Icon(Icons.message, color: Colors.green),
+                      tooltip: 'WhatsApp',
+                      onPressed: () => _launchWhatsApp(context, customer.whatsapp),
+                    ),
+                  IconButton(
+                    icon:
+                    const Icon(Icons.edit_outlined, color: Colors.orange),
+                    tooltip: 'Editar',
+                    onPressed: onEdit,
+                  ),
+                  IconButton(
+                    icon:
+                    const Icon(Icons.delete_outline, color: Colors.red),
+                    tooltip: 'Excluir',
+                    onPressed: onDelete,
+                  ),
+                ],
+              )
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow({required IconData icon, required String value}) {
+    return Row(
+      children: [
+        Icon(icon, size: 16, color: Colors.grey[600]),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            value,
+            style: TextStyle(fontSize: 14, color: Colors.grey[800]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

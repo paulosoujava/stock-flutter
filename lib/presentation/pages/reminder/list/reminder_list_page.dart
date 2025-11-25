@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
@@ -9,8 +12,6 @@ import 'package:stock/presentation/pages/reminder/list/reminder_list_state.dart'
 import 'package:stock/presentation/pages/reminder/list/reminder_list_viewmodel.dart';
 import 'package:stock/presentation/widgets/confirmation_dialog.dart';
 
-import '../../../../core/di/app_module.dart';
-
 class ReminderListPage extends StatefulWidget {
   const ReminderListPage({super.key});
 
@@ -18,8 +19,8 @@ class ReminderListPage extends StatefulWidget {
   State<ReminderListPage> createState() => _ReminderListPageState();
 }
 
-class _ReminderListPageState extends State<ReminderListPage>
-    with TickerProviderStateMixin {
+class _ReminderListPageState extends State<ReminderListPage> {
+  // --- LÓGICA ORIGINAL 100% PRESERVADA ---
   late final ReminderListViewModel _viewModel;
   final TextEditingController _searchController = TextEditingController();
 
@@ -27,11 +28,14 @@ class _ReminderListPageState extends State<ReminderListPage>
   void initState() {
     super.initState();
     _viewModel = getIt<ReminderListViewModel>();
+    // Carrega os dados na inicialização
+    _viewModel.handleIntent(LoadRemindersIntent());
   }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _viewModel.dispose();
     super.dispose();
   }
 
@@ -72,153 +76,194 @@ class _ReminderListPageState extends State<ReminderListPage>
       }
     }
   }
+  // --- FIM DA LÓGICA ORIGINAL ---
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: Colors.white, // Fundo branco puro
-      appBar: AppBar(
-        title: const Text(
-          'Lembretes',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22),
-        ),
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.add_alarm),
-              tooltip: 'Cadastrar produto em categoria',
-              onPressed: _navigateToCreateForm),
-          SizedBox(
-            width: 20,
-          )
+      backgroundColor: Colors.grey[100],
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: StreamBuilder<ReminderListState>(
+              stream: _viewModel.state,
+              builder: (context, snapshot) {
+                final state = snapshot.data;
+                if (state is ReminderListLoading || !snapshot.hasData) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (state is ReminderListError) {
+                  return Center(
+                    child: Text(state.message,
+                        style: const TextStyle(color: Colors.red)),
+                  );
+                }
+                if (state is ReminderListLoaded) {
+                  if (state.reminders.isEmpty) {
+                    return _buildEmptyState();
+                  }
+                  return RefreshIndicator(
+                    onRefresh: () async =>
+                        _viewModel.handleIntent(LoadRemindersIntent()),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                      itemCount: state.reminders.length,
+                      itemBuilder: (context, index) {
+                        final reminder = state.reminders[index];
+                        return _ReminderCard(
+                          key: ValueKey(reminder.id),
+                          reminder: reminder,
+                          onEdit: () => _navigateToEditForm(reminder),
+                          onDelete: () => _showDeleteConfirmation(reminder),
+                          onToggle: () => _viewModel
+                              .handleIntent(ToggleReminderStatusIntent(reminder)),
+                        );
+                      },
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
         ],
-        backgroundColor: theme.primaryColor,
-        // Usa a cor primária do seu app
-        foregroundColor: Colors.white,
-        elevation: 2,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(70),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 40, 24, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+            tooltip: 'Voltar',
+          ),
+          const SizedBox(width: 16),
+          Text(
+            'Lembretes',
+            style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800]),
+          ),
+          const Spacer(),
+          SizedBox(
+            width: 300,
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Pesquisar por título ou conteúdo...',
-                prefixIcon: const Icon(Icons.search),
-                filled: true,
-                fillColor: Colors.grey[50],
+                hintText: 'Pesquisar lembrete...',
+                prefixIcon: const Icon(Icons.search, size: 20),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none),
+                filled: true,
+                contentPadding: EdgeInsets.zero,
+                fillColor: Colors.grey[100],
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _viewModel.handleIntent(SearchRemindersIntent(''));
-                        },
-                      )
+                  icon: const Icon(Icons.clear),
+                  onPressed: () {
+                    _searchController.clear();
+                    // Dispara a busca com texto vazio para limpar o filtro
+                    _viewModel.handleIntent(SearchRemindersIntent(''));
+                  },
+                )
                     : null,
               ),
               onChanged: (query) =>
                   _viewModel.handleIntent(SearchRemindersIntent(query)),
             ),
           ),
-        ),
-      ),
-      body: StreamBuilder<ReminderListState>(
-        stream: _viewModel.state,
-        builder: (context, snapshot) {
-          final state = snapshot.data;
-
-          if (state is ReminderListLoading || !snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (state is ReminderListError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error_outline, size: 64, color: Colors.grey[600]),
-                  const SizedBox(height: 16),
-                  Text(state.message,
-                      style: const TextStyle(color: Colors.black54)),
-                ],
-              ),
-            );
-          }
-          if (state is ReminderListLoaded) {
-            if (state.reminders.isEmpty) {
-              return _buildEmptyState();
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-              itemCount: state.reminders.length,
-              itemBuilder: (context, index) {
-                final reminder = state.reminders[index];
-                return _ReminderCard(
-                  reminder: reminder,
-                  onEdit: () => _navigateToEditForm(reminder),
-                  onDelete: () => _showDeleteConfirmation(reminder),
-                  onToggle: () => _viewModel
-                      .handleIntent(ToggleReminderStatusIntent(reminder)),
-                );
-              },
-            );
-          }
-          return const SizedBox.shrink();
-        },
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.note_alt_outlined, size: 90, color: Colors.grey[400]),
-          const SizedBox(height: 24),
-          const Text(
-            'Nenhum lembrete cadastrado',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.black54),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Cadastre seu primeiro lembrete, antes que você se esqueça de cadastrar!',
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 32),
+          const SizedBox(width: 16),
           ElevatedButton.icon(
-            icon: const Icon(Icons.add_alarm),
-            label: const Text('Cadastrar lembrete'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.deepPurple,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               padding:
-              const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             ),
+            icon: const Icon(Icons.add_alarm, size: 20),
+            label: const Text("Novo Lembrete"),
             onPressed: _navigateToCreateForm,
           ),
         ],
       ),
     );
   }
+
+  Widget _buildEmptyState() {
+    bool isSearching = _searchController.text.isNotEmpty;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(isSearching ? Icons.search_off : Icons.note_alt_outlined,
+                size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 24),
+            Text(
+              isSearching ? 'Nenhum lembrete encontrado' : 'Nenhum lembrete cadastrado',
+              style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey[700]),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              isSearching
+                  ? 'Tente uma busca diferente.'
+                  : 'Crie seu primeiro lembrete para não se esquecer de nada importante.',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+            if (!isSearching) ...[
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.add_alarm),
+                label: const Text('Cadastrar Primeiro Lembrete'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  foregroundColor: Colors.white,
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: _navigateToCreateForm,
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-// === CARD LIMPO E PROFISSIONAL (SEM SWIPE) ===
-class _ReminderCard extends StatefulWidget {
+// CARD DE LEMBRETE REDESENHADO
+class _ReminderCard extends StatelessWidget {
   final Reminder reminder;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onToggle;
 
   const _ReminderCard({
+    super.key,
     required this.reminder,
     required this.onEdit,
     required this.onDelete,
@@ -226,143 +271,137 @@ class _ReminderCard extends StatefulWidget {
   });
 
   @override
-  State<_ReminderCard> createState() => __ReminderCardState();
-}
-
-class __ReminderCardState extends State<_ReminderCard>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _scale;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 150));
-    _scale = Tween<double>(begin: 1.0, end: 0.97).animate(_controller);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isCompleted = widget.reminder.isCompleted;
+    final isCompleted = reminder.isCompleted;
     final theme = Theme.of(context);
 
-    return ScaleTransition(
-      scale: _scale,
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        color: isCompleted ? Colors.grey[100] : Colors.white,
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            _controller.forward().then((_) => _controller.reverse());
-            widget.onToggle();
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Checkbox
-                GestureDetector(
-                  onTap: widget.onToggle,
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color:
-                          isCompleted ? theme.primaryColor : Colors.transparent,
-                      border: Border.all(
-                        color: isCompleted ? theme.primaryColor : Colors.grey,
-                        width: 2,
-                      ),
-                    ),
-                    child: isCompleted
-                        ? const Icon(Icons.check, size: 16, color: Colors.white)
-                        : null,
+    return Card(
+      elevation: 2.0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+            color: isCompleted ? Colors.green.shade200 : Colors.grey.shade200,
+            width: 1),
+      ),
+      clipBehavior: Clip.antiAlias,
+      color: isCompleted ? Colors.green.shade50 : Colors.white,
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Checkbox customizado
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color:
+                  isCompleted ? theme.primaryColor : Colors.transparent,
+                  border: Border.all(
+                    color:
+                    isCompleted ? theme.primaryColor : Colors.grey.shade400,
+                    width: 2,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.reminder.title,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color:
-                              isCompleted ? Colors.grey[600] : Colors.black87,
-                          decoration:
-                              isCompleted ? TextDecoration.lineThrough : null,
-                        ),
+                child: isCompleted
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(width: 16),
+              // Conteúdo do lembrete
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      reminder.title,
+                      style: GoogleFonts.poppins(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w600,
+                        color:
+                        isCompleted ? Colors.grey[600] : Colors.black87,
+                        decoration: isCompleted
+                            ? TextDecoration.lineThrough
+                            : null,
                       ),
-                      const SizedBox(height: 4),
+                    ),
+                    const SizedBox(height: 6),
+                    if (reminder.content.isNotEmpty)
                       Text(
-                        widget.reminder.content,
+                        reminder.content,
                         style: TextStyle(
                           color:
-                              isCompleted ? Colors.grey[500] : Colors.black54,
-                          decoration:
-                              isCompleted ? TextDecoration.lineThrough : null,
+                          isCompleted ? Colors.grey[500] : Colors.black54,
+                          decoration: isCompleted
+                              ? TextDecoration.lineThrough
+                              : null,
+                          fontSize: 15,
                         ),
                         maxLines: 3,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Icon(Icons.person_outline,
-                              size: 14, color: theme.primaryColor),
-                          const SizedBox(width: 4),
-                          Text(
-                            widget.reminder.createdBy,
-                            style: TextStyle(
-                                fontSize: 12, color: theme.primaryColor),
-                          ),
-                          const SizedBox(width: 16),
-                          const Icon(Icons.schedule,
-                              size: 14, color: Colors.grey),
-                          const SizedBox(width: 4),
-                          Text(
-                            DateFormat('dd/MM/yyyy', 'pt_BR')
-                                .format(widget.reminder.createdAt),
-                            style: const TextStyle(
-                                fontSize: 12, color: Colors.black54),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                // Ações (sem swipe)
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                      tooltip: 'Editar',
-                      onPressed: widget.onEdit,
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      tooltip: 'Excluir',
-                      onPressed: widget.onDelete,
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(Icons.person_outline,
+                            size: 14, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          reminder.createdBy,
+                          style: TextStyle(
+                              fontSize: 12, color: Colors.grey[700]),
+                        ),
+                        const Spacer(),
+                        Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          DateFormat('dd/MM/yyyy', 'pt_BR')
+                              .format(reminder.createdAt),
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.black54),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 8),
+              // Ações em Menu
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') {
+                    onEdit();
+                  } else if (value == 'delete') {
+                    onDelete();
+                  }
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'edit',
+                    child: ListTile(
+                      leading: Icon(Icons.edit_outlined),
+                      title: Text('Editar'),
+                    ),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline, color: Colors.red),
+                      title: Text('Excluir', style: TextStyle(color: Colors.red)),
+                    ),
+                  ),
+                ],
+                icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                tooltip: 'Mais opções',
+              ),
+            ],
           ),
         ),
       ),

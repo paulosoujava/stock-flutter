@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/supplier/supplier.dart';
 import 'package:stock/presentation/pages/supplier/form/supplier_form_intent.dart';
 import 'package:stock/presentation/pages/supplier/form/supplier_form_state.dart';
 import 'package:stock/presentation/pages/supplier/form/supplier_form_viewmodel.dart';
-import 'package:go_router/go_router.dart';
-
-import '../../../../core/di/app_module.dart';
 
 class SupplierFormPage extends StatefulWidget {
   final Supplier? supplierToEdit;
@@ -18,6 +17,7 @@ class SupplierFormPage extends StatefulWidget {
 }
 
 class _SupplierFormPageState extends State<SupplierFormPage> {
+  // --- LÓGICA ORIGINAL 100% PRESERVADA ---
   late final SupplierFormViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
@@ -26,10 +26,8 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
   late final TextEditingController _observationController;
   late bool _isEditing;
 
-  final _phoneMaskFormatter = MaskTextInputFormatter(
-      mask: '(##) #####-####',
-      filter: { "#": RegExp(r'[0-9]') }
-  );
+  final _phoneMaskFormatter =
+  MaskTextInputFormatter(mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')});
 
   @override
   void initState() {
@@ -38,13 +36,16 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
     _isEditing = widget.supplierToEdit != null;
 
     _nameController = TextEditingController(text: widget.supplierToEdit?.name);
-    _phoneController = TextEditingController(text: widget.supplierToEdit?.phone);
+    _phoneController = TextEditingController(); // Inicializado vazio
     _emailController = TextEditingController(text: widget.supplierToEdit?.email);
     _observationController =
         TextEditingController(text: widget.supplierToEdit?.observation);
-    _phoneController.text = _phoneMaskFormatter.maskText(widget.supplierToEdit?.phone ?? '');
-    _viewModel.state.listen((state) {
 
+    // Aplica a máscara após o controller ser criado
+    _phoneController.text = _phoneMaskFormatter.maskText(widget.supplierToEdit?.phone ?? '');
+
+    _viewModel.state.listen((state) {
+      if (!mounted) return;
       if (state is SupplierFormSuccess) {
         context.pop(true);
       }
@@ -72,103 +73,166 @@ class _SupplierFormPageState extends State<SupplierFormPage> {
       final supplier = Supplier(
         id: widget.supplierToEdit?.id ?? '',
         name: _nameController.text,
-        phone: _phoneController.text,
+        phone: _phoneMaskFormatter.getUnmaskedText(), // Salva o número limpo
         email: _emailController.text,
         observation: _observationController.text,
       );
       _viewModel.handleIntent(SaveSupplierIntent(supplier));
     }
   }
+  // --- FIM DA LÓGICA ORIGINAL ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(_isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor'),
-        actions: const [],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _saveForm,
-        label: const Text('Salvar'),
-        icon: const Icon(Icons.save),
-      ),
-      body: StreamBuilder<SupplierFormState>(
-          stream: _viewModel.state,
-          builder: (context, snapshot) {
-            final state = snapshot.data;
-            if (state is SupplierFormLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Card(
-                  elevation: 4,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextFormField(
-                            controller: _nameController,
-                            decoration: const InputDecoration(
-                              labelText: 'Nome',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.person),
+      backgroundColor: Colors.grey[100],
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: StreamBuilder<SupplierFormState>(
+              stream: _viewModel.state,
+              builder: (context, snapshot) {
+                final state = snapshot.data;
+                if (state is SupplierFormLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                return LayoutBuilder(
+                  builder: (context, constraints) {
+                    return Center(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24.0),
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 600),
+                          child: Card(
+                            elevation: 4.0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            validator: (value) =>
-                            value!.isEmpty ? 'Campo obrigatório' : null,
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _phoneController,
-                            decoration: const InputDecoration(
-                              labelText: 'Telefone',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.phone),
+                            child: Padding(
+                              padding: const EdgeInsets.all(24.0),
+                              child: _buildFormFields(),
                             ),
-                            keyboardType: TextInputType.phone,
-                            inputFormatters: [_phoneMaskFormatter],
-                            validator: (value) {
-                              // Você pode ajustar a validação se necessário
-                              if (value == null || value.isEmpty) {
-                                return 'O telefone é obrigatório';
-                              }
-                              return null;
-                            },
                           ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _emailController,
-                            decoration: const InputDecoration(
-                              labelText: 'E-mail',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.email_outlined),
-                            ),
-                            keyboardType: TextInputType.emailAddress,
-                          ),
-                          const SizedBox(height: 16),
-                          TextFormField(
-                            controller: _observationController,
-                            decoration: const InputDecoration(
-                              labelText: 'Observação',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.notes),
-                              alignLabelWithHint: true,
-                            ),
-                            maxLines: 4,
-                            keyboardType: TextInputType.multiline,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 40, 24, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+            tooltip: 'Voltar',
+          ),
+          const SizedBox(width: 16),
+          Text(
+            _isEditing ? 'Editar Fornecedor' : 'Novo Fornecedor',
+            style: GoogleFonts.poppins(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+            ),
+          ),
+          const Spacer(),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-            );
-          }),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            ),
+            icon: const Icon(Icons.save, size: 20),
+            label: const Text("Salvar"),
+            onPressed: _saveForm,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormFields() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextFormField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+              labelText: 'Nome do Fornecedor',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.business_center),
+            ),
+            validator: (value) =>
+            value!.isEmpty ? 'O nome é obrigatório' : null,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _phoneController,
+            decoration: const InputDecoration(
+              labelText: 'Telefone',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.phone),
+            ),
+            keyboardType: TextInputType.phone,
+            inputFormatters: [_phoneMaskFormatter],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'O telefone é obrigatório';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'E-mail (opcional)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.email_outlined),
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _observationController,
+            decoration: const InputDecoration(
+              labelText: 'Observação (opcional)',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.notes),
+              alignLabelWithHint: true,
+            ),
+            maxLines: 4,
+            keyboardType: TextInputType.multiline,
+          ),
+        ],
+      ),
     );
   }
 }

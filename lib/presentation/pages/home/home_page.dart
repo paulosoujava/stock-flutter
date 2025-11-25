@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/core/navigation/app_routes.dart';
@@ -23,6 +24,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  // --- LÓGICA ORIGINAL 100% PRESERVADA ---
   late final HomeViewModel _viewModel;
   late final StreamSubscription<HomeState> _stateSubscription;
 
@@ -58,14 +60,14 @@ class _HomePageState extends State<HomePage> {
     ActionItem(
       title: 'Fornecedores',
       description: 'Gerencie parceiros e contatos.',
-      icon: Icons.recent_actors_outlined,
+      icon: Icons.business_center,
       iconColor: Colors.deepOrange,
       route: AppRoutes.supplierList,
     ),
     ActionItem(
       title: 'Lembretes',
       description: 'Crie anotações importantes.',
-      icon: Icons.today_outlined,
+      icon: Icons.note_alt,
       iconColor: Colors.purple,
       route: AppRoutes.reminderList,
     ),
@@ -103,6 +105,19 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  void _onLogoffPressed(BuildContext context) async {
+    final shouldLogoff = await showConfirmationDialog(
+      context: context,
+      title: 'Confirmar Logoff',
+      content: 'Deseja realmente sair?',
+      confirmText: 'Sair',
+    );
+    if (shouldLogoff == true) {
+      _viewModel.handleIntent(SignOutIntent());
+    }
+  }
+  // --- FIM DA LÓGICA ORIGINAL ---
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -110,14 +125,15 @@ class _HomePageState extends State<HomePage> {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: Colors.grey[200],
+        backgroundColor: Colors.grey[100], // Fundo mais suave
         appBar: AppBar(
-          elevation: 0,
-          backgroundColor: theme.colorScheme.primary,
-          title: const Text(
+          elevation: 2,
+          shadowColor: Colors.black.withOpacity(0.1),
+          backgroundColor: Colors.white,
+          foregroundColor: Colors.grey[800],
+          title: Text(
             'Dashboard',
-            style: TextStyle(
-              fontSize: 20,
+            style: GoogleFonts.poppins(
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -125,28 +141,28 @@ class _HomePageState extends State<HomePage> {
             IconButton(
               icon: const Icon(Icons.help_outline),
               onPressed: () => HelpDialog.show(context),
+              tooltip: 'Ajuda',
             ),
             IconButton(
               icon: const Icon(Icons.logout),
               onPressed: () => _onLogoffPressed(context),
+              tooltip: 'Sair',
             ),
             const SizedBox(width: 8),
           ],
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(55),
-            child: Container(
-              color: theme.colorScheme.primary,
-              child: TabBar(
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white70,
-                indicatorColor: Colors.white,
-                tabs: const [
-                  Tab(text: "Ações", icon: Icon(Icons.dashboard_customize)),
-                  Tab(text: "Relatórios", icon: Icon(Icons.bar_chart)),
-                  Tab(text: "Lives", icon: Icon(Icons.live_tv)),
-                ],
-              ),
+          bottom: TabBar(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            labelColor: theme.primaryColor,
+            unselectedLabelColor: Colors.grey[600],
+            indicator: UnderlineTabIndicator(
+              borderSide: BorderSide(color: theme.primaryColor, width: 3),
+              insets: const EdgeInsets.symmetric(horizontal: 16.0),
             ),
+            tabs: const [
+              Tab(child: _TabItem(title: "Ações", icon: Icons.dashboard_customize)),
+              Tab(child: _TabItem(title: "Relatórios", icon: Icons.bar_chart)),
+              Tab(child: _TabItem(title: "Lives", icon: Icons.live_tv)),
+            ],
           ),
         ),
         body: TabBarView(
@@ -159,107 +175,144 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             const SalesReportPage(),
-            LiveListScreen(),
+            const LiveListScreen(),
           ],
         ),
       ),
     );
   }
 
+  // ABA DE AÇÕES REDESENHADA
   Widget _buildActionsTab(BuildContext context, HomeState? state) {
     final String formattedDate = DateFormat("EEEE, d 'de' MMMM", 'pt_BR').format(DateTime.now());
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          children: [
-
-
-            // ================== ALERTA DE ESTOQUE BAIXO (OPCIONAL) ==================
-            if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: LowStockAlertCard(lowStockInfoList: state.lowStockInfo),
-              ),
-
-            if (state is HomeErrorState)
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  state.errorMessage,
-                  style: const TextStyle(color: Colors.red, fontSize: 16),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-
-            const Divider(height: 1),
-
-            // ================== GRID DE AÇÕES (OCUPA O RESTANTE E ROLA) ==================
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(22),
-                child: GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 22,
-                    mainAxisSpacing: 22,
-                    mainAxisExtent: 180,
+    return CustomScrollView(
+      slivers: [
+        // Cabeçalho de Boas-Vindas
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bem-vindo(a)!',
+                  style: GoogleFonts.poppins(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
                   ),
-                  itemCount: _actionItems.length,
-                  itemBuilder: (context, index) {
-                    final item = _actionItems[index];
-                    Future<void> onTapAction() async {
-                      if (item.title == 'Produtos' ||
-                          item.title == 'Categorias' ||
-                          item.title == 'Clientes' ||
-                          item.title == 'Vendas') {
-                        await context.push(item.route);
-                        _viewModel.handleIntent(LoadInitialDataIntent());
-                      } else {
-                        context.push(item.route);
-                      }
-                    }
-
-                    return ActionCard(
-                      title: item.title,
-                      description: item.description,
-                      icon: item.icon,
-                      iconColor: item.iconColor,
-                      onTap: onTapAction,
-                    );
-                  },
                 ),
+                Text(
+                  formattedDate[0].toUpperCase() + formattedDate.substring(1),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Alerta de Estoque Baixo
+        if (state is HomeSuccessState && state.lowStockInfo.isNotEmpty)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+              child: LowStockAlertCard(lowStockInfoList: state.lowStockInfo),
+            ),
+          ),
+
+        if (state is HomeErrorState)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                state.errorMessage,
+                style: const TextStyle(color: Colors.red, fontSize: 16),
+                textAlign: TextAlign.center,
               ),
             ),
+          ),
 
-            // ================== RODAPÉ COM VERSÃO ==================
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: const Center(
-                child: Text(
-                  "Versão 1.0.0",
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
-                ),
+        // Grid de Ações Responsivo
+        SliverPadding(
+          padding: const EdgeInsets.all(24),
+          sliver: SliverGrid(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 380, // Largura máxima do card
+              mainAxisSpacing: 20,
+              crossAxisSpacing: 20,
+              childAspectRatio: 1.6, // Proporção ajustada
+            ),
+            delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                final item = _actionItems[index];
+                Future<void> onTapAction() async {
+                  // Lógica original preservada
+                  if (item.title == 'Produtos' ||
+                      item.title == 'Categorias' ||
+                      item.title == 'Clientes' ||
+                      item.title == 'Vendas') {
+                    await context.push(item.route);
+                    _viewModel.handleIntent(LoadInitialDataIntent());
+                  } else {
+                    context.push(item.route);
+                  }
+                }
+
+                return ActionCard(
+                  title: item.title,
+                  description: item.description,
+                  icon: item.icon,
+                  iconColor: item.iconColor,
+                  onTap: onTapAction,
+                );
+              },
+              childCount: _actionItems.length,
+            ),
+          ),
+        ),
+
+        // Rodapé com Versão
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                "Versão 1.0.0",
+                style: TextStyle(color: Colors.grey[400], fontSize: 14),
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
+}
 
-  void _onLogoffPressed(BuildContext context) async {
-    final shouldLogoff = await showConfirmationDialog(
-      context: context,
-      title: 'Confirmar Logoff',
-      content: 'Deseja realmente sair?',
-      confirmText: 'Sair',
+// Widget auxiliar para os itens da TabBar
+class _TabItem extends StatelessWidget {
+  final String title;
+  final IconData icon;
+
+  const _TabItem({required this.title, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 8),
+          Text(title),
+        ],
+      ),
     );
-    if (shouldLogoff == true) {
-      _viewModel.handleIntent(SignOutIntent());
-    }
   }
 }

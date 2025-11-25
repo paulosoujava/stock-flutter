@@ -50,7 +50,7 @@ Future<void> main() async {
       center: true,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
-      title: 'Meu App de Estoque',
+      title: 'Controle e Vendas',
       titleBarStyle: TitleBarStyle.normal,
     );
 

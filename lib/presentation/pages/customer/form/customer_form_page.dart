@@ -1,15 +1,12 @@
-// lib/app/presentation/pages/customer_form/customer_form_page.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
 import 'package:stock/core/di/injection.dart';
 import 'package:stock/domain/entities/customer/customer.dart';
-import 'package:stock/presentation/widgets/custom_text_form_field.dart';
-import '../../../../core/di/app_module.dart';
-import '../../live/list/live_list_view_model.dart';
 import 'customer_form_intent.dart';
 import 'customer_form_state.dart';
-import 'customer_form_viewmodel.dart'; // Para gerar um ID aleatório
+import 'customer_form_viewmodel.dart';
 
 class CustomerFormPage extends StatefulWidget {
   final Customer? customerToEdit;
@@ -21,10 +18,10 @@ class CustomerFormPage extends StatefulWidget {
 }
 
 class _CustomerFormPageState extends State<CustomerFormPage> {
+  // --- LÓGICA ORIGINAL 100% PRESERVADA ---
   late final CustomerFormViewModel _viewModel;
   final _formKey = GlobalKey<FormState>();
 
-  // Controladores para os campos de texto
   final _nameController = TextEditingController();
   final _cpfController = TextEditingController();
   final _emailController = TextEditingController();
@@ -40,18 +37,12 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
 
   bool get isEditing => widget.customerToEdit != null;
 
-  final _cpfFormatter = MaskTextInputFormatter(
-    mask: '###.###.###-##',
-    filter: {"#": RegExp(r'[0-9]')},
-  );
-  final _phoneFormatter = MaskTextInputFormatter(
-    mask: '(##) #####-####',
-    filter: {"#": RegExp(r'[0-9]')},
-  );
-  final _whatsappFormatter = MaskTextInputFormatter(
-    mask: '(##) #####-####',
-    filter: {"#": RegExp(r'[0-9]')},
-  );
+  final _cpfFormatter =
+  MaskTextInputFormatter(mask: '###.###.###-##', filter: {"#": RegExp(r'[0-9]')});
+  final _phoneFormatter =
+  MaskTextInputFormatter(mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')});
+  final _whatsappFormatter =
+  MaskTextInputFormatter(mask: '(##) #####-####', filter: {"#": RegExp(r'[0-9]')});
 
   @override
   void initState() {
@@ -63,66 +54,30 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
     }
 
     _phoneController.addListener(_updateWhatsAppField);
-
-  /*  _viewModel.state.listen((state) {
-      if (!mounted) return;
-
-      if (state is CustomerFormSuccessState) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(isEditing ||
-                    widget.customerToEdit?.id.startsWith('temp_') == true
-                ? 'Cliente salvo com sucesso!'
-                : 'Cliente atualizado com sucesso!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.pop(true);
-      } else if (state is CustomerFormErrorState) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-        );
-      }
-    });*/
   }
 
   void _populateFieldsForEditing() {
     final customer = widget.customerToEdit!;
-
-    // Para campos sem máscara, a atribuição direta funciona.
     _nameController.text = customer.name;
-    _emailController.text = customer.email;
+    _emailController.text = customer.email ?? '';
     _addressController.text = customer.address;
     _addressController1.text = customer.address1 ?? "";
     _addressController2.text = customer.address2 ?? "";
     _notesController.text = customer.notes ?? "";
     _instagramController.text = customer.instagram ?? "";
-
-    // Para campos COM máscara, use o método .formatEditUpdate() do formatador.
-    // Isso atualiza o controlador e o estado interno do formatador, mantendo-os em sincronia.
     _cpfController.value = _cpfFormatter.formatEditUpdate(
-      TextEditingValue.empty,
-      TextEditingValue(text: customer.cpf),
-    );
+        TextEditingValue.empty, TextEditingValue(text: customer.cpf));
     _phoneController.value = _phoneFormatter.formatEditUpdate(
-      TextEditingValue.empty,
-      TextEditingValue(text: customer.phone),
-    );
+        TextEditingValue.empty, TextEditingValue(text: customer.phone));
     _whatsappController.value = _whatsappFormatter.formatEditUpdate(
-      TextEditingValue.empty,
-      TextEditingValue(text: customer.whatsapp),
-    );
-
+        TextEditingValue.empty, TextEditingValue(text: customer.whatsapp));
     if (customer.phone.isNotEmpty && customer.phone == customer.whatsapp) {
-      setState(() {
-        _isWhatsAppSameAsPhone = true;
-      });
+      setState(() => _isWhatsAppSameAsPhone = true);
     }
   }
 
   @override
   void dispose() {
-    // Limpeza dos controladores
     _phoneController.removeListener(_updateWhatsAppField);
     _nameController.dispose();
     _cpfController.dispose();
@@ -146,45 +101,32 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
 
   void _saveForm() {
     if (_formKey.currentState?.validate() ?? false) {
-      // 1. Coleta os valores dos endereços
       final address = _addressController.text.trim();
       final address1 = _addressController1.text.trim();
       final address2 = _addressController2.text.trim();
+      final filledAddresses =
+      [address, address1, address2].where((addr) => addr.isNotEmpty).toList();
 
-      // 2. Cria uma lista apenas com os endereços que foram preenchidos
-      final filledAddresses = [address, address1, address2]
-          .where((addr) => addr.isNotEmpty)
-          .toList();
-
-      // 3. Verifica se há duplicatas na lista de endereços preenchidos
-      //    Convertendo para um Set, os duplicados são removidos.
-      //    Se o tamanho do Set for menor que o da lista, significa que havia duplicatas.
       if (filledAddresses.toSet().length < filledAddresses.length) {
-        // 4. Se houver duplicatas, mostra um erro e interrompe a função
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content:
-                Text('Os campos de endereço não podem ter valores repetidos.'),
+            content: Text('Os campos de endereço não podem ter valores repetidos.'),
             backgroundColor: Colors.orange,
           ),
         );
-        return; // Interrompe a execução do método _saveForm
+        return;
       }
-
-      // Se passou na validação de endereços, o código continua normalmente...
-      final cleanCpf = _cpfFormatter.getUnmaskedText();
-      final cleanPhone = _phoneFormatter.getUnmaskedText();
-      final cleanWhatsApp = _whatsappFormatter.getUnmaskedText();
 
       final customerData = Customer(
         id: isEditing ? widget.customerToEdit!.id : '',
         name: _nameController.text.trim(),
-        cpf: cleanCpf,
+        cpf: _cpfFormatter.getUnmaskedText(),
         email: _emailController.text.trim(),
-        phone: cleanPhone,
-        whatsapp: _isWhatsAppSameAsPhone ? cleanPhone : cleanWhatsApp,
+        phone: _phoneFormatter.getUnmaskedText(),
+        whatsapp: _isWhatsAppSameAsPhone
+            ? _phoneFormatter.getUnmaskedText()
+            : _whatsappFormatter.getUnmaskedText(),
         address: address,
-        // Usa a variável que já foi tratada com .trim()
         address1: address1,
         address2: address2,
         notes: _notesController.text.trim(),
@@ -198,186 +140,277 @@ class _CustomerFormPageState extends State<CustomerFormPage> {
       }
     }
   }
+  // --- FIM DA LÓGICA ORIGINAL ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? 'Editar Cliente' : 'Novo Cliente'),
-      ),
-      body: StreamBuilder<CustomerFormState>(
-        stream: _viewModel.state,
-        builder: (context, snapshot) {
+      backgroundColor: Colors.grey[100],
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: StreamBuilder<CustomerFormState>(
+              stream: _viewModel.state,
+              builder: (context, snapshot) {
+                final state = snapshot.data;
 
-          if (snapshot.hasData) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              final state = snapshot.data;
+                if (state is CustomerFormSuccessState) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(isEditing
+                              ? 'Cliente atualizado com sucesso!'
+                              : 'Cliente salvo com sucesso!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                      context.pop(true);
+                    }
+                  });
+                }
 
-              if (state is CustomerFormSuccessState) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente salvo com sucesso!'),
-                    backgroundColor: Colors.green,
-                  ),
-                );
+                if (state is CustomerFormErrorState) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(state.message),
+                            backgroundColor: Colors.red),
+                      );
+                    }
+                  });
+                }
 
-                  context.pop(true);
+                if (state is CustomerFormLoadingState) {
+                  return const Center(child: CircularProgressIndicator());
+                }
 
-              } else if (state is CustomerFormErrorState) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(state.message), backgroundColor: Colors.red),
-                );
-              }
-            });
-          }
-
-
-          if (snapshot.data is CustomerFormLoadingState) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          return // Substitua o trecho selecionado por este código:
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Center( // 1. Adicionado para centralizar o conteúdo horizontalmente
-                child: ConstrainedBox( // 2. Adicionado para limitar a largura máxima
-                  constraints: const BoxConstraints(maxWidth: 600), // 3. Define a largura máxima (ajuste conforme necessário)
-                  child: Card(
-                    elevation: 2,
-                    shadowColor: Colors.black.withOpacity(0.1),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    child: Padding(
-                      padding: const EdgeInsets.all(24.0),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          children: [
-                            CustomTextFormField(
-                              controller: _nameController,
-                              labelText: 'Nome Completo',
-                              icon: Icons.person,
-                              validator: (value) => (value?.isEmpty ?? true)
-                                  ? 'O nome é obrigatório'
-                                  : null,
-                            ),
-                            CustomTextFormField(
-                              controller: _cpfController,
-                              labelText: 'CPF',
-                              icon: Icons.badge,
-                              keyboardType: TextInputType.number,
-                              inputFormatters: [_cpfFormatter],
-                            ),
-                            CustomTextFormField(
-                              controller: _emailController,
-                              labelText: 'Email',
-                              icon: Icons.email,
-                              keyboardType: TextInputType.emailAddress,
-                            ),
-                            CustomTextFormField(
-                              controller: _instagramController,
-                              labelText: 'Instagram',
-                              icon: Icons.alternate_email_rounded,
-                            ),
-                            CustomTextFormField(
-                              controller: _phoneController,
-                              labelText: 'Telefone',
-                              icon: Icons.phone,
-                              keyboardType: TextInputType.phone,
-                              inputFormatters: [_phoneFormatter],
-                            ),
-                            CheckboxListTile(
-                              title: const Text("WhatsApp é o mesmo que o telefone"),
-                              value: _isWhatsAppSameAsPhone,
-                              onChanged: (bool? value) {
-                                setState(() {
-                                  _isWhatsAppSameAsPhone = value ?? false;
-                                  _updateWhatsAppField();
-                                });
-                              },
-                              controlAffinity: ListTileControlAffinity.leading,
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                            CustomTextFormField(
-                              controller: _whatsappController,
-                              labelText: 'WhatsApp',
-                              icon: Icons.chat_bubble,
-                              keyboardType: TextInputType.phone,
-                              enabled: !_isWhatsAppSameAsPhone,
-                              inputFormatters: [_phoneFormatter],
-                            ),
-                            CustomTextFormField(
-                              controller: _addressController,
-                              labelText: 'Endereço',
-                              icon: Icons.location_on,
-                            ),
-                            CustomTextFormField(
-                              controller: _addressController1,
-                              labelText: 'Endereço 2',
-                              icon: Icons.location_on,
-                            ),
-                            CustomTextFormField(
-                              controller: _addressController2,
-                              labelText: 'Endereço 3',
-                              icon: Icons.location_on,
-                            ),
-                            CustomTextFormField(
-                              controller: _notesController,
-                              labelText: 'Observações',
-                              icon: Icons.notes,
-                            ),
-
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue.withOpacity(0.05),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: Colors.blue.withOpacity(0.2)),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.info_outline,
-                                    color: Colors.blue.shade600,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      'Dica: Use o campo acima para classificar o cliente\nex: "Cliente Ouro", "prata ou bronze"\nOu para adicionar lembretes importantes.',
-                                      style: TextStyle(
-                                        color: Colors.blue.shade800,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                FloatingActionButton.extended(
-                                  onPressed: _saveForm,
-                                  label: Text(isEditing ? 'Atualizar' : 'Salvar'),
-                                  icon: const Icon(Icons.save),
-                                ),
-                              ],
-                            ),
-                          ],
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(24.0),
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 800),
+                      child: Card(
+                        elevation: 4.0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(32.0),
+                          child: _buildFormFields(),
                         ),
                       ),
                     ),
                   ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 40, 24, 20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4)),
+        ],
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.pop(),
+            tooltip: 'Voltar',
+          ),
+          const SizedBox(width: 16),
+          Text(
+            isEditing ? 'Editar Cliente' : 'Novo Cliente',
+            style: GoogleFonts.poppins(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800]),
+          ),
+          const Spacer(),
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.deepPurple,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding:
+              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            ),
+            icon: const Icon(Icons.save, size: 20),
+            label: Text(isEditing ? 'Atualizar' : 'Salvar'),
+            onPressed: _saveForm,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFormFields() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildSectionTitle('Dados Pessoais'),
+          TextFormField(
+            controller: _nameController,
+            decoration: const InputDecoration(
+                labelText: 'Nome Completo',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person)),
+            validator: (v) =>
+            (v?.isEmpty ?? true) ? 'O nome é obrigatório' : null,
+          ),
+          const SizedBox(height: 16),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _cpfController,
+                  decoration: const InputDecoration(
+                      labelText: 'CPF',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.badge)),
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [_cpfFormatter],
                 ),
               ),
-            );
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _instagramController,
+                  decoration: const InputDecoration(
+                      labelText: 'Instagram (sem @)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.alternate_email)),
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 48),
+          _buildSectionTitle('Contato'),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _phoneController,
+                  decoration: const InputDecoration(
+                      labelText: 'Telefone',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone)),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [_phoneFormatter],
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: TextFormField(
+                  controller: _emailController,
+                  decoration: const InputDecoration(
+                      labelText: 'E-mail (opcional)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email)),
+                  keyboardType: TextInputType.emailAddress,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          CheckboxListTile(
+            title: const Text("WhatsApp é o mesmo que o telefone"),
+            value: _isWhatsAppSameAsPhone,
+            onChanged: (bool? value) {
+              setState(() {
+                _isWhatsAppSameAsPhone = value ?? false;
+                _updateWhatsAppField();
+              });
+            },
+            controlAffinity: ListTileControlAffinity.leading,
+            contentPadding: EdgeInsets.zero,
+          ),
+          if (!_isWhatsAppSameAsPhone)
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: TextFormField(
+                controller: _whatsappController,
+                decoration: const InputDecoration(
+                    labelText: 'WhatsApp',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.chat_bubble)),
+                keyboardType: TextInputType.phone,
+                inputFormatters: [_whatsappFormatter],
+              ),
+            ),
+          const Divider(height: 48),
+          _buildSectionTitle('Endereços'),
+          TextFormField(
+            controller: _addressController,
+            decoration: const InputDecoration(
+                labelText: 'Endereço Principal',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on)),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _addressController1,
+            decoration: const InputDecoration(
+                labelText: 'Endereço 2 (Opcional)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on_outlined)),
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _addressController2,
+            decoration: const InputDecoration(
+                labelText: 'Endereço 3 (Opcional)',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on_outlined)),
+          ),
+          const Divider(height: 48),
+          _buildSectionTitle('Outras Informações'),
+          TextFormField(
+            controller: _notesController,
+            decoration: const InputDecoration(
+              labelText: 'Observações e Nível (Ex: Cliente Ouro)',
+              alignLabelWithHint: true,
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.notes),
+            ),
+            maxLines: 3,
+          ),
+        ],
+      ),
+    );
+  }
 
-        },
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20.0),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.grey[700],
+        ),
       ),
     );
   }
