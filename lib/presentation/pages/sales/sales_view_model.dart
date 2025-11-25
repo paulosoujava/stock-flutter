@@ -24,7 +24,7 @@ class SalesViewModel {
   final Uuid _uuid;
   final EventBus _eventBus;
 
-  final _stateController = BehaviorSubject<SalesState>();
+  late var _stateController = BehaviorSubject<SalesState>();
 
   Stream<SalesState> get state => _stateController.stream;
 
@@ -35,13 +35,13 @@ class SalesViewModel {
       (_stateController.value as SalesReadyState?)?.globalDescription ?? '';
 
   SalesViewModel(
-    this._getAllProductsUseCase,
-    this._saveSaleUseCase,
-    this._updateProductUseCase,
-    this._getCurrentUser,
-    this._uuid,
-    this._eventBus,
-  ) {
+      this._getAllProductsUseCase,
+      this._saveSaleUseCase,
+      this._updateProductUseCase,
+      this._getCurrentUser,
+      this._uuid,
+      this._eventBus,
+      ) {
     _stateController.add(SalesReadyState());
   }
 
@@ -67,34 +67,26 @@ class SalesViewModel {
   }
 
   void reset() {
-    _stateController.add(SalesReadyState());
+    try {
+      _stateController.add(SalesReadyState());
+    } catch (e) {
+      // Se der erro, é porque o stream foi fechado → recria o subject
+      _stateController = BehaviorSubject<SalesState>.seeded(SalesReadyState());
+    }
   }
 
   void _selectCustomer(Customer customer) {
     final currentState = _stateController.value;
     if (currentState is SalesReadyState) {
       _stateController.add(currentState.copyWith(selectedCustomer: customer));
+      // **AJUSTE 1**: Dispara a busca com texto vazio para carregar todos os produtos.
+      _searchProducts('');
     }
   }
 
   Future<void> _searchProducts(String query) async {
     final currentState = _stateController.value;
     if (currentState is! SalesReadyState) return;
-
-    // LIMPEZA IMEDIATA SE QUERY VAZIA
-    if (query.isEmpty) {
-      _stateController.add(SalesReadyState(
-        selectedCustomer: currentState.selectedCustomer,
-        cart: currentState.cart,
-        originalProducts: currentState.originalProducts,
-        searchResults: [],
-        currentSearchQuery: '',
-        isSearching: false,
-        globalDiscount: currentState.globalDiscount,
-        globalDescription: currentState.globalDescription,
-      ));
-      return;
-    }
 
     // Inicia a busca
     _stateController.add(currentState.copyWith(
@@ -104,6 +96,9 @@ class SalesViewModel {
 
     try {
       final allProducts = await _getAllProductsUseCase();
+
+      // **AJUSTE 2**: A lógica de filtro agora funciona para ambos os casos.
+      // Se a query for vazia, `contains('')` retorna true para todos, carregando a lista completa.
       List<Product> results = allProducts.where((product) {
         final searchLower = query.toLowerCase();
         return product.name.toLowerCase().contains(searchLower) ||
@@ -111,7 +106,7 @@ class SalesViewModel {
             product.salePrice.toString().contains(searchLower);
       }).toList();
 
-      // Ajusta estoque com base no carrinho
+      // Ajusta estoque com base no carrinho (lógica original preservada)
       for (final cartItem in currentState.cart) {
         final index = results.indexWhere((p) => p.id == cartItem.productId);
         if (index != -1) {
@@ -151,7 +146,7 @@ class SalesViewModel {
     );
 
     final existingIndex =
-        updatedCart.indexWhere((item) => item.productId == product.id);
+    updatedCart.indexWhere((item) => item.productId == product.id);
 
     if (existingIndex != -1) {
       updatedCart[existingIndex] = updatedCart[existingIndex].copyWith(
@@ -163,7 +158,6 @@ class SalesViewModel {
     }
 
     _stateController.add(currentState.copyWith(cart: updatedCart));
-    _stateController.add(currentState.copyWith(cart: updatedCart));
   }
 
   void _removeProductFromCart(String productId) {
@@ -171,7 +165,7 @@ class SalesViewModel {
     if (currentState is! SalesReadyState) return;
 
     final updatedCart =
-        currentState.cart.where((item) => item.productId != productId).toList();
+    currentState.cart.where((item) => item.productId != productId).toList();
     _stateController.add(currentState.copyWith(cart: updatedCart));
     _searchProducts(currentState.currentSearchQuery);
   }
@@ -185,7 +179,7 @@ class SalesViewModel {
 
     final updatedCart = List<SaleItem>.from(currentState.cart);
     final itemIndex =
-        updatedCart.indexWhere((item) => item.productId == productId);
+    updatedCart.indexWhere((item) => item.productId == productId);
 
     if (itemIndex != -1) {
       final currentItem = updatedCart[itemIndex];
@@ -204,7 +198,7 @@ class SalesViewModel {
 
     final updatedCart = List<SaleItem>.from(currentState.cart);
     final itemIndex =
-        updatedCart.indexWhere((item) => item.productId == productId);
+    updatedCart.indexWhere((item) => item.productId == productId);
 
     if (itemIndex != -1) {
       final currentItem = updatedCart[itemIndex];
@@ -261,7 +255,7 @@ class SalesViewModel {
       final productsInDb = await _getAllProductsUseCase();
       for (final cartItem in currentState.cart) {
         final product =
-            productsInDb.firstWhere((p) => p.id == cartItem.productId);
+        productsInDb.firstWhere((p) => p.id == cartItem.productId);
         if (product.stockQuantity < cartItem.quantity) {
           throw Exception('Estoque insuficiente: ${product.name}');
         }
@@ -303,6 +297,7 @@ class SalesViewModel {
       _stateController.add(currentState); // volta ao estado anterior
     }
   }
+
 
   @disposeMethod
   void dispose() {
