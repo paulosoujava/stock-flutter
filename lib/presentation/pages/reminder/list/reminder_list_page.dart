@@ -106,8 +106,15 @@ class _ReminderListPageState extends State<ReminderListPage> {
                   return RefreshIndicator(
                     onRefresh: () async =>
                         _viewModel.handleIntent(LoadRemindersIntent()),
-                    child: ListView.builder(
+                    child: GridView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+                      gridDelegate:
+                          const SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 400,
+                        mainAxisSpacing: 16,
+                        crossAxisSpacing: 16,
+                        childAspectRatio: 1,
+                      ),
                       itemCount: state.reminders.length,
                       itemBuilder: (context, index) {
                         final reminder = state.reminders[index];
@@ -175,13 +182,13 @@ class _ReminderListPageState extends State<ReminderListPage> {
                 fillColor: Colors.grey[100],
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    // Dispara a busca com texto vazio para limpar o filtro
-                    _viewModel.handleIntent(SearchRemindersIntent(''));
-                  },
-                )
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          // Dispara a busca com texto vazio para limpar o filtro
+                          _viewModel.handleIntent(SearchRemindersIntent(''));
+                        },
+                      )
                     : null,
               ),
               onChanged: (query) =>
@@ -196,7 +203,7 @@ class _ReminderListPageState extends State<ReminderListPage> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12)),
               padding:
-              const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             ),
             icon: const Icon(Icons.add_alarm, size: 20),
             label: const Text("Novo Lembrete"),
@@ -215,11 +222,17 @@ class _ReminderListPageState extends State<ReminderListPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(isSearching ? Icons.search_off : Icons.note_alt_outlined,
-                size: 80, color: Colors.grey[400]),
+            Icon(
+                isSearching
+                    ? Icons.search_off
+                    : Icons.sentiment_very_dissatisfied,
+                size: 80,
+                color: Colors.grey[400]),
             const SizedBox(height: 24),
             Text(
-              isSearching ? 'Nenhum lembrete encontrado' : 'Nenhum lembrete cadastrado',
+              isSearching
+                  ? 'Nenhum lembrete encontrado'
+                  : 'Nenhum lembrete cadastrado',
               style: GoogleFonts.poppins(
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -243,7 +256,7 @@ class _ReminderListPageState extends State<ReminderListPage> {
                   backgroundColor: Colors.deepPurple,
                   foregroundColor: Colors.white,
                   padding:
-                  const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 ),
                 onPressed: _navigateToCreateForm,
               ),
@@ -285,121 +298,120 @@ class _ReminderCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       color: isCompleted ? Colors.green.shade50 : Colors.white,
-      margin: const EdgeInsets.symmetric(vertical: 8),
       child: InkWell(
         onTap: onToggle,
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
-          child: Row(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Checkbox customizado
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                  isCompleted ? theme.primaryColor : Colors.transparent,
-                  border: Border.all(
-                    color:
-                    isCompleted ? theme.primaryColor : Colors.grey.shade400,
-                    width: 2,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Checkbox customizado
+                  Container(
+                    width: 24,
+                    height: 24,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isCompleted
+                          ? theme.primaryColor
+                          : Colors.transparent,
+                      border: Border.all(
+                        color: isCompleted
+                            ? theme.primaryColor
+                            : Colors.grey.shade400,
+                        width: 2,
+                      ),
+                    ),
+                    child: isCompleted
+                        ? const Icon(Icons.check, size: 16, color: Colors.white)
+                        : null,
                   ),
-                ),
-                child: isCompleted
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
-                    : null,
-              ),
-              const SizedBox(width: 16),
-              // Conteúdo do lembrete
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
+                  const SizedBox(width: 12),
+                  // Conteúdo do lembrete
+                  Expanded(
+                    child: Text(
                       reminder.title,
                       style: GoogleFonts.poppins(
                         fontSize: 17,
                         fontWeight: FontWeight.w600,
                         color:
-                        isCompleted ? Colors.grey[600] : Colors.black87,
-                        decoration: isCompleted
-                            ? TextDecoration.lineThrough
-                            : null,
+                            isCompleted ? Colors.grey[600] : Colors.black87,
+                        decoration:
+                            isCompleted ? TextDecoration.lineThrough : null,
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    if (reminder.content.isNotEmpty)
-                      Text(
-                        reminder.content,
-                        style: TextStyle(
-                          color:
-                          isCompleted ? Colors.grey[500] : Colors.black54,
-                          decoration: isCompleted
-                              ? TextDecoration.lineThrough
-                              : null,
-                          fontSize: 15,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Icon(Icons.person_outline,
-                            size: 14, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          reminder.createdBy,
-                          style: TextStyle(
-                              fontSize: 12, color: Colors.grey[700]),
-                        ),
-                        const Spacer(),
-                        Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          DateFormat('dd/MM/yyyy', 'pt_BR')
-                              .format(reminder.createdAt),
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              // Ações em Menu
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') {
-                    onEdit();
-                  } else if (value == 'delete') {
-                    onDelete();
-                  }
-                },
-                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-                  const PopupMenuItem<String>(
-                    value: 'edit',
-                    child: ListTile(
-                      leading: Icon(Icons.edit_outlined),
-                      title: Text('Editar'),
                     ),
                   ),
-                  const PopupMenuItem<String>(
-                    value: 'delete',
-                    child: ListTile(
-                      leading: Icon(Icons.delete_outline, color: Colors.red),
-                      title: Text('Excluir', style: TextStyle(color: Colors.red)),
-                    ),
+                  const SizedBox(width: 8),
+                  // Ações em Menu
+                  PopupMenuButton<String>(
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        onEdit();
+                      } else if (value == 'delete') {
+                        onDelete();
+                      }
+                    },
+                    itemBuilder: (BuildContext context) =>
+                        <PopupMenuEntry<String>>[
+                      const PopupMenuItem<String>(
+                        value: 'edit',
+                        child: ListTile(
+                          leading: Icon(Icons.edit_outlined),
+                          title: Text('Editar'),
+                        ),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'delete',
+                        child: ListTile(
+                          leading:
+                              Icon(Icons.delete_outline, color: Colors.red),
+                          title: Text('Excluir',
+                              style: TextStyle(color: Colors.red)),
+                        ),
+                      ),
+                    ],
+                    icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                    tooltip: 'Mais opções',
                   ),
                 ],
-                icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-                tooltip: 'Mais opções',
+              ),
+              const SizedBox(height: 10),
+              if (reminder.content.isNotEmpty)
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Text(
+                      reminder.content,
+                      style: TextStyle(
+                        color: isCompleted ? Colors.grey[500] : Colors.black54,
+                        decoration: isCompleted ? TextDecoration.lineThrough : null,
+                        fontSize: 15,
+                      ),
+                      maxLines: 40,
+                    ),
+                  ),
+                ),
+              const Divider(height: 1),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Icon(Icons.person_outline, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    reminder.createdBy,
+                    style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                  ),
+                  const Spacer(),
+                  Icon(Icons.schedule, size: 14, color: Colors.grey[600]),
+                  const SizedBox(width: 4),
+                  Text(
+                    DateFormat('dd/MM/yyyy', 'pt_BR')
+                        .format(reminder.createdAt),
+                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                  ),
+                ],
               ),
             ],
           ),

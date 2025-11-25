@@ -423,10 +423,16 @@ class _SalesPageState extends State<SalesPage> {
           (p) => p.id == product.id,
           orElse: () => product,
         );
+        // CALCULA O ESTOQUE DISPONÍVEL TEMPORARIAMENTE
+        final availableStock = latestProduct.stockQuantity -
+            state.cart
+                .where((item) => item.productId == latestProduct.id)
+                .fold<int>(0, (sum, item) => sum + item.quantity);
 
         return _ProductSearchItem(
           key: ValueKey('${latestProduct.id}_${latestProduct.stockQuantity}'),
           product: latestProduct,
+          availableStock: availableStock,
           onAddToCart: (quantity, discount) {
             _viewModel.handleIntent(
                 AddProductToCartIntent(latestProduct, quantity, discount));
@@ -755,11 +761,14 @@ class _ProductSearchItem extends StatefulWidget {
   final Product product;
   final Function(int quantity, int discount) onAddToCart;
   final int globalDiscount;
+  final int availableStock;
+
 
   const _ProductSearchItem({
     required super.key,
     required this.product,
     required this.onAddToCart,
+    required this.availableStock,
     required this.globalDiscount,
   });
 
@@ -783,7 +792,7 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
   }
 
   void _increment() => setState(() => _quantity =
-      _quantity < widget.product.stockQuantity ? _quantity + 1 : _quantity);
+  _quantity < widget.availableStock ? _quantity + 1 : _quantity);
 
   void _decrement() =>
       setState(() => _quantity = _quantity > 1 ? _quantity - 1 : 1);
@@ -792,10 +801,9 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
   Widget build(BuildContext context) {
     super.build(context);
 
-    final hasStock = widget.product.stockQuantity > 0;
-    final isLowStock = hasStock &&
-        widget.product.stockQuantity <= widget.product.lowStockThreshold;
-    final canAddMore = _quantity < widget.product.stockQuantity;
+    final hasStock = widget.availableStock > 0;
+    final isLowStock = hasStock && widget.availableStock <= widget.product.lowStockThreshold;
+    final canAddMore = _quantity < widget.availableStock;
     final hasGlobalDiscount = widget.globalDiscount > 0;
 
     return Card(
@@ -835,19 +843,18 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
                     color: (isLowStock
-                            ? Colors.orange.shade700
-                            : hasStock
-                                ? Colors.green.shade700
-                                : Colors.red)
+                        ? Colors.orange.shade700
+                        : hasStock
+                        ? Colors.green.shade700
+                        : Colors.red)
                         .withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '${widget.product.stockQuantity}',
+                    '${widget.availableStock}', // AQUI ERA O PROBLEMA!
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -890,49 +897,97 @@ class _ProductSearchItemState extends State<_ProductSearchItem>
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.remove_circle, size: 22),
-                      color: _quantity > 1 ? Colors.red.shade400 : Colors.grey,
-                      onPressed: _quantity > 1 ? _decrement : null,
-                    ),
-                    SizedBox(
-                      width: 38,
-                      child: Center(
-                        child: Text(
-                          '$_quantity',
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
+                // CONTROLES DE QUANTIDADE (só aparece se tem estoque)
+                if (widget.availableStock > 0) ...[
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle, size: 22),
+                        color: _quantity > 1 ? Colors.red.shade400 : Colors.grey,
+                        onPressed: _quantity > 1 ? _decrement : null,
+                      ),
+                      SizedBox(
+                        width: 38,
+                        child: Center(
+                          child: Text(
+                            '$_quantity',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          ),
                         ),
                       ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle, size: 22),
+                        color: _quantity < widget.availableStock ? Colors.green.shade600 : Colors.grey,
+                        onPressed: _quantity < widget.availableStock ? _increment : null,
+                      ),
+                    ],
+                  ),
+
+                  // BOTÃO ADICIONAR (só se tem estoque)
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      widget.onAddToCart(_quantity, hasGlobalDiscount ? 0 : _discount);
+                      setState(() {
+                        _quantity = 1;
+                        _discount = 0;
+                        _discountController.clear();
+                      });
+                    },
+                    icon: const Icon(Icons.add_shopping_cart, size: 18),
+                    label: const Text("Adicionar"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green.shade600,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.add_circle, size: 22),
-                      color: canAddMore ? Colors.green.shade600 : Colors.grey,
-                      onPressed: canAddMore ? _increment : null,
+                  ),
+                ]
+
+                // AVISO BONITÃO QUANDO ESGOTADO
+                else
+                  Container(
+                    height: 40,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: widget.product.stockQuantity == 0
+                          ? Colors.red.shade50
+                          : Colors.orange.shade50,
+                      border: Border.all(
+                        color: widget.product.stockQuantity == 0
+                            ? Colors.red.shade300
+                            : Colors.orange.shade300,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
                     ),
-                  ],
-                ),
-
-
-
-                // Botão Add
-                IconButton(
-                  onPressed: hasStock
-                      ? () {
-                          widget.onAddToCart(
-                              _quantity, hasGlobalDiscount ? 0 : _discount);
-                          setState(() {
-                            _quantity = 1;
-                            _discount = 0;
-                            _discountController.clear();
-                          });
-                        }
-                      : null,
-                  icon: const Icon(Icons.add_shopping_cart, size: 21),
-                ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          widget.product.stockQuantity == 0
+                              ? Icons.sentiment_dissatisfied
+                              : Icons.check_circle_outline,
+                          size: 20,
+                          color: widget.product.stockQuantity == 0
+                              ? Colors.red.shade600
+                              : Colors.orange.shade700,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          widget.product.stockQuantity == 0
+                              ? "Produto esgotado"
+                              : "Já no carrinho (${widget.product.stockQuantity - widget.availableStock}/${widget.product.stockQuantity})",
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            color: widget.product.stockQuantity == 0
+                                ? Colors.red.shade700
+                                : Colors.orange.shade800,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ],

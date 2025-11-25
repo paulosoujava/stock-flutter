@@ -56,7 +56,6 @@ class CustomerFormViewModel {
     _stateController.add(CustomerFormLoadingState());
 
     try {
-      // === REGRA NOVA: Decide se cria novo ou atualiza existente ===
       final bool isTempOrNew =
           customer.id.isEmpty || customer.id.startsWith('temp_');
 

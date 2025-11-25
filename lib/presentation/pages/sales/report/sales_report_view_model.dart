@@ -131,7 +131,11 @@ class SalesReportViewModel {
 // FUNÇÃO ISOLADA PARA O COMPUTE (NÃO PODE SER STATIC NEM USAR INSTÂNCIA)
 // ==============================================================
   static List<YearlySales> _processSalesDataIsolated(List<Sale> allSales) {
-    final salesByYear = groupBy(allSales, (Sale sale) => sale.saleDate.year);
+    // FILTRA VENDAS CANCELADAS AQUI
+    final activeSales = allSales.where((sale) => !(sale.isCanceled == true)).toList();
+
+    final salesByYear = groupBy(activeSales, (Sale sale) => sale.saleDate.year);
+
     final List<YearlySales> yearlySalesList = [];
 
     salesByYear.forEach((year, yearSales) {
@@ -160,7 +164,7 @@ class SalesReportViewModel {
         monthlySalesList.add(MonthlySales(
           month: month,
           totalAmount: monthTotal,
-          sales: monthSales,
+          sales: monthSales, // aqui ainda inclui só as ativas (por causa do filtro acima)
           sellerPerformances: sellerPerformances,
         ));
       });
@@ -175,7 +179,6 @@ class SalesReportViewModel {
     });
 
     yearlySalesList.sort((a, b) => b.year.compareTo(a.year));
-
     return yearlySalesList;
   }
 
@@ -202,6 +205,8 @@ class SalesReportViewModel {
           .add(SalesReportError("Erro ao cancelar venda: ${e.toString()}"));
     }
   }
+
+
 // Adicione este método no SalesReportViewModel
   String getDisplayCustomerName(Sale sale, Customer? customer) {
     // Se veio de uma Live (liveId não nulo) → sempre mostra o nome usado na live (que já vem com @)

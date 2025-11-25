@@ -127,7 +127,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Confirmar"),
+            child: const Text("Confirmar", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),

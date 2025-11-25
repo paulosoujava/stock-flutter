@@ -21,7 +21,6 @@ class CustomerListPage extends StatefulWidget {
 }
 
 class _CustomerListPageState extends State<CustomerListPage> {
-  // --- LÓGICA ORIGINAL PRESERVADA ---
   late final CustomerListViewModel _viewModel;
   final _searchController = TextEditingController();
   StreamSubscription? _customerSavedSubscription;
