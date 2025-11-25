@@ -43,6 +43,7 @@ import '../../domain/usecases/live/start_live_use_case.dart' as _i1025;
 import '../../domain/usecases/products/add_product.dart' as _i125;
 import '../../domain/usecases/products/delete_product.dart' as _i403;
 import '../../domain/usecases/products/get_all_products_use_case.dart' as _i237;
+import '../../domain/usecases/products/get_last_product_code.dart' as _i804;
 import '../../domain/usecases/products/get_product_count_by_category.dart'
     as _i811;
 import '../../domain/usecases/products/get_products_by_category.dart' as _i887;
@@ -152,6 +153,8 @@ _i174.GetIt $initGetIt(
       () => _i159.AddCategory(gh<_i204.ICategoryRepository>()));
   gh.factory<_i618.DeleteCategory>(
       () => _i618.DeleteCategory(gh<_i204.ICategoryRepository>()));
+  gh.factory<_i804.GetLastProductCode>(
+      () => _i804.GetLastProductCode(gh<_i213.IProductRepository>()));
   gh.factory<_i885.RegisterDeliveryUseCase>(
       () => _i885.RegisterDeliveryUseCase(gh<_i398.IDeliveryRepository>()));
   gh.factory<_i37.GetDeliveryUseCase>(
@@ -171,6 +174,13 @@ _i174.GetIt $initGetIt(
     ),
     dispose: (i) => i.dispose(),
   );
+  gh.factory<_i689.ProductFormViewModel>(() => _i689.ProductFormViewModel(
+        gh<_i125.AddProduct>(),
+        gh<_i421.UpdateProduct>(),
+        gh<_i557.EventBus>(),
+        gh<_i1056.GetProductsByCode>(),
+        gh<_i804.GetLastProductCode>(),
+      ));
   gh.factory<_i1051.UpdateSaleUseCase>(
       () => _i1051.UpdateSaleUseCase(gh<_i666.ISaleRepository>()));
   gh.factory<_i853.GetSalesByMonthUseCase>(
@@ -231,12 +241,6 @@ _i174.GetIt $initGetIt(
   );
   gh.factory<_i439.GetCurrentUserUseCase>(
       () => _i439.GetCurrentUserUseCase(gh<_i59.FirebaseAuth>()));
-  gh.factory<_i689.ProductFormViewModel>(() => _i689.ProductFormViewModel(
-        gh<_i125.AddProduct>(),
-        gh<_i421.UpdateProduct>(),
-        gh<_i557.EventBus>(),
-        gh<_i1056.GetProductsByCode>(),
-      ));
   gh.factory<_i447.LoginViewModel>(
       () => _i447.LoginViewModel(gh<_i561.SignInUseCase>()));
   gh.factory<_i569.FinishLiveUseCase>(

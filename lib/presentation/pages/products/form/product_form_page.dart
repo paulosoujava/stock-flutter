@@ -43,13 +43,34 @@ class _ProductFormPageState extends State<ProductFormPage> {
 
   final _stockQuantityController = TextEditingController();
   final _lowStockThresholdController = TextEditingController();
-
+  String initialCode = '';
   bool get isEditing => widget.productToEdit != null;
 
   @override
   void initState() {
     super.initState();
     _viewModel = getIt<ProductFormViewModel>();
+
+// Escuta o stream uma única vez para pegar o código sugerido
+    final subscription = _viewModel.state.listen((state) {
+      if (state is ProductFormNextCodeSuggested && !isEditing) {
+        setState(() {
+          initialCode = state.suggestedCode;
+          // Atualiza o controller com o código sugerido
+          _codeOfProductController.text = initialCode;
+          _codeOfProductController.selection = TextSelection.fromPosition(
+            TextPosition(offset: initialCode.length),
+          );
+        });
+        //subscription.cancel(); // cancela após usar (evita múltiplas chamadas)
+      }
+    });
+
+    // Se estiver editando, preenche com o código do produto existente
+    if (isEditing && widget.productToEdit!.codeOfProduct != null) {
+      initialCode = widget.productToEdit!.codeOfProduct!;
+      _codeOfProductController.text = initialCode;
+    }
 
     if (isEditing) {
       _populateFieldsForEditing();

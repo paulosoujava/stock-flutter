@@ -6,6 +6,7 @@ import 'package:stock/core/events/event_bus.dart';
 import 'package:stock/domain/entities/product/product.dart';
 import 'package:stock/domain/usecases/products/add_product.dart';
 import 'package:stock/domain/usecases/products/update_product.dart';
+import '../../../../domain/usecases/products/get_last_product_code.dart';
 import '../../../../domain/usecases/products/get_products_by_code.dart';
 import 'product_form_intent.dart';
 import 'product_form_state.dart';
@@ -15,6 +16,7 @@ class ProductFormViewModel {
   final AddProduct _addProduct;
   final UpdateProduct _updateProduct;
   final GetProductsByCode _getProductsByCode;
+  final GetLastProductCode _getLastProductCode;
   final EventBus _eventBus;
 
   final _stateController = StreamController<ProductFormState>.broadcast();
@@ -26,8 +28,10 @@ class ProductFormViewModel {
     this._updateProduct,
     this._eventBus,
     this._getProductsByCode,
+    this._getLastProductCode,
   ) {
     _stateController.add(ProductFormInitial());
+    _loadNextCode();
   }
 
   void handleIntent(ProductFormIntent intent) {
@@ -35,6 +39,16 @@ class ProductFormViewModel {
       _saveProduct(intent.product);
     } else if (intent is UpdateProductIntent) {
       _updateProductMethod(intent.product);
+    }
+  }
+
+  Future<void> _loadNextCode() async {
+    try {
+      final lastCode = await _getLastProductCode();
+      final nextCode = (lastCode ?? 0) + 1;
+      _stateController.add(ProductFormNextCodeSuggested(nextCode.toString()));
+    } catch (e) {
+      // Se der erro, só não sugere nada
     }
   }
 
@@ -60,7 +74,6 @@ class ProductFormViewModel {
     _stateController.add(ProductFormLoading());
 
     try {
-
       await _updateProduct(product);
       _stateController.add(ProductFormSuccess());
       _eventBus.fire(ProductEvent());

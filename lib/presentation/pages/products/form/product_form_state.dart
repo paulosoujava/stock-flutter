@@ -11,3 +11,8 @@ class ProductFormError extends ProductFormState {
   final String message;
   ProductFormError(this.message);
 }
+
+class ProductFormNextCodeSuggested extends ProductFormState {
+  final String suggestedCode;
+   ProductFormNextCodeSuggested(this.suggestedCode);
+}

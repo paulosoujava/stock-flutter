@@ -313,12 +313,24 @@ class _ProductCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Expanded(
-                    child: Text(
-                      product.name,
-                      style: GoogleFonts.poppins(
-                          fontSize: 18, fontWeight: FontWeight.w600),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          product.name,
+                          style: GoogleFonts.poppins(
+                              fontSize: 18, fontWeight: FontWeight.w600),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Text(
+                          "Cód.: ${product.codeOfProduct}",
+                          style: GoogleFonts.poppins(
+                              fontSize: 14, fontWeight: FontWeight.w100),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -352,8 +364,7 @@ class _ProductCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-
+              const SizedBox(height: 25),
               // --- DESCRIÇÃO ---
               if (product.description.isNotEmpty)
                 Text(
