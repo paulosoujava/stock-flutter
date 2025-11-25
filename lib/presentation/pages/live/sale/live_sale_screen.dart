@@ -534,9 +534,10 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                         // CALCULA ESTOQUE REAL EM TEMPO REAL (considerando vendas já feitas)
                                         final sold = state.orders
                                             .where((o) => o.product.id == p.id)
-                                            .fold(0, (sum, o) => sum + o.customers.length);
+                                            .fold<int>(0, (sum, o) => sum + o.customers.length);
 
                                         final remaining = p.stockQuantity - sold;
+
 
                                         if (remaining <= 0) {
                                           ScaffoldMessenger.of(context).showSnackBar(
@@ -943,26 +944,64 @@ class _LiveSaleScreenState extends State<LiveSaleScreen> {
                                     onPressed: state.currentCustomers.isEmpty
                                         ? null
                                         : () {
-                                            // 1. Lê o valor do desconto do controller
-                                            final discountValue = int.tryParse(
-                                                    _discountController.text) ??
-                                                0;
+                                      // RECALCULA O ESTOQUE SEMPRE
+                                      final productId = state.selectedProduct!.id;
 
-                                            // 2. Envia a intent para definir o desconto
-                                            _vm.add(SetIndividualDiscountIntent(
-                                                discountValue));
+                                      final alreadySold = state.orders
+                                          .where((o) => o.product.id == productId)
+                                          .fold<int>(0, (sum, order) => sum + order.customers.length);
 
-                                            _vm.add(AddOrderIntent());
-                                            _discountController.clear();
-                                          },
-                                    backgroundColor:
-                                        state.currentCustomers.isEmpty
-                                            ? Colors.grey
-                                            : Colors.green,
-                                    tooltip: 'Adicionar ao Carrinho',
-                                    elevation: 2,
-                                    child: const Icon(Icons.add_shopping_cart,
-                                        color: Colors.white),
+                                      final available = state.selectedProduct!.stockQuantity - alreadySold;
+
+                                      // BLOQUEIA SE ESGOTOU
+                                      if (available <= 0) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                              "Produto ${state.selectedProduct!.name} ESGOTADO!",
+                                              style: const TextStyle(fontWeight: FontWeight.bold),
+                                            ),
+                                            backgroundColor: Colors.red.shade700,
+                                            behavior: SnackBarBehavior.floating,
+                                            duration: const Duration(seconds: 3),
+                                          ),
+                                        );
+                                        return;
+                                      }
+
+                                      // SE TEM ESTOQUE → ADICIONA
+                                      final discount = int.tryParse(_discountController.text) ?? 0;
+
+                                      _vm.add(SetIndividualDiscountIntent(discount));
+                                      _vm.add(AddOrderIntent());
+                                      _discountController.clear();
+                                      _instagramFocusNode.requestFocus();
+                                    },
+                                    // COR E ÍCONE CORRETOS (sem usar variável fora do escopo)
+                                    backgroundColor: () {
+                                      if (state.currentCustomers.isEmpty) return Colors.grey;
+
+                                      final productId = state.selectedProduct!.id;
+                                      final alreadySold = state.orders
+                                          .where((o) => o.product.id == productId)
+                                          .fold<int>(0, (sum, o) => sum + o.customers.length);
+                                      final available = state.selectedProduct!.stockQuantity - alreadySold;
+
+                                      return available <= 0 ? Colors.red.shade600 : Colors.green;
+                                    }(),
+                                    child: () {
+                                      if (state.currentCustomers.isEmpty) {
+                                        return const Icon(Icons.block);
+                                      }
+
+                                      final productId = state.selectedProduct!.id;
+                                      final alreadySold = state.orders
+                                          .where((o) => o.product.id == productId)
+                                          .fold<int>(0, (sum, o) => sum + o.customers.length);
+                                      final available = state.selectedProduct!.stockQuantity - alreadySold;
+
+                                      return Icon(available <= 0 ? Icons.block : Icons.add_shopping_cart);
+                                    }(),
                                   ),
                                 ],
                               ),

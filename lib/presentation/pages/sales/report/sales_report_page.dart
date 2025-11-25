@@ -28,7 +28,7 @@ class SalesReportPage extends StatefulWidget {
 
 class _SalesReportPageState extends State<SalesReportPage> {
   late final SalesReportViewModel _viewModel;
-
+  Map<String, String> _deliveryStatusCache = {}; // ←  cache de status
   final NumberFormat _currency =
       NumberFormat.currency(locale: 'pt_BR', symbol: 'R\$');
   final DateFormat _date = DateFormat('dd/MM/yyyy - HH:mm');
@@ -42,11 +42,36 @@ class _SalesReportPageState extends State<SalesReportPage> {
     _viewModel = getIt<SalesReportViewModel>();
     _viewModel.handleIntent(LoadSalesReportIntent());
 
+    // ← NOVA LINHA: pré-carrega todos os status de entrega
+    _preloadAllDeliveryStatus();
+
     final eventBus = getIt<EventBus>();
     _tempCustomerSavedSubscription = eventBus.stream.listen((event) {
       if (event is RegisterEvent) {
         _viewModel.handleIntent(LoadSalesReportIntent());
+        _preloadAllDeliveryStatus(); // recarrega cache quando mudar
       }
+    });
+  }
+
+  Future<void> _preloadAllDeliveryStatus() async {
+    if (_viewModel.state is! SalesReportLoaded) return;
+
+    final loadedState = _viewModel.state as SalesReportLoaded;
+    final allSales = loadedState.yearlySales
+        .expand((y) => y.monthlySales)
+        .expand((m) => m.sales)
+        .toList();
+
+    final Map<String, String> cache = {};
+
+    for (final sale in allSales) {
+      final delivery = await _viewModel.fetchDeliveryData(sale.id);
+      cache[sale.id] = delivery?.status ?? "Pendente";
+    }
+
+    setState(() {
+      _deliveryStatusCache = cache;
     });
   }
 
@@ -115,19 +140,34 @@ class _SalesReportPageState extends State<SalesReportPage> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("Cancelar Venda"),
-        content: TextField(
-          controller: reasonController,
-          decoration: const InputDecoration(labelText: "Motivo"),
+        title: Text("Cancelar Venda${sale.liveId != null ? ' da Live' : ''}"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("Tem certeza que deseja cancelar esta venda?"),
+            const SizedBox(height: 8),
+            Text("Cliente: ${sale.customerName}", style: TextStyle(fontWeight: FontWeight.bold)),
+            if (sale.liveId != null)
+              Text("Live ID: ${sale.liveId}", style: TextStyle(color: Colors.purple)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: reasonController,
+              decoration: const InputDecoration(
+                labelText: "Motivo do cancelamento",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text("Cancelar")),
+              child: const Text("Voltar")),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text("Confirmar", style: TextStyle(color: Colors.white)),
+            child: const Text("Cancelar Venda", style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -325,9 +365,8 @@ class _SalesReportPageState extends State<SalesReportPage> {
                     final List<Sale> newSales = [];
 
                     for (final sale in month.sales) {
-                      final delivery =
-                          await _viewModel.fetchDeliveryData(sale.id);
-                      final status = delivery?.status ?? "Pendente";
+                      // ← AQUI ERA O PROBLEMA! Agora usa o cache!
+                      final status = _deliveryStatusCache[sale.id] ?? "Pendente";
                       if (status == _selectedFilter) {
                         newSales.add(sale);
                       }
@@ -336,8 +375,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
                     if (newSales.isNotEmpty) {
                       newMonths.add(MonthlySales(
                         month: month.month,
-                        totalAmount:
-                            newSales.fold(0.0, (sum, s) => sum + s.totalAmount),
+                        totalAmount: newSales.fold(0.0, (sum, s) => sum + s.totalAmount),
                         sales: newSales,
                         sellerPerformances: month.sellerPerformances,
                       ));
@@ -347,8 +385,7 @@ class _SalesReportPageState extends State<SalesReportPage> {
                   if (newMonths.isNotEmpty) {
                     filtered.add(YearlySales(
                       year: year.year,
-                      totalAmount:
-                          newMonths.fold(0.0, (sum, m) => sum + m.totalAmount),
+                      totalAmount: newMonths.fold(0.0, (sum, m) => sum + m.totalAmount),
                       monthlySales: newMonths,
                     ));
                   }

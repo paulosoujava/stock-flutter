@@ -251,7 +251,6 @@ void openSaleHistory(BuildContext context, Sale sale, NumberFormat currency) {
     context: context,
     builder: (ctx) {
       return AlertDialog(
-        // ... (shape, backgroundColor, surfaceTintColor, title - sem alterações) ...
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
@@ -269,6 +268,8 @@ void openSaleHistory(BuildContext context, Sale sale, NumberFormat currency) {
         content: ConstrainedBox(
           constraints: BoxConstraints(
             maxHeight: MediaQuery.of(context).size.height * 0.75,
+            maxWidth: MediaQuery.of(context).size.height * 0.90,
+            minWidth: MediaQuery.of(context).size.height * 0.75,
           ),
           child: SingleChildScrollView(
             child: Column(
@@ -299,6 +300,7 @@ void openSaleHistory(BuildContext context, Sale sale, NumberFormat currency) {
                     ),
                   ),
                 ...sale.items.map((SaleItem item) {
+                  // ... (shape, backgroundColor, surfaceTintColor, title - sem alterações) ...
                   return Card(
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     shape: RoundedRectangleBorder(

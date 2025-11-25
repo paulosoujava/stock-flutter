@@ -128,32 +128,41 @@ class SalesReportViewModel {
   }
 
 // ==============================================================
-// FUNÇÃO ISOLADA PARA O COMPUTE (NÃO PODE SER STATIC NEM USAR INSTÂNCIA)
+// FUNÇÃO ISOLADA PARA O COMPUTE
 // ==============================================================
   static List<YearlySales> _processSalesDataIsolated(List<Sale> allSales) {
-    // FILTRA VENDAS CANCELADAS AQUI
-    final activeSales = allSales.where((sale) => !(sale.isCanceled == true)).toList();
-
-    final salesByYear = groupBy(activeSales, (Sale sale) => sale.saleDate.year);
+    // Mantém TODAS as vendas (inclusive canceladas)
+    final salesByYear = groupBy(allSales, (Sale sale) => sale.saleDate.year);
 
     final List<YearlySales> yearlySalesList = [];
 
     salesByYear.forEach((year, yearSales) {
-      final yearTotal = yearSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+      // Total do ano → só vendas não canceladas
+      final yearTotal = yearSales.fold<double>(
+        0,
+            (sum, sale) => sum + (sale.isCanceled == true ? 0 : sale.totalAmount),
+      );
 
       final salesByMonth = groupBy(yearSales, (Sale sale) => sale.saleDate.month);
       final List<MonthlySales> monthlySalesList = [];
 
       salesByMonth.forEach((month, monthSales) {
-        final monthTotal = monthSales.fold<double>(0, (sum, sale) => sum + sale.totalAmount);
+        // Total do mês → só vendas não canceladas
+        final monthTotal = monthSales.fold<double>(
+          0,
+              (sum, sale) => sum + (sale.isCanceled == true ? 0 : sale.totalAmount),
+        );
 
+        // Performance dos vendedores → só vendas não canceladas
         final Map<String, double> sellerSalesMap = {};
         for (var sale in monthSales) {
-          sellerSalesMap.update(
-            sale.sellerName,
-                (value) => value + sale.totalAmount,
-            ifAbsent: () => sale.totalAmount,
-          );
+          if (sale.isCanceled != true) {
+            sellerSalesMap.update(
+              sale.sellerName,
+                  (value) => value + sale.totalAmount,
+              ifAbsent: () => sale.totalAmount,
+            );
+          }
         }
 
         final sellerPerformances = sellerSalesMap.entries
@@ -161,14 +170,19 @@ class SalesReportViewModel {
             .toList()
           ..sort((a, b) => b.totalSold.compareTo(a.totalSold));
 
+        // ORDENA AS VENDAS POR DATA (mais recente primeiro)
+        final sortedMonthSales = monthSales.toList()
+          ..sort((a, b) => b.saleDate.compareTo(a.saleDate));
+
         monthlySalesList.add(MonthlySales(
           month: month,
           totalAmount: monthTotal,
-          sales: monthSales, // aqui ainda inclui só as ativas (por causa do filtro acima)
+          sales: sortedMonthSales,           // ordenado por data
           sellerPerformances: sellerPerformances,
         ));
       });
 
+      // Ordena os meses (dezembro → janeiro)
       monthlySalesList.sort((a, b) => b.month.compareTo(a.month));
 
       yearlySalesList.add(YearlySales(
@@ -178,7 +192,9 @@ class SalesReportViewModel {
       ));
     });
 
+    // Ordena os anos (2025 → 2024 → 2023...)
     yearlySalesList.sort((a, b) => b.year.compareTo(a.year));
+
     return yearlySalesList;
   }
 

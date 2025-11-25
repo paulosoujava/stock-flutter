@@ -146,41 +146,58 @@ class LiveSaleViewModel {
         final product = current.selectedProduct!;
         final alreadySold = current.orders
             .where((o) => o.product.id == product.id)
-            .fold(0, (sum, o) => sum + o.customers.length);
+            .fold<int>(0, (sum, o) => sum + o.customers.length);
 
         final sellingNow = current.currentCustomers.length;
+        final available = product.stockQuantity - alreadySold;
 
-        if (alreadySold + sellingNow > product.stockQuantity) {
-          _emitMessage(current, "Not enough stock! Only ${product.stockQuantity - alreadySold} left.");
+        // BLOQUEIA SE NÃO TEM ESTOQUE SUFICIENTE
+        if (sellingNow > available) {
+          _emitMessage(
+            current,
+            "Estoque insuficiente!\n"
+                "${product.name} só tem $available unidade(s) disponível(is).\n"
+                "Você tentou adicionar $sellingNow cliente(s).",
+          );
           break;
         }
 
-        final newOrders = List<LiveOrder>.from(current.orders);
-        newOrders.add(LiveOrder(
+        // CRIA NOVA ORDEM
+        final newOrder = LiveOrder(
           product: product,
           discountPercent: current.discountPercent,
           customers: List.from(current.currentCustomers),
-        ));
+        );
 
-        // UPDATE STOCK IN THE PRODUCT LIST (forces new object + rebuild)
+        final newOrders = [...current.orders, newOrder];
+
+        // RECALCULA O ESTOQUE REAL DO PRODUTO (com base nas ordens atualizadas)
+        final totalSoldAfterAdd = newOrders
+            .where((o) => o.product.id == product.id)
+            .fold<int>(0, (sum, o) => sum + o.customers.length);
+
+        final newStockQuantity = product.stockQuantity - totalSoldAfterAdd;
+
+        // ATUALIZA A LISTA DE PRODUTOS COM O ESTOQUE CORRETO
         final updatedProducts = current.products.map((p) {
           if (p.id == product.id) {
-            final totalSoldNow = newOrders
-                .where((o) => o.product.id == p.id)
-                .fold(0, (sum, o) => sum + o.customers.length);
-            return p.copyWith(stockQuantity: product.stockQuantity - (totalSoldNow - alreadySold));
+            return p.copyWith(stockQuantity: newStockQuantity);
           }
-          return p.copyWith(); // forces new instance even if unchanged
+          return p;
         }).toList();
+
+        // ATUALIZA TAMBÉM O selectedProduct (senão ele fica com estoque antigo!)
+        final updatedSelectedProduct = product.copyWith(stockQuantity: newStockQuantity);
 
         current.instagramController.clear();
 
         _state.add(current.copyWith(
-          selectedProduct: null,
-          currentCustomers: [],
-          clearSelectedProduct: true,
           orders: newOrders,
           products: updatedProducts,
+          selectedProduct: updatedSelectedProduct, // ESSA LINHA ERA O PROBLEMA!
+          currentCustomers: [],
+          discountPercent: 0, // reseta desconto individual
+          clearSelectedProduct: true,
         ));
         break;
       case RemoveOrderIntent:

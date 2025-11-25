@@ -166,9 +166,7 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // AVATAR
-          Tooltip(
-              message: delivery?.status ?? "Não registrado",
-              child:CircleAvatar(
+        CircleAvatar(
                 radius: 20,
                 backgroundColor: canceled ? Colors.grey : cardBorderColor,
                 child: Icon(
@@ -177,7 +175,6 @@ class _TimelineSaleCardState extends State<TimelineSaleCard> {
                   size: 20,
                 ),
               ),
-          ),
           const SizedBox(width: 12),
           // INFO
           Expanded(
